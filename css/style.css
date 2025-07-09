@@ -182,22 +182,101 @@ a:hover {
 }
 
 /* --- 3. Estilos del Header y Navegación --- */
+/* css/style.css - REEMPLAZA TODA LA SECCIÓN 3 */
+
+/* --- 3. Estilos del Header y Navegación --- */
 .main-header {
     background-color: rgba(15, 15, 15, 0.9);
     border-bottom: 1px solid var(--border-color);
     padding: 1rem 0;
-    position: sticky; top: 0; z-index: 1000;
+    position: sticky; 
+    top: 0; 
+    z-index: 1000;
     backdrop-filter: blur(10px);
 }
-.main-nav { display: flex; justify-content: space-between; align-items: center; }
-.logo { font-family: var(--font-headings); font-size: 2rem; font-weight: 700; color: var(--text-headings); }
-.logo span { color: var(--primary-color); }
-.nav-menu { list-style: none; display: flex; align-items: center; gap: 1.5rem; }
-.nav-menu a { color: var(--text-secondary); font-weight: 600; padding: 0.5rem 0; border-bottom: 2px solid transparent; transition: all var(--transition-speed) ease; }
-.nav-menu a:hover, .nav-menu a.active { color: var(--text-headings); border-bottom-color: var(--primary-color); }
-.nav-actions { display: flex; align-items: center; gap: 1rem; }
-.mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; z-index: 1001; }
 
+.main-nav { 
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* Tres columnas: izquierda, centro, derecha */
+    align-items: center;
+    width: 100%;
+}
+
+/* Contenedor del logo y el texto - alineado a la izquierda */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    grid-column: 1;
+    justify-self: start;
+}
+
+/* Estilos para la imagen del logo */
+.logo-img {
+    height: 35px;
+    display: block;
+}
+
+/* Estilos para el texto del logo */
+.logo-text { 
+    font-family: var(--font-headings); 
+    font-size: 1.8rem;
+    font-weight: 700; 
+    color: var(--text-headings);
+    white-space: nowrap;
+}
+
+.logo-text span { 
+    color: var(--primary-color); 
+}
+
+/* Menú de navegación - centrado exactamente */
+.nav-menu { 
+    list-style: none; 
+    display: flex; 
+    align-items: center; 
+    gap: 2rem;
+    padding: 0;
+    margin: 0;
+    grid-column: 2;
+    justify-self: center; /* Centra el menú en su columna */
+}
+
+.nav-menu a { 
+    color: var(--text-secondary); 
+    font-weight: 600; 
+    padding: 0.5rem 0; 
+    border-bottom: 2px solid transparent; 
+    transition: all var(--transition-speed) ease; 
+}
+
+.nav-menu a:hover, .nav-menu a.active { 
+    color: var(--text-headings); 
+    border-bottom-color: var(--primary-color); 
+}
+
+/* Contenedor de botones de acción - alineado a la derecha */
+.nav-actions { 
+    display: flex; 
+    align-items: center; 
+    gap: 1rem;
+    grid-column: 3;
+    justify-self: end; /* Alinea a la derecha */
+}
+
+/* Botón de menú móvil */
+.mobile-menu-btn { 
+    display: none; 
+    background: none; 
+    border: none; 
+    color: white; 
+    font-size: 1.5rem; 
+    cursor: pointer; 
+    z-index: 1001; 
+}
+
+/* Menú de usuario */
 .user-menu-container { position: relative; }
 .dropdown-menu { 
     position: absolute; 
@@ -1157,4 +1236,53 @@ a:hover {
     color: var(--success-color);
     animation: fadeIn 0.5s;
     text-shadow: 0 0 10px rgba(47, 133, 90, 0.7);
+}
+
+/* css/style.css - AÑADIR EN LA SECCIÓN DEL HEADER */
+
+.logo { 
+    font-family: var(--font-headings); 
+    font-size: 2rem; 
+    font-weight: 700; 
+    color: var(--text-headings);
+    /* ¡NUEVO! Convertir a flex para alinear imagen y texto */
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Espacio entre el logo y el texto */
+}
+
+/* ¡NUEVO! Estilos para la imagen del logo */
+.logo-img {
+    height: 40px; /* Ajusta este valor según tu preferencia */
+}
+/* Media query para dispositivos móviles - ACTUALIZADO */
+@media (max-width: 768px) {
+    .main-nav {
+        display: flex; /* Volvemos a flexbox en móvil */
+        justify-content: space-between;
+    }
+    
+    .nav-menu { 
+        position: fixed; 
+        top: 0; 
+        left: -100%; 
+        width: 280px; 
+        height: 100%; 
+        background: var(--bg-light); 
+        flex-direction: column; 
+        align-items: flex-start; 
+        justify-content: flex-start; 
+        padding: 6rem 2rem 2rem 2rem; 
+        gap: 1rem; 
+        transition: left 0.3s ease-in-out; 
+        border-right: 1px solid var(--border-color);
+    }
+    
+    .nav-menu.active { 
+        left: 0; 
+    }
+    
+    .mobile-menu-btn { 
+        display: block; 
+    }
 }
