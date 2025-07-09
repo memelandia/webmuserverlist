@@ -1,4 +1,4 @@
-// js/explorar.js (v7 - con Filtros Avanzados y Ordenación)
+// js/explorar.js (v8 - con Slider de EXP por Tramos)
 
 document.addEventListener('DOMContentLoaded', () => {
     initExplorar();
@@ -29,75 +29,88 @@ async function checkServerStatus(serverId, url) {
     }
 }
 
-// Función principal de la página explorar
 function initExplorar() {
     // Referencias a los elementos del DOM
     const serversGridContainer = document.getElementById('servers-grid-container');
     const filtersForm = document.getElementById('explore-filters-form');
     const resetBtn = document.getElementById('reset-filters-btn');
-    const expSlider = document.getElementById('filter-exp');
+    const expSlider = document.getElementById('filter-exp-slider');
     const expValueSpan = document.getElementById('exp-value');
 
-    if (!serversGridContainer || !filtersForm) return;
+    if (!serversGridContainer || !filtersForm || !expSlider) return;
 
-    // Actualiza el valor del slider de EXP en la UI
-    expSlider.addEventListener('input', () => {
-        if (parseInt(expSlider.value, 10) >= 10000) {
+    // --- NUEVA LÓGICA PARA EL SLIDER DE EXPERIENCIA ---
+    // Definimos nuestros tramos de EXP. El último es "infinito".
+    const expSteps = [1, 5, 10, 20, 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 2000, 5000, 9999, 100000];
+    
+    // Función para traducir el valor del slider (0-17) a un valor de EXP
+    function getExpValueFromSlider(sliderValue) {
+        const index = parseInt(sliderValue, 10);
+        return expSteps[index];
+    }
+
+    // Función para actualizar el texto que ve el usuario
+    function updateExpLabel(value) {
+        if (value >= 99999) { // Nuestro valor "infinito"
             expValueSpan.textContent = 'Cualquiera';
         } else {
-            expValueSpan.textContent = `< ${expSlider.value}x`;
+            expValueSpan.textContent = `≤ ${value}x`;
         }
+    }
+    
+    // Event listener para el slider de EXP
+    expSlider.addEventListener('input', () => {
+        const currentExp = getExpValueFromSlider(expSlider.value);
+        updateExpLabel(currentExp);
     });
+    // --- FIN DE LA NUEVA LÓGICA ---
 
     // Event listener para el formulario de filtros
     filtersForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        loadServers(); // Llama a la función principal de carga
+        loadServers();
     });
 
     // Event listener para el botón de resetear
     resetBtn.addEventListener('click', () => {
         filtersForm.reset();
-        expValueSpan.textContent = 'Cualquiera'; // Resetea también el span del slider
+        expSlider.value = expSteps.length - 1; // Resetea el slider al máximo
+        updateExpLabel(getExpValueFromSlider(expSlider.value)); // Actualiza la etiqueta
         loadServers();
     });
 
-    // Carga inicial de servidores al entrar en la página
+    // Carga inicial
+    updateExpLabel(getExpValueFromSlider(expSlider.value)); // Establece la etiqueta inicial
     loadServers();
 
-    // Función principal que construye la query y carga los servidores
     async function loadServers() {
         serversGridContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Aplicando filtros y cargando servidores...</div>`;
 
         try {
             // Recoger todos los valores del formulario
+            const expFilterValue = getExpValueFromSlider(document.getElementById('filter-exp-slider').value);
+
             const filters = {
                 name: document.getElementById('filter-name').value.trim(),
                 version: document.getElementById('filter-version').value.trim(),
                 type: document.getElementById('filter-type').value,
-                exp: parseInt(document.getElementById('filter-exp').value, 10),
+                exp: expFilterValue,
                 sort: document.getElementById('filter-sort').value
             };
 
-            // Construir la consulta a Supabase dinámicamente
             let query = window.supabaseClient
                 .from('servers')
                 .select('id, name, image_url, banner_url, version, type, exp_rate, drop_rate, description, website_url')
                 .eq('status', 'aprobado');
 
             // Aplicar filtros de texto
-            if (filters.name) {
-                query = query.ilike('name', `%${filters.name}%`);
-            }
-            if (filters.version) {
-                query = query.ilike('version', `%${filters.version}%`);
-            }
-            if (filters.type) {
-                query = query.eq('type', filters.type);
-            }
+            if (filters.name) query = query.ilike('name', `%${filters.name}%`);
+            if (filters.version) query = query.ilike('version', `%${filters.version}%`);
+            if (filters.type) query = query.eq('type', filters.type);
             
             // Aplicar filtro de rango de EXP (menor o igual que)
-            if (filters.exp < 10000) {
+            // Solo se aplica si el valor no es el máximo (nuestro "Cualquiera")
+            if (filters.exp < 99999) {
                 query = query.lte('exp_rate', filters.exp);
             }
             
@@ -107,7 +120,6 @@ function initExplorar() {
                     query = query.order('created_at', { ascending: false });
                     break;
                 case 'opening_soon':
-                    // Filtra solo servidores con fecha futura y los ordena
                     query = query.not('opening_date', 'is', null)
                                  .gt('opening_date', new Date().toISOString())
                                  .order('opening_date', { ascending: true });
@@ -118,24 +130,18 @@ function initExplorar() {
                     break;
             }
             
-            // Añadimos un orden secundario por si hay empates
             query = query.order('is_featured', { ascending: false });
 
-            // Ejecutar la consulta
             const { data, error } = await query;
-
             if (error) throw error;
-
-            // Renderizar los resultados
             renderServers(data);
 
         } catch (error) {
             console.error("Error cargando servidores:", error);
-            serversGridContainer.innerHTML = `<div class="error-text">Error al cargar los servidores. Por favor, intenta de nuevo.</div>`;
+            serversGridContainer.innerHTML = `<div class="error-text">Error al cargar los servidores.</div>`;
         }
     }
 
-    // Función que renderiza las tarjetas de los servidores (sin cambios en su lógica interna)
     function renderServers(servers) {
         if (!servers || servers.length === 0) {
             serversGridContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">No se encontraron servidores con los filtros aplicados.</p>`;
@@ -143,7 +149,7 @@ function initExplorar() {
         }
 
         serversGridContainer.innerHTML = servers.map(server => {
-            const shortDescription = server.description ? server.description.substring(0, 100) + (server.description.length > 100 ? '...' : '') : 'Sin descripción.';
+            const shortDescription = server.description ? server.description.substring(0, 100) + '...' : 'Sin descripción.';
             const optimizedLogoUrl = getOptimizedImageUrl('server-images', server.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
             const optimizedBannerUrl = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 120 }, 'https://via.placeholder.com/400x120.png?text=Banner');
             
@@ -172,10 +178,7 @@ function initExplorar() {
                 </div>
             </div>`;
         }).join('');
-
-        // Comprueba el estado online de cada servidor después de renderizarlos
-        servers.forEach(server => {
-            checkServerStatus(server.id, server.website_url);
-        });
+        
+        servers.forEach(server => checkServerStatus(server.id, server.website_url));
     }
 }
