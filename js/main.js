@@ -1,4 +1,4 @@
-// js/main.js (v11 - Servidor del Mes con Stats)
+// js/main.js (v12 - Rediseño Profesional de Widgets)
 
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadHomeWidgets() {
     loadFeaturedCarousel();
-    loadServerOfTheMonth(); // ¡Lógica actualizada!
-    loadTopRanking();
-    loadUpcomingEvents();
+    loadServerOfTheMonth();
+    loadTopRanking(); // <-- MODIFICADO
+    loadUpcomingEvents(); // <-- MODIFICADO
     loadStats();
 }
 
@@ -86,50 +86,25 @@ function initCarousel() {
     }, 500);
 }
 
-// LÓGICA FINAL Y CORRECTA PARA SERVIDOR DEL MES
 async function loadServerOfTheMonth() {
     const container = document.getElementById('server-of-the-month-widget');
     if (!container) return;
     try {
-        // Buscamos en la tabla 'servers' al que esté marcado como ganador.
-        const { data, error } = await window.supabaseClient
-            .from('servers')
-            .select('*')
-            .eq('is_server_of_the_month', true)
-            .single();
-
+        const { data, error } = await window.supabaseClient.from('servers').select('*').eq('is_server_of_the_month', true).single();
         if (error || !data) {
             container.innerHTML = `<div class="som-content"><span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span><h2>Aún no hay ganador</h2><p>¡Vota por tus servidores favoritos para que aparezcan aquí!</p></div>`;
             return;
         }
-
         const optimizedBanner = getOptimizedImageUrl('server-banners', data.banner_url, { width: 1200, height: 400, resize: 'cover' }, 'https://via.placeholder.com/1200x300.png?text=Banner');
         container.style.backgroundImage = `url('${optimizedBanner}')`;
-
-        // Se reemplaza el párrafo <p> por un div con los stats del servidor.
-        container.innerHTML = `
-            <div class="som-content">
-                <span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span>
-                <h2>${data.name}</h2>
-                <div class="som-stats">
-                    <span class="som-stat-item"><i class="fa-solid fa-gamepad"></i> ${data.version || 'N/A'}</span>
-                    <span class="som-stat-item"><i class="fa-solid fa-cogs"></i> ${data.configuration || 'N/A'}</span>
-                    <span class="som-stat-item"><i class="fa-solid fa-bolt"></i> ${data.exp_rate ? data.exp_rate + 'x' : 'N/A'}</span>
-                    <span class="som-stat-item"><i class="fa-solid fa-gem"></i> ${data.drop_rate ? data.drop_rate + '%' : 'N/A'}</span>
-                </div>
-                <a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a>
-            </div>`;
-    
-    } catch (error) { 
-        container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`; 
-    }
+        container.innerHTML = `<div class="som-content"><span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span><h2>${data.name}</h2><div class="som-stats"><span class="som-stat-item"><i class="fa-solid fa-gamepad"></i> ${data.version || 'N/A'}</span><span class="som-stat-item"><i class="fa-solid fa-cogs"></i> ${data.configuration || 'N/A'}</span><span class="som-stat-item"><i class="fa-solid fa-bolt"></i> ${data.exp_rate ? data.exp_rate + 'x' : 'N/A'}</span><span class="som-stat-item"><i class="fa-solid fa-gem"></i> ${data.drop_rate ? data.drop_rate + '%' : 'N/A'}</span></div><a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a></div>`;
+    } catch (error) { container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`; }
 }
-
 
 async function loadTopRanking() {
     const container = document.getElementById('ranking-widget-list');
     if (!container) return;
-    container.innerHTML = `<li class="loading-text">Cargando ranking...</li>`;
+    container.innerHTML = `<div class="loading-text">Cargando ranking...</div>`; // Usar un div para el loader
     try {
         const { data, error } = await window.supabaseClient.from('servers').select('id, name, image_url, votes_count, version, type, exp_rate').eq('status', 'aprobado').order('votes_count', { ascending: false, nullsFirst: false }).limit(5);
         if (error) throw error;
@@ -138,35 +113,59 @@ async function loadTopRanking() {
                 const rankClass = index < 3 ? `top-${index + 1}` : '';
                 const medalIcon = ['gold', 'silver', 'bronze'][index] ? `<i class="fa-solid fa-medal rank-medal ${['gold', 'silver', 'bronze'][index]}"></i>` : '';
                 const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 80, height: 80 }, 'https://via.placeholder.com/40');
+                // NUEVO HTML para el widget de ranking
                 return `
                 <a href="servidor.html?id=${server.id}" class="ranking-item-link">
                     <li class="ranking-item ${rankClass}">
-                        <div class="rank-position-container"><span class="rank-number">${index + 1}</span>${medalIcon}</div>
+                        <div class="rank-position-container">
+                            <span class="rank-number">${index + 1}</span>
+                            ${medalIcon}
+                        </div>
                         <img src="${optimizedLogo}" alt="${server.name}" class="ranking-logo-icon" width="40" height="40">
-                        <div class="ranking-item-info"><span class="ranking-name">${server.name}</span><small>${server.version || 'N/A'}</small></div>
-                        <div class="ranking-item-stats"><span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span><span><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg> ${server.exp_rate || '?'}x</span></div>
+                        <div class="ranking-item-info">
+                            <span class="ranking-name">${server.name}</span>
+                            <small>${server.version || 'N/A'}</small>
+                        </div>
+                        <div class="ranking-item-stats">
+                            <span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg> ${server.exp_rate || '?'}x</span>
+                        </div>
                     </li>
                 </a>`;
             }).join('');
-        } else { container.innerHTML = '<li class="loading-text">No hay servidores en el ranking.</li>'; }
-    } catch (error) { container.innerHTML = '<li class="error-text">Error al cargar ranking.</li>'; }
+        } else { container.innerHTML = '<div class="loading-text">No hay servidores en el ranking.</div>'; }
+    } catch (error) { container.innerHTML = '<div class="error-text">Error al cargar ranking.</div>'; }
 }
 
 async function loadUpcomingEvents() {
     const container = document.getElementById('calendar-widget-list');
     if (!container) return;
-    container.innerHTML = `<p class="loading-text">Cargando calendario...</p>`;
+    container.innerHTML = `<div class="loading-text">Cargando calendario...</div>`;
     try {
         const { data, error } = await window.supabaseClient.from('servers').select('id, name, opening_date').not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }).limit(3);
         if (error) throw error;
         if (data && data.length > 0) {
-            container.innerHTML = data.map(server => `
+            // NUEVO HTML para el widget de calendario
+            container.innerHTML = data.map(server => {
+                const openingDate = new Date(server.opening_date);
+                const day = openingDate.getDate();
+                const month = openingDate.toLocaleString('es-ES', { month: 'short' }).replace('.', '').toUpperCase();
+
+                return `
                 <a href="servidor.html?id=${server.id}" class="opening-item-widget">
-                    <div><h4>${server.name}</h4><p><i class="fa-solid fa-calendar-day"></i> ${new Date(server.opening_date).toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}</p></div>
-                    <i class="fa-solid fa-chevron-right"></i>
-                </a>`).join('');
-        } else { container.innerHTML = '<p class="loading-text">No hay próximas aperturas.</p>'; }
-    } catch (error) { container.innerHTML = '<p class="error-text">Error al cargar calendario.</p>'; }
+                    <div class="opening-date-box">
+                        <span class="day">${day}</span>
+                        <span class="month">${month}</span>
+                    </div>
+                    <div class="opening-info">
+                        <h4>${server.name}</h4>
+                        <p>${openingDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </a>`
+            }).join('');
+        } else { container.innerHTML = '<div class="loading-text">No hay próximas aperturas.</div>'; }
+    } catch (error) { container.innerHTML = '<div class="error-text">Error al cargar calendario.</div>'; }
 }
 
 async function loadStats() {
