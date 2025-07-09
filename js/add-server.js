@@ -91,20 +91,18 @@ async function initAddServer() {
                 description: form.description.value,
                 version: form.version.value,
                 type: form.type.value,
+                configuration: form.configuration.value,
+                exp_rate: parseInt(form.exp_rate.value) || null,
+                drop_rate: parseInt(form.drop_rate.value) || null,
                 reset_info: form.reset_info.value,
                 antihack_info: form.antihack_info.value,
                 website_url: form.website_url.value,
                 discord_url: form.discord_url.value,
-                exp_rate: parseInt(form.exp_rate.value) || null,
-                drop_rate: parseInt(form.drop_rate.value) || null,
                 opening_date: form.opening_date.value || null,
                 events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value),
                 user_id: session.user.id,
-                // Guardamos los PATHS en la base de datos
-                image_url: logoPath, 
-                banner_url: bannerPath,
-                gallery_urls: galleryPaths.length > 0 ? galleryPaths : null,
-                status: 'pendiente'
+                status: 'pendiente',
+                created_at: new Date().toISOString()
             };
 
             const { data: insertData, error: insertError } = await window.supabaseClient
