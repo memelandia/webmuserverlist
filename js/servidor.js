@@ -52,17 +52,21 @@ function renderServerPage(server) {
 
     const galleryHtml = (galleryUrls.length > 0)
         ? galleryUrls.map(url => {
+            // Optimizar cada imagen de la galería
             const imageUrl = Array.isArray(url) ? url[0] : url;
-            return `<a href="${imageUrl}" target="_blank" rel="noopener noreferrer"><img src="${imageUrl}" alt="Galería de ${server.name}"></a>`;
+            const optimizedGalleryImage = getOptimizedImageUrl('server-gallery', imageUrl, { width: 800, height: 600 }, 'https://via.placeholder.com/800x600');
+            return `<a href="${optimizedGalleryImage}" target="_blank" rel="noopener noreferrer"><img src="${optimizedGalleryImage}" alt="Galería de ${server.name}"></a>`;
         }).join('')
         : '<p>No hay imágenes en la galería.</p>';
 
-    const bannerUrl = Array.isArray(server.banner_url) ? server.banner_url[0] : server.banner_url;
+    // Optimizar banner y logo
+    const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 1200, height: 300 }, 'https://via.placeholder.com/1200x300.png?text=Banner');
+    const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 180, height: 180 }, 'https://via.placeholder.com/180.png?text=Logo');
 
     mainContainer.innerHTML = `
-        <header class="server-header" style="background-image: linear-gradient(rgba(15, 15, 15, 0.8), var(--bg-dark)), url(${bannerUrl || 'https://via.placeholder.com/1200x300.png?text=Banner'});">
+        <header class="server-header" style="background-image: linear-gradient(rgba(15, 15, 15, 0.8), var(--bg-dark)), url(${optimizedBanner});">
             <div class="container server-header-content">
-                 <img src="${server.image_url || 'https://via.placeholder.com/180.png?text=Logo'}" alt="Logo de ${server.name}" class="server-logo-detail">
+                 <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="server-logo-detail">
                  <div class="server-header-info">
                      <h1>${server.name}</h1>
                      <div class="server-header-tags">
@@ -82,7 +86,7 @@ function renderServerPage(server) {
             <main class="server-main-column">
                 <div class="widget">
                     <h3><i class="fa-solid fa-file-alt"></i> Descripción del Servidor</h3>
-                    <p>${server.description || 'No hay una descripción disponible para este servidor.'}</p>
+                    <div class="server-description" style="white-space: pre-wrap;">${server.description || 'No hay una descripción disponible para este servidor.'}</div>
                 </div>
                  <div class="widget">
                     <h3><i class="fa-solid fa-images"></i> Galería</h3>
