@@ -41,7 +41,12 @@ export function getOptimizedImageUrl(bucketName, imagePath, options, fallbackUrl
  * @returns {string} - El HTML de las estrellas.
  */
 export function renderStars(rating) {
-    if (typeof rating !== 'number' || rating <= 0) return '<span class="text-secondary">Sin Rating</span>';
+    // Si el rating es 0, null o undefined, mostrar 5 estrellas vacías
+    if (!rating || rating <= 0) {
+        return '<span style="color:var(--text-secondary); letter-spacing:1px;">☆☆☆☆☆</span>';
+    }
+    
+    // Para ratings válidos, calcular estrellas llenas y vacías
     const full = '★'.repeat(Math.floor(rating));
     const empty = '☆'.repeat(5 - Math.floor(rating));
     return `<span style="color:var(--primary-color); letter-spacing:1px;">${full}${empty}</span>`;
