@@ -1,4 +1,4 @@
-// js/add-server.js (v9 - Con subida de solo path y optimización)
+// js/add-server.js (v10 - Corregido guardado de imágenes y galería)
 
 document.addEventListener('DOMContentLoaded', () => {
     initAddServer();
@@ -27,7 +27,7 @@ async function uploadFile(file, bucket) {
             throw new Error(`No se pudo subir ${file.name}: ${uploadError.message}`);
         }
 
-        // ¡CAMBIO CLAVE! Devolvemos solo el nombre del archivo (path).
+        // Devolvemos solo el nombre del archivo (path).
         return fileName;
         
     } catch (error) {
@@ -61,31 +61,6 @@ async function initAddServer() {
         feedbackEl.className = 'feedback-message';
 
         try {
-            feedbackEl.textContent = 'Subiendo imágenes...';
-            const logoFile = document.getElementById('logo-file').files[0];
-            const bannerFile = document.getElementById('banner-file').files[0];
-            const galleryFiles = document.getElementById('gallery-files').files;
-
-            let logoPath = await uploadFile(logoFile, 'server-images');
-            let bannerPath = await uploadFile(bannerFile, 'server-banners');
-            
-            let galleryPaths = [];
-            if (galleryFiles.length > 0) {
-                if (galleryFiles.length > 6) {
-                    throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
-                }
-                
-                feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
-                
-                // Crear un array de promesas para subir todas las imágenes en paralelo
-                const uploadPromises = Array.from(galleryFiles).map(file => uploadFile(file, 'server-gallery'));
-                
-                // Esperar a que todas las promesas se resuelvan
-                galleryPaths = await Promise.all(uploadPromises);
-            }
-            
-            feedbackEl.textContent = 'Guardando datos del servidor...';
-            
             const serverData = {
                 name: form.name.value,
                 description: form.description.value,
@@ -105,6 +80,34 @@ async function initAddServer() {
                 created_at: new Date().toISOString()
             };
 
+            feedbackEl.textContent = 'Subiendo imágenes...';
+            const logoFile = document.getElementById('logo-file').files[0];
+            const bannerFile = document.getElementById('banner-file').files[0];
+            const galleryFiles = document.getElementById('gallery-files').files;
+
+            // ¡CORRECCIÓN! Las claves deben coincidir con la BD: image_url, banner_url
+            if (logoFile) {
+                serverData.image_url = await uploadFile(logoFile, 'server-images');
+            }
+            if (bannerFile) {
+                serverData.banner_url = await uploadFile(bannerFile, 'server-banners');
+            }
+            
+            // ¡CORRECCIÓN! Añadir la subida y guardado de la galería
+            if (galleryFiles.length > 0) {
+                if (galleryFiles.length > 6) {
+                    throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
+                }
+                
+                feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
+                
+                const uploadPromises = Array.from(galleryFiles).map(file => uploadFile(file, 'server-gallery'));
+                // ¡CORRECCIÓN! La clave debe ser gallery_urls
+                serverData.gallery_urls = await Promise.all(uploadPromises);
+            }
+            
+            feedbackEl.textContent = 'Guardando datos del servidor...';
+            
             const { data: insertData, error: insertError } = await window.supabaseClient
                 .from('servers')
                 .insert([serverData])

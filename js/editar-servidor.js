@@ -1,4 +1,4 @@
-// js/editar-servidor.js (v5 - Con subida de solo path y optimización)
+// js/editar-servidor.js (v6 - Corregido guardado de imágenes y galería)
 
 // Función de subida de archivos modificada para devolver solo el PATH
 async function uploadFile(file, bucket) {
@@ -12,7 +12,7 @@ async function uploadFile(file, bucket) {
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
-                upsert: false
+                upsert: false // Usamos false para evitar sobreescribir por accidente, ya que el nombre es único.
             });
         if (uploadError) {
             throw new Error(`No se pudo subir ${file.name}: ${uploadError.message}`);
@@ -40,8 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    //... (el resto de la lógica de permisos es la misma)
-
     const { data: profile } = await window.supabaseClient
         .from('profiles')
         .select('role')
@@ -65,7 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.description.value = server.description || '';
     form.version.value = server.version || '';
     form.type.value = server.type || 'Medium';
-    // Manejo especial para configuration para evitar problemas con NULL
     form.configuration.value = server.configuration || 'Custom';
     form.exp_rate.value = server.exp_rate || '';
     form.drop_rate.value = server.drop_rate || '';
@@ -118,28 +115,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             const logoFile = document.getElementById('logo-file').files[0];
+            // ¡CORRECCIÓN! La clave debe ser image_url
             if (logoFile) {
+                feedbackEl.textContent = 'Subiendo nuevo logo...';
                 updatedData.image_url = await uploadFile(logoFile, 'server-images');
             }
 
             const bannerFile = document.getElementById('banner-file').files[0];
+            // ¡CORRECCIÓN! La clave debe ser banner_url
             if (bannerFile) {
+                feedbackEl.textContent = 'Subiendo nuevo banner...';
                 updatedData.banner_url = await uploadFile(bannerFile, 'server-banners');
             }
 
             const galleryFiles = document.getElementById('gallery-files').files;
+            // ¡CORRECCIÓN! Añadir la subida y guardado de la galería
             if (galleryFiles.length > 0) {
                 if (galleryFiles.length > 6) {
                     throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
                 
-                // Crear un array de promesas para subir todas las imágenes en paralelo
+                feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
                 const uploadPromises = Array.from(galleryFiles).map(file => uploadFile(file, 'server-gallery'));
-                
-                // Esperar a que todas las promesas se resuelvan
+                // ¡CORRECCIÓN! La clave debe ser gallery_urls
                 updatedData.gallery_urls = await Promise.all(uploadPromises);
             }
 
+            feedbackEl.textContent = 'Guardando cambios...';
             const { error: updateError } = await window.supabaseClient
                 .from('servers')
                 .update(updatedData)

@@ -1,10 +1,9 @@
-// js/servidor.js (v5 - Con Lightbox, Ficha Técnica y Eventos rediseñados)
+// js/servidor.js (v6 - Galería funcional y diseño mejorado)
 
 document.addEventListener('DOMContentLoaded', () => {
     initServidor();
 });
 
-// Variable para la instancia del Lightbox
 let lightbox = null;
 
 async function initServidor() {
@@ -31,19 +30,17 @@ async function initServidor() {
             throw new Error('Servidor no encontrado o no disponible.');
         }
 
-        renderServerPage(server); // Renderiza el HTML
-        loadReviews(server.id); // Carga las reseñas
-        setupReviewForm(server.id); // Configura el formulario de reseña
-        setupVoteButton(server.id); // Configura el botón de votar
+        renderServerPage(server);
+        loadReviews(server.id);
+        setupReviewForm(server.id);
+        setupVoteButton(server.id);
 
-        // ¡CAMBIO! Inicializa GLightbox después de que el contenido se haya renderizado.
         if (lightbox) {
-            lightbox.reload();
-        } else {
-            lightbox = GLightbox({
-                selector: '.gallery-item' // Le decimos que busque elementos con esta clase
-            });
+            lightbox.destroy();
         }
+        lightbox = GLightbox({
+            selector: '.gallery-item'
+        });
 
     } catch (error) {
         console.error('Error al cargar el servidor:', error);
@@ -51,42 +48,29 @@ async function initServidor() {
     }
 }
 
-// ¡CAMBIO! Hemos añadido íconos a los eventos para hacerlos más visuales.
 function getEventIcon(eventName) {
-    const iconMap = {
-        'Blood Castle': 'fa-solid fa-chess-rook',
-        'Devil Square': 'fa-solid fa-square',
-        'Chaos Castle': 'fa-solid fa-dungeon',
-        'Illusion Temple': 'fa-solid fa-eye',
-        'Doppelganger': 'fa-solid fa-clone',
-        'Castle Siege': 'fa-solid fa-fort-awesome',
-        'Crywolf Event': 'fa-solid fa-wolf-pack-battalion',
-        'Kanturu Event': 'fa-solid fa-biohazard',
-        'Last Man Standing': 'fa-solid fa-khanda',
-        'Golden Invasion': 'fa-solid fa-dragon',
-        'White Wizard': 'fa-solid fa-hat-wizard',
-        'Invasión de Conejos': 'fa-solid fa-carrot'
-    };
-    return iconMap[eventName] || 'fa-solid fa-star'; // Ícono por defecto
+    const iconMap = { 'Blood Castle': 'fa-solid fa-chess-rook', 'Devil Square': 'fa-solid fa-square', 'Chaos Castle': 'fa-solid fa-dungeon', 'Illusion Temple': 'fa-solid fa-eye', 'Doppelganger': 'fa-solid fa-clone', 'Castle Siege': 'fa-brands fa-fort-awesome', 'Crywolf Event': 'fa-brands fa-wolf-pack-battalion', 'Kanturu Event': 'fa-solid fa-biohazard', 'Last Man Standing': 'fa-solid fa-khanda', 'Golden Invasion': 'fa-solid fa-dragon', 'White Wizard': 'fa-solid fa-hat-wizard', 'Invasión de Conejos': 'fa-solid fa-carrot' };
+    return iconMap[eventName] || 'fa-solid fa-star';
 }
 
 function renderServerPage(server) {
     document.title = `${server.name} - MuServerList`;
     const mainContainer = document.getElementById('server-detail-content');
 
-    // Eventos HTML (sin cambios)
     const eventsHtml = (server.events && server.events.length > 0)
-        ? server.events.map(event => `
-            <span class="event-tag">
-                <i class="${getEventIcon(event)}"></i> ${event}
-            </span>
-        `).join('')
+        ? server.events.map(event => `<span class="event-tag"><i class="${getEventIcon(event)}"></i> ${event}</span>`).join('')
         : '<p>No hay eventos principales especificados.</p>';
 
-    // Galería (sin cambios)
+    // ¡CORRECCIÓN! Generar el HTML de la galería.
     const galleryUrls = Array.isArray(server.gallery_urls) ? server.gallery_urls : [];
-    
-    // Optimización de banner y logo
+    const galleryHtml = galleryUrls.length > 0 
+        ? galleryUrls.map(imgPath => {
+            const fullUrl = getOptimizedImageUrl('server-gallery', imgPath, { quality: 85 });
+            const thumbUrl = getOptimizedImageUrl('server-gallery', imgPath, { width: 300, height: 200 });
+            return `<a href="${fullUrl}" class="gallery-item" data-gallery="server-gallery"><img src="${thumbUrl}" alt="Galería de ${server.name}"></a>`;
+        }).join('')
+        : '<p>Este servidor no tiene imágenes en la galería.</p>';
+
     const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 1200, quality: 80 }, 'https://via.placeholder.com/1200x300.png?text=Banner');
     const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 360, height: 360 }, 'https://via.placeholder.com/180.png?text=Logo');
 
@@ -97,10 +81,10 @@ function renderServerPage(server) {
                  <div class="server-header-info">
                      <h1>${server.name}</h1>
                      <div class="server-header-tags">
-                         <span><i class="fa-solid fa-gamepad text-accent"></i> ${server.version || 'N/A'}</span>
-                         <span><i class="fa-solid fa-shield-halved text-accent"></i> ${server.type || 'N/A'}</span>
-                         <span><i class="fa-solid fa-cogs text-accent"></i> ${server.configuration || 'N/A'}</span>
-                         <span><i class="fa-solid fa-heart text-accent"></i> <span id="votes-count">${server.votes_count || 0}</span> Votos</span>
+                         <span><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
+                         <span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                         <span><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
+                         <span><i class="fa-solid fa-heart"></i> <span id="votes-count">${server.votes_count || 0}</span> Votos</span>
                      </div>
                  </div>
                  <div class="server-header-actions">
@@ -114,20 +98,17 @@ function renderServerPage(server) {
             <main class="server-main-column">
                 <div class="widget">
                     <h3 class="widget-title"><i class="fa-solid fa-file-alt"></i> Descripción</h3>
-                    <div class="server-description-content">${server.description || 'No hay una descripción disponible.'}</div>
+                    <div class="server-description-content">${server.description ? new showdown.Converter().makeHtml(server.description) : 'No hay una descripción disponible.'}</div>
                 </div>
                  <div class="widget">
                     <h3 class="widget-title"><i class="fa-solid fa-images"></i> Galería</h3>
                     <div class="gallery-grid">${galleryHtml}</div>
                 </div>
-                <div class="widget" id="reviews-widget">
-                    <!-- Contenido de Reseñas... (sin cambios) -->
-                </div>
+                <div class="widget" id="reviews-widget"></div>
             </main>
             <aside class="server-sidebar-column">
                  <div class="widget">
                     <h3 class="widget-title"><i class="fa-solid fa-circle-info"></i> Ficha Técnica</h3>
-                    <!-- ¡CAMBIO! Nuevo HTML para la ficha técnica con íconos -->
                     <ul class="tech-details-list">
                         <li><strong><i class="fa-solid fa-gamepad"></i>Versión</strong> <span>${server.version || 'N/A'}</span></li>
                         <li><strong><i class="fa-solid fa-shield-halved"></i>Tipo</strong> <span>${server.type || 'N/A'}</span></li>
@@ -147,7 +128,6 @@ function renderServerPage(server) {
         <div id="vote-feedback" class="feedback-message" style="position: fixed; top: 90px; right: 20px; z-index: 1002; width: auto; max-width: 300px;"></div>
     `;
 
-    // Re-poblar el widget de reseñas que fue borrado y re-creado
     document.getElementById('reviews-widget').innerHTML = `
         <h3 class="widget-title"><i class="fa-solid fa-comments"></i> Reseñas de la Comunidad</h3>
         <div id="reviews-list"><p class="loading-text">Cargando reseñas...</p></div>
@@ -163,9 +143,7 @@ function renderServerPage(server) {
     `;
 }
 
-
-// ----- El resto de funciones (loadReviews, setupReviewForm, setupVoteButton) se mantienen exactamente igual -----
-
+// El resto de las funciones (loadReviews, setupReviewForm, setupVoteButton) se mantienen igual
 async function loadReviews(serverId) {
     const reviewsList = document.getElementById('reviews-list');
     if (!reviewsList) return;

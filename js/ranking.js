@@ -1,4 +1,4 @@
-// js/ranking.js (v8 - Con optimización de imágenes y rankings General/Mensual)
+// js/ranking.js (v9 - Corregido ranking mensual y paginación mejorada)
 
 document.addEventListener('DOMContentLoaded', () => {
     initRanking();
@@ -53,44 +53,39 @@ function initRanking() {
         const to = page * pageSize - 1;
 
         try {
-            let data, count, error;
+            let query;
+            let countQuery;
 
             if (currentRankingType === 'general') {
-                // Ranking general
-                const response = await window.supabaseClient
+                const columns = 'id, name, image_url, version, type, configuration, exp_rate, drop_rate, votes_count, average_rating, review_count';
+                query = window.supabaseClient
                     .from('servers')
-                    .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, votes_count', { count: 'exact' })
+                    .select(columns, { count: 'exact' })
                     .eq('status', 'aprobado')
                     .order('votes_count', { ascending: false, nullsFirst: false })
                     .range(from, to);
-                
-                data = response.data;
-                count = response.count;
-                error = response.error;
             } else {
-                // Ranking mensual
-                const response = await window.supabaseClient
+                // ¡CORRECCIÓN! Asegurarse de que la vista 'monthly_server_votes' tenga todas las columnas necesarias.
+                // Si 'configuration' u otra columna da error, debes regenerar la vista en Supabase.
+                const columns = 'id, name, image_url, version, type, configuration, exp_rate, drop_rate, monthly_votes_count, average_rating, review_count';
+                query = window.supabaseClient
                     .from('monthly_server_votes')
-                    .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, monthly_votes_count', { count: 'exact' })
+                    .select(columns, { count: 'exact' })
                     .order('monthly_votes_count', { ascending: false, nullsFirst: false })
                     .range(from, to);
-                
-                data = response.data;
-                count = response.count;
-                error = response.error;
             }
+            
+            const { data, count, error } = await query;
             
             if (error) throw error;
             
             if (!data || data.length === 0) {
-                rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center">No hay servidores para mostrar.</td></tr>`;
+                rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 2rem;">No hay servidores en este ranking.</td></tr>`;
                 paginationContainer.innerHTML = '';
                 return;
             }
 
-            // Actualizar paginación
-            const totalPages = Math.ceil(count / pageSize);
-            updatePagination(page, totalPages);
+            renderPagination(count, page, pageSize);
 
             rankingContainer.innerHTML = data.map((server, index) => {
                 const position = (page - 1) * pageSize + index + 1;
@@ -98,7 +93,6 @@ function initRanking() {
                 const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
                 const votes = currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count;
 
-                // Optimización de imagen
                 const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
 
                 return `
@@ -130,7 +124,7 @@ function initRanking() {
             paginationContainer.innerHTML = '';
         }
     }
-
+    
     function renderPagination(totalItems, page, pageSize) {
         if (!paginationContainer) return;
         const totalPages = Math.ceil(totalItems / pageSize);
@@ -149,7 +143,8 @@ function initRanking() {
             <button class="btn btn-secondary" data-page="${page + 1}" ${nextDisabled}>Siguiente <i class="fa-solid fa-chevron-right"></i></button>`;
         
         paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
                 if(btn.hasAttribute('disabled')) return;
                 currentPage = parseInt(btn.dataset.page);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -163,12 +158,13 @@ function initRanking() {
         const fullStars = Math.floor(rating);
         const halfStar = rating % 1 >= 0.5 ? 1 : 0;
         const emptyStars = 5 - fullStars - halfStar;
-        let starsHtml = '';
-        for(let i = 0; i < fullStars; i++) starsHtml += '<i class="fa-solid fa-star"></i>';
-        if(halfStar) starsHtml += '<i class="fa-solid fa-star-half-alt"></i>';
-        for(let i = 0; i < emptyStars; i++) starsHtml += '<i class="fa-regular fa-star"></i>';
-        return starsHtml;
+        let starsHtml = '★'.repeat(fullStars);
+        if (halfStar) starsHtml += '½';
+        starsHtml += '☆'.repeat(emptyStars);
+        // Usando iconos de FontAwesome
+        return '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
     }
     
+    updateButtonStyles();
     fetchRanking(currentPage);
 }

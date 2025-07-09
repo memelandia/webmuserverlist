@@ -418,14 +418,19 @@ a:hover {
 .server-header-actions { margin-left: auto; flex-shrink: 0; align-self: flex-end; display: flex; gap: 1rem; }
 .server-body-grid { display: grid; grid-template-columns: 2.5fr 1fr; gap: 2.5rem; margin-top: 3rem; }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.gallery-grid a { display: block; }
 .gallery-grid img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--border-radius); transition: transform var(--transition-speed), box-shadow var(--transition-speed); border: 1px solid var(--border-color); }
 .gallery-grid a:hover img { transform: scale(1.05); box-shadow: 0 0 10px var(--primary-glow); }
-.tech-details-list { list-style: none; }
-.tech-details-list li { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+.tech-details-list { list-style: none; padding: 0; margin: 0; }
+.tech-details-list li { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; }
 .tech-details-list li:last-child { border-bottom: none; }
-.tech-details-list li span { color: var(--text-secondary); text-align: right;}
+.tech-details-list li strong { color: var(--text-primary); font-weight: 600; display: flex; align-items: center; gap: 0.75rem; }
+.tech-details-list li strong i { color: var(--primary-color); font-size: 1.1em; width: 20px; text-align: center; }
+.tech-details-list li span { color: var(--text-secondary); font-weight: 500; background-color: var(--bg-dark); padding: 4px 10px; border-radius: 6px; font-size: 0.9rem; }
 .events-list { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.event-tag { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; }
+.event-tag { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 30px; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
+.event-tag:hover { background-color: var(--primary-color); border-color: var(--primary-color); color: var(--text-headings); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(255, 51, 51, 0.2); }
+.event-tag i { font-size: 1.1em; }
 
 #review-form .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 5px; }
 #review-form .star-rating input[type="radio"] { display: none; }
@@ -469,28 +474,26 @@ a:hover {
     background-position: center; 
     display: block; 
 }
-/* *** INICIO DE LA MODIFICACIÓN DE CENTRADO *** */
 .carousel-card-info { 
     padding: 1rem 1.5rem 1.5rem;
     position: relative; 
     flex-grow: 1; 
     display: flex; 
     flex-direction: column; 
-    justify-content: center; /* ¡Centra verticalmente! */
-    align-items: center;     /* ¡Centra horizontalmente! */
-    text-align: center;      /* ¡Centra el texto! */
+    justify-content: space-between; /* Ajustado */
+    align-items: center;
+    text-align: center;
 }
-/* *** FIN DE LA MODIFICACIÓN DE CENTRADO *** */
 .carousel-card-logo { 
-    width: 200px; 
-    height: 200px; 
+    width: 90px; 
+    height: 90px; 
     border-radius: 12px;
     border: 4px solid var(--bg-light); 
     margin-bottom: 1rem; 
     background: var(--bg-dark); 
     object-fit: cover; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.5); 
-    margin-top: -65px; /* Sube el logo sobre el banner */
+    margin-top: -65px;
 }
 .carousel-card-info h3 { 
     font-size: 1.4rem; 
@@ -502,21 +505,17 @@ a:hover {
 .carousel-card-meta { 
     display: flex; 
     flex-wrap: wrap;
-    justify-content: center; /* Centra los tags */
+    justify-content: center; 
     gap: 0.75rem 1.25rem; 
     font-size: 0.9rem; 
     color: var(--text-secondary); 
     margin: 0.5rem 0 1rem 0;
 }
 .carousel-card-meta span { display: flex; align-items: center; gap: 6px; }
-.carousel-card-meta i, .carousel-card-rates svg { color: var(--text-secondary); transition: color var(--transition-speed); }
-.carousel-card-rates { display: flex; gap: 1.2rem; justify-content: center;}
-.carousel-card-opening { background-color: rgba(255, 51, 51, 0.1); color: var(--primary-color); padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; margin: 0.75rem 0; display: inline-flex; align-items: center; gap: 8px;}
+.carousel-card-rates { display: flex; gap: 1.2rem; justify-content: center; margin-bottom: 1rem;}
+.carousel-card-opening { background-color: rgba(255, 51, 51, 0.1); color: var(--primary-color); padding: 6px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 8px;}
 .carousel-card-info .btn {
-    margin-top: auto; /* Esto ya no es necesario con flex, pero no daña */
-    background-color: var(--bg-contrast);
-    border-color: var(--border-color);
-    width: 100%; /* El botón ocupará todo el ancho */
+    width: 100%;
 }
 .carousel-card:hover .btn {
     background-color: var(--primary-color);
@@ -542,44 +541,116 @@ a:hover {
 .card-description { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem; flex-grow: 1; }
 .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: auto; padding: 0 1.5rem 1.5rem; }
 
-/* MEJORA VISUAL: TARJETAS DEL CALENDARIO */
-.opening-card .card-countdown {
+/* ¡NUEVO! TARJETA DEL CALENDARIO CORREGIDA */
+.calendar-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+.calendar-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+.calendar-card-banner {
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+}
+.calendar-card-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, rgba(15,15,15,0.8) 20%, rgba(15,15,15,0.2) 100%);
+}
+.calendar-date {
+    position: relative;
+    z-index: 2;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--border-radius);
+    width: 70px;
+    height: 70px;
     text-align: center;
-    background: linear-gradient(to top, rgba(255, 51, 51, 0.1), transparent), var(--bg-dark);
-    border-top: 1px solid var(--primary-color);
-    margin-top: 1.5rem;
-    padding: 1.25rem;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
-.card-countdown .countdown-main {
-    font-family: var(--font-headings);
-    line-height: 1;
-    margin-bottom: 0.5rem;
-}
-.card-countdown .countdown-main .days {
-    font-size: 3.5rem;
-    color: var(--primary-color);
+.calendar-day {
+    font-size: 2rem;
     font-weight: 700;
+    line-height: 1;
+    font-family: var(--font-headings);
+    color: var(--primary-color);
 }
-.card-countdown .countdown-main span {
-    font-size: 1rem;
-    color: var(--text-secondary);
+.calendar-month {
     text-transform: uppercase;
-    margin-left: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
 }
-.card-countdown .countdown-secondary {
-    font-family: var(--font-headings);
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    letter-spacing: 3px;
-    opacity: 0.8;
+.calendar-card-content {
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
-.card-countdown .countdown-live {
-    font-family: var(--font-headings);
-    font-size: 1.8rem;
-    color: var(--success-color);
-    animation: fadeIn 0.5s;
-    text-shadow: 0 0 10px rgba(47, 133, 90, 0.7);
+.calendar-card-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
 }
+.calendar-card-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+.calendar-card-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+.calendar-card-header h3 a {
+    color: var(--text-headings);
+}
+.calendar-card-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+.calendar-card-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+.calendar-card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.calendar-card-meta i {
+    color: var(--primary-color);
+}
+.calendar-card .btn {
+    width: 100%;
+    margin-top: auto;
+}
+
 
 /* --- 8. Tablas y Paginación (ranking.html) --- */
 .table-container { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; }
@@ -614,9 +685,17 @@ a:hover {
 .checklist-grid input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer; }
 .checklist-grid label { font-weight: 500; color: var(--text-primary); cursor: pointer; }
 .filters-card { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 2rem; margin-bottom: 2rem; }
-.filters-grid-explore { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1.5rem; align-items: end; }
+#explore-filters-form { display: flex; flex-direction: column; gap: 1.5rem; }
+.filters-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; align-items: flex-end; }
+.form-group.filter-large { grid-column: 1 / 2; }
+.form-group.filter-medium { grid-column: 1 / 3; }
 .filters-card .form-group { margin-bottom: 0; }
-.filters-card .form-actions { display: flex; gap: 1rem; }
+.range-slider { position: relative; display: flex; align-items: center; gap: 1rem; }
+.range-slider input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--bg-dark); border-radius: 5px; outline: none; padding: 0; margin: 0; }
+.range-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; cursor: pointer; border: 3px solid var(--bg-light); transition: background-color 0.2s ease-in-out; }
+.range-slider input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; background: var(--primary-color); border-radius: 50%; cursor: pointer; border: 3px solid var(--bg-light); }
+.range-slider span { font-family: var(--font-headings); font-weight: 700; color: var(--primary-color); background: var(--bg-dark); padding: 6px 12px; border-radius: 6px; min-width: 100px; text-align: center; }
+.filters-actions { display: flex; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: 0.5rem; }
 
 /* --- 10. Perfil de Usuario y Panel de Admin (profile.html, admin.html) --- */
 .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
@@ -656,6 +735,18 @@ a:hover {
 .feedback-message.success { color: var(--success-color); }
 .feedback-message.error { color: var(--primary-color); }
 .feedback-message.info { color: #3182ce; }
+.feedback-message.active {
+    opacity: 1;
+    transform: translateX(0);
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.feedback-message {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
 
 /* --- 13. Animaciones y Transiciones --- */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -667,42 +758,38 @@ a:hover {
 /* --- 14. Media Queries para Responsividad Total --- */
 @media (max-width: 992px) {
     .home-layout-section, .server-body-grid, .profile-grid { grid-template-columns: 1fr; }
-    .filters-grid-explore { grid-template-columns: 1fr 1fr; }
-    .filters-card .form-actions { grid-column: span 2; justify-content: flex-start; }
+    .filters-row { grid-template-columns: 1fr 1fr; }
+    .form-group.filter-large, .form-group.filter-medium { grid-column: 1 / -1; }
+    .filters-actions { grid-column: span 2; justify-content: flex-start; }
     .nav-actions { margin-left: auto; }
 }
 
 @media (max-width: 768px) {
     .page-header h1, .hero-content h1, .server-header-info h1 { font-size: 2.5rem; }
-    .form-grid, .footer-content, .footer-links, .filters-grid-explore, .cta-content { grid-template-columns: 1fr; }
+    .form-grid, .footer-content, .footer-links, .filters-row, .cta-content { grid-template-columns: 1fr; }
     .cta-content { text-align: center; flex-direction: column; }
     .nav-menu { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: var(--bg-light); flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 6rem 2rem 2rem 2rem; gap: 1rem; transition: left 0.3s ease-in-out; border-right: 1px solid var(--border-color);}
     .nav-menu.active { left: 0; }
     .mobile-menu-btn { display: block; }
-
     .server-header-content { flex-direction: column; align-items: center; text-align: center; }
     .server-logo-detail { margin-top: -80px; margin-bottom: 1rem; }
     .server-header-actions { margin: 1.5rem 0 0 0; align-self: center; }
-    
     .carousel-control { display: none; }
-    .filters-card .form-actions { grid-column: 1; }
+    .filters-actions { grid-column: 1; }
     .pagination-container { flex-direction: column; }
     .hero-stats { flex-direction: column; gap: 2rem;}
 }
 /* === Estilos del Sistema de Notificaciones === */
-.notification-bell {
+.notification-container {
     position: relative;
+}
+.notification-bell {
     font-size: 1.25rem;
     color: var(--text-secondary);
     cursor: pointer;
     transition: color 0.2s ease-in-out;
-    margin-right: 1.5rem; /* Espacio entre la campana y el menú de usuario */
 }
-
-.notification-bell:hover {
-    color: var(--text-primary);
-}
-
+.notification-bell:hover { color: var(--text-primary); }
 .notification-badge {
     position: absolute;
     top: -5px;
@@ -717,37 +804,22 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--bg-dark); /* Borde del color del header para un look integrado */
+    border: 2px solid var(--bg-dark);
 }
-
-.notification-badge.hidden {
-    display: none;
-}
-
+.notification-badge.hidden { display: none; }
 #notification-panel {
     position: absolute;
-    top: calc(100% + 15px);
+    top: calc(100% + 20px); /* Más espacio */
     right: 0;
-    background-color: var(--bg-contrast);
+    background-color: var(--bg-light); /* Coincide con el dropdown */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     width: 350px;
     max-height: 400px;
     overflow-y: auto;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    z-index: 1001;
+    z-index: 1010;
 }
-
-#notification-panel.active {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
 .notification-panel-header {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
@@ -756,449 +828,83 @@ a:hover {
     align-items: center;
     position: sticky;
     top: 0;
-    background-color: var(--bg-contrast);
+    background-color: var(--bg-light);
 }
+.notification-panel-header h4 { margin: 0; font-size: 1rem; }
+#mark-all-read-btn { background: none; border: none; color: var(--primary-color); font-size: 0.8rem; cursor: pointer; }
+.notification-list { list-style: none; padding: 0; margin: 0; }
+.notification-item { display: block; padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; text-decoration: none; color: var(--text-primary); }
+.notification-item:last-child { border-bottom: none; }
+.notification-item:hover { background-color: var(--bg-contrast); }
+.notification-item.unread { background-color: rgba(255, 51, 51, 0.1); } /* Usa tu color primario */
+.notification-item.unread:hover { background-color: rgba(255, 51, 51, 0.2); }
+.notification-item p { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
+.notification-item .notification-time { font-size: 0.75rem; color: var(--text-secondary); }
+.no-notifications { text-align: center; padding: 2rem; color: var(--text-secondary); }
 
-.notification-panel-header h4 {
-    margin: 0;
-    font-size: 1rem;
-}
-
-#mark-all-read-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-.notification-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.notification-item {
-    display: block;
-    padding: 0.8rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
-    text-decoration: none;
-    color: var(--text-primary);
-}
-.notification-item:last-child {
-    border-bottom: none;
-}
-.notification-item:hover {
-    background-color: var(--bg-dark);
-}
-
-.notification-item.unread {
-    background-color: rgba(var(--primary-color-rgb), 0.1);
-}
-.notification-item.unread:hover {
-    background-color: rgba(var(--primary-color-rgb), 0.2);
-}
-
-.notification-item p {
-    margin: 0 0 0.25rem 0;
-    font-size: 0.9rem;
-}
-
-.notification-item .notification-time {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-
-.no-notifications {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-}
-.feedback-message.active {
-    opacity: 1;
-    transform: translateX(0);
-    padding: 1rem;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.feedback-message {
-    opacity: 0;
-    transform: translateX(100%);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-/* =================================================================
-   ESTILOS PARA LAS NUEVAS FUNCIONALIDADES
-   ================================================================= */
-
-/* 1. Estilos para los botones de filtro en la página de Ranking
------------------------------------------------------------------*/
-.ranking-filter-tabs {
-    display: flex;
-    flex-wrap: wrap; /* Para que se vea bien en móviles */
-    gap: 1rem;
-    margin-bottom: 2rem;
-    justify-content: center;
-}
-
-/* 
-   No es necesario añadir más estilos para los botones en sí,
-   porque ya estás usando las clases .btn, .btn-primary y .btn-secondary,
-   que ya tienen estilos definidos. El JavaScript se encarga de cambiar
-   estas clases para mostrar cuál está activo.
-*/
-
-
-/* 2. Estilos para la sección "Servidor del Mes" en la página de inicio
------------------------------------------------------------------*/
+/* ¡NUEVO! ESTILOS PARA "SERVIDOR DEL MES" */
 .server-of-the-month-section {
     padding: 4rem 0;
-    /* Un fondo sutil para separar esta sección del resto */
     background: var(--bg-dark); 
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
+    margin: 4rem 0;
 }
-
 #server-of-the-month-widget {
     background-size: cover;
     background-position: center center;
     border-radius: 12px;
-    padding: 3rem 2rem; /* Más padding para un look premium */
+    padding: 3rem 2rem;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     color: #fff;
-    overflow: hidden; /* Importante para que el borde redondeado funcione con el ::before */
+    overflow: hidden;
     min-height: 350px;
     justify-content: center;
     transition: background-image 0.5s ease-in-out;
 }
-
-/* Capa de superposición oscura para asegurar que el texto sea legible */
 #server-of-the-month-widget::before {
     content: '';
     position: absolute;
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(180deg, rgba(15, 15, 15, 0.6) 0%, rgba(15, 15, 15, 0.9) 100%);
-    z-index: 1; /* Se coloca entre el fondo y el contenido */
+    z-index: 1;
 }
-
-/* Contenedor para el contenido de texto y botones */
 .som-content {
     position: relative;
-    z-index: 2; /* Se coloca por encima de la capa de superposición */
-    max-width: 90%; /* Evita que el texto se estire demasiado en pantallas grandes */
+    z-index: 2;
+    max-width: 90%;
 }
-
-/* La "medalla" o "badge" que dice "Servidor del Mes" */
 .som-badge {
     background-color: var(--primary-color);
     color: #fff;
     padding: 0.5rem 1.5rem;
     border-radius: 30px;
     font-weight: 700;
-    font-family: var(--font-display);
+    font-family: var(--font-headings);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-bottom: 1rem;
     display: inline-block;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
+.som-badge i { margin-right: 0.5rem; vertical-align: middle; }
+.som-content h2 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0 0 0.5rem 0; font-family: var(--font-headings); text-shadow: 2px 2px 8px rgba(0,0,0,0.5); }
+.som-content p { font-size: clamp(1rem, 2.5vw, 1.1rem); max-width: 650px; margin: 0 auto 1.5rem auto; opacity: 0.9; line-height: 1.6; }
+.som-content .btn { font-size: 1.1rem; padding: 0.8rem 2rem; }
 
-.som-badge i {
-    margin-right: 0.5rem;
-    vertical-align: middle; /* Alinea el ícono con el texto */
-}
-
-/* Título del servidor */
-.som-content h2 {
-    font-size: clamp(2rem, 5vw, 2.8rem); /* Tamaño de fuente adaptable */
-    margin: 0 0 0.5rem 0;
-    font-family: var(--font-display);
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Sombra para resaltar el texto */
-}
-
-/* Descripción del servidor */
-.som-content p {
-    font-size: clamp(1rem, 2.5vw, 1.1rem); /* Tamaño de fuente adaptable */
-    max-width: 650px;
-    margin: 0 auto 1.5rem auto;
-    opacity: 0.9;
-    line-height: 1.6;
-}
-
-/* Estilos para el botón dentro del widget */
-.som-content .btn {
-    font-size: 1.1rem;
-    padding: 0.8rem 2rem;
-}
-
-/* css/style.css - AÑADIR AL FINAL */
-
-/* =================================================================
-   NUEVOS ESTILOS PARA LA FICHA TÉCNICA Y EVENTOS
-   ================================================================= */
-
-/* --- Mejora para la Ficha Técnica --- */
-.tech-details-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.tech-details-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
-}
-
-.tech-details-list li:last-child {
-    border-bottom: none;
-}
-
-.tech-details-list li strong {
-    color: var(--text-primary);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem; /* Espacio entre el ícono y el texto */
-}
-
-.tech-details-list li strong i {
-    color: var(--primary-color);
-    font-size: 1.1em;
-    width: 20px;
-    text-align: center;
-}
-
-.tech-details-list li span {
-    color: var(--text-secondary);
-    font-weight: 500;
-    background-color: var(--bg-dark);
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-}
-
-
-/* --- Mejora para los Eventos Principales --- */
-.events-list {
+/* ¡NUEVO! ESTILOS PARA LOS BOTONES DE FILTRO DEL RANKING */
+.ranking-filter-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem; /* Espacio entre los tags de eventos */
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
 }
-
-.event-tag {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 8px 16px;
-    border-radius: 30px; /* Hace que sean como píldoras */
-    font-size: 0.9rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-}
-
-.event-tag:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--text-headings);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(255, 51, 51, 0.2);
-}
-
-.event-tag i {
-    font-size: 1.1em; /* El ícono un poco más grande que el texto */
-}
-
-/* --- Ajustes para el Lightbox GLightbox --- */
-/* GLightbox es bastante bueno por sí solo, pero podemos ajustar el fondo */
 .goverlay {
-    background: rgba(15, 15, 15, 0.95); /* Un fondo más oscuro y acorde al sitio */
+    background: rgba(15, 15, 15, 0.95);
     backdrop-filter: blur(5px);
-}
-
-/* css/style.css - AÑADIR AL FINAL */
-
-/* =================================================================
-   NUEVOS ESTILOS PARA LOS FILTROS AVANZADOS
-   ================================================================= */
-
-/* Contenedor principal de filtros */
-.filters-card {
-    background-color: rgba(26, 26, 26, 0.5); /* Más transparente */
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 3rem;
-    backdrop-filter: blur(5px);
-}
-
-#explore-filters-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.filters-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr; /* Diseño flexible en 3 columnas */
-    gap: 1.5rem;
-    align-items: flex-end;
-}
-
-/* Ajustes para grupos de filtros de diferente tamaño */
-.form-group.filter-large {
-    grid-column: 1 / 2; /* Ocupa el primer espacio */
-}
-
-.form-group.filter-medium {
-    grid-column: 1 / 3; /* Ocupa los dos primeros espacios */
-}
-
-/* Mejora para las etiquetas de los filtros */
-.filters-card .form-group label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
-}
-
-/* Estilos para el slider de rango */
-.range-slider {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.range-slider input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    background: var(--bg-dark);
-    border-radius: 5px;
-    outline: none;
-    padding: 0;
-    margin: 0;
-}
-
-.range-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 3px solid var(--bg-light);
-    transition: background-color 0.2s ease-in-out;
-}
-
-.range-slider input[type="range"]::-moz-range-thumb {
-    width: 15px;
-    height: 15px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 3px solid var(--bg-light);
-}
-
-.range-slider span {
-    font-family: var(--font-headings);
-    font-weight: 700;
-    color: var(--primary-color);
-    background: var(--bg-dark);
-    padding: 6px 12px;
-    border-radius: 6px;
-    min-width: 100px;
-    text-align: center;
-}
-
-.filters-actions {
-    display: flex;
-    gap: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-    margin-top: 0.5rem;
-}
-
-/* Media Query para responsividad de los filtros */
-@media (max-width: 992px) {
-    .filters-row {
-        grid-template-columns: 1fr 1fr;
-    }
-    .form-group.filter-large,
-    .form-group.filter-medium {
-        grid-column: 1 / -1; /* Ocupan toda la fila */
-    }
-}
-
-@media (max-width: 768px) {
-    .filters-row {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Añadir estilos para la nueva etiqueta de configuración */
-.server-header-tags span i.fa-cogs,
-.carousel-card-meta span i.fa-cogs,
-.calendar-card-meta span i.fa-cogs,
-.tech-details-list li i.fa-cogs {
-    color: var(--accent-color);
-}
-
-/* Actualizar el ancho de las columnas en la tabla de ranking */
-.ranking-table th:nth-child(5),
-.ranking-table td:nth-child(5) {
-    width: 10%;
-    text-align: center;
-}
-
-/* Ajustar el espaciado en las tarjetas para acomodar la nueva etiqueta */
-.carousel-card-meta span,
-.calendar-card-meta span {
-    margin-right: 8px;
-    font-size: 0.85rem;
-}
-
-/* Asegurar que las etiquetas de configuración se vean bien en móviles */
-@media (max-width: 768px) {
-    .carousel-card-meta,
-    .calendar-card-meta {
-        flex-wrap: wrap;
-    }
-    
-    .carousel-card-meta span,
-    .calendar-card-meta span {
-        margin-bottom: 4px;
-    }
-}
-
-/* Asegurar que todos los iconos en la ficha técnica tengan el mismo color */
-.server-header-tags i.text-accent,
-.server-specs i.text-accent,
-.server-meta-item i.text-accent {
-    color: var(--accent-color);
-}
-
-/* Si hay algún ícono específico que necesite el mismo estilo */
-.fa-cogs.text-accent {
-    color: var(--accent-color) !important;
 }
