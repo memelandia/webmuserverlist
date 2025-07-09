@@ -64,56 +64,59 @@ function initRanking() {
                 .from('monthly_server_votes')
                 .select('*', { count: 'exact' });
         }
-        
-        const { data, error, count } = await query.range(from, to);
+
+        try {
+            const { data: servers, count, error } = await query.range(from, to);
             
-        if (error) {
-            rankingContainer.innerHTML = `<tr><td colspan="8" class="error-text">Error al cargar el ranking.</td></tr>`;
-            return;
+            if (error) throw error;
+            
+            if (!servers || servers.length === 0) {
+                rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center">No hay servidores para mostrar.</td></tr>`;
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            // Actualizar paginación
+            const totalPages = Math.ceil(count / pageSize);
+            updatePagination(page, totalPages);
+
+            rankingContainer.innerHTML = servers.map((server, index) => {
+                const position = (page - 1) * pageSize + index + 1;
+                const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
+                const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
+                const votes = currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count;
+
+                // ¡OPTIMIZACIÓN!
+                const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
+
+                return `
+                    <tr>
+                        <td><span class="rank-position">${position}</span></td>
+                        <td class="server-info-cell">
+                            <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="server-logo-table" width="45" height="45">
+                            <div>
+                                <a href="servidor.html?id=${server.id}" class="server-name-link">${server.name}</a>
+                                <div class="server-version-tag">${server.version || 'N/A'}</div>
+                            </div>
+                        </td>
+                        <td class="table-rating">
+                            <span class="stars">${renderStars(server.average_rating || 0)}</span>
+                            <span class="review-count">(${server.review_count || 0})</span>
+                        </td>
+                        <td>${server.type || 'N/A'}</td>
+                        <td>${server.configuration || 'N/A'}</td>
+                        <td>${expRate}</td>
+                        <td>${dropRate}</td>
+                        <td class="votes-count">${votes || 0}</td>
+                        <td><a href="servidor.html?id=${server.id}" class="btn btn-primary btn-sm">Ver</a></td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error("Error cargando ranking:", error);
+            rankingContainer.innerHTML = `<tr><td colspan="9" class="error-text">Error al cargar el ranking: ${error.message}</td></tr>`;
+            paginationContainer.innerHTML = '';
         }
-
-        renderRanking(data || [], page, pageSize);
-        renderPagination(count || 0, page, pageSize);
-    }
-
-    function renderRanking(servers, page, pageSize) {
-        if (servers.length === 0) {
-            rankingContainer.innerHTML = '<tr><td colspan="8" class="loading-text">No hay servidores en este ranking.</td></tr>';
-            return;
-        }
-
-        rankingContainer.innerHTML = servers.map((server, index) => {
-            const position = (page - 1) * pageSize + index + 1;
-            const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
-            const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
-            const votes = currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count;
-
-            // ¡OPTIMIZACIÓN!
-            const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
-
-            return `
-                <tr>
-                    <td><span class="rank-position">${position}</span></td>
-                    <td class="server-info-cell">
-                        <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="server-logo-table" width="45" height="45">
-                        <div>
-                            <a href="servidor.html?id=${server.id}" class="server-name-link">${server.name}</a>
-                            <div class="server-version-tag">${server.version || 'N/A'}</div>
-                        </div>
-                    </td>
-                    <td class="table-rating">
-                        <span class="stars">${renderStars(server.average_rating || 0)}</span>
-                        <span class="review-count">(${server.review_count || 0})</span>
-                    </td>
-                    <td>${server.type || 'N/A'}</td>
-                    <td>${server.configuration || 'N/A'}</td>
-                    <td>${expRate}</td>
-                    <td>${dropRate}</td>
-                    <td class="votes-count">${votes || 0}</td>
-                    <td><a href="servidor.html?id=${server.id}" class="btn btn-primary btn-sm">Ver</a></td>
-                </tr>
-            `;
-        }).join('');
     }
 
     function renderPagination(totalItems, page, pageSize) {

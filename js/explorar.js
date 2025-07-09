@@ -120,8 +120,9 @@ function initExplorar() {
                 query = query.eq('type', filters.type);
             }
             
+            // Manejo especial para configuration para evitar problemas con NULL
             if (filters.configuration) {
-                query = query.eq('configuration', filters.configuration);
+                query = query.or(`configuration.eq.${filters.configuration},configuration.is.null`);
             }
             
             if (filters.exp < 99999) {

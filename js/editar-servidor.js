@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.description.value = server.description || '';
     form.version.value = server.version || '';
     form.type.value = server.type || 'Medium';
+    // Manejo especial para configuration para evitar problemas con NULL
     form.configuration.value = server.configuration || 'Custom';
     form.exp_rate.value = server.exp_rate || '';
     form.drop_rate.value = server.drop_rate || '';

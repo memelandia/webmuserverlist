@@ -38,7 +38,7 @@ async function initCalendario() {
     try {
         const { data, error } = await window.supabaseClient
             .from('servers')
-            .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
+            .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date, website_url')
             .not('opening_date', 'is', null)
             .gt('opening_date', new Date().toISOString())
             .order('opening_date', { ascending: true });
@@ -86,7 +86,8 @@ async function initCalendario() {
         data.forEach(server => checkServerStatus(server.id, server.website_url));
 
     } catch (error) {
-        calendarContainer.innerHTML = `<p class="error-text">No se pudo cargar el calendario.</p>`;
+        console.error("Error cargando calendario:", error);
+        calendarContainer.innerHTML = `<p class="error-text">Error al cargar el calendario: ${error.message}</p>`;
     }
 }
 
