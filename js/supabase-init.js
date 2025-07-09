@@ -139,98 +139,125 @@ async function initNotifications(user) {
     fetchNotifications();
 }
 
-// --- LÓGICA DE AUTENTICACIÓN CENTRALIZADA (MODIFICADA) ---
+// --- LÓGICA DE AUTENTICACIÓN CENTRALIZADA (REFORZADA) ---
 async function updateAuthUI(user) {
+    console.log('Actualizando UI de autenticación:', user ? 'Usuario autenticado' : 'No autenticado');
     const authSections = document.querySelectorAll('#auth-section');
+    if (authSections.length === 0) return;
 
-    for (const section of authSections) {
-        if (!section) continue;
-        section.innerHTML = ''; // Limpiar la sección
+    try {
+        for (const section of authSections) {
+            if (!section) continue;
+            section.innerHTML = ''; // Limpiar la sección
 
-        if (user) {
-            // Usuario autenticado -> Menú desplegable
-            const { data: profile } = await window.supabaseClient
-                .from('profiles')
-                .select('role, username')
-                .eq('id', user.id)
-                .single();
+            if (user) {
+                // Usuario autenticado -> Menú desplegable
+                const { data: profile, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('role, username')
+                    .eq('id', user.id)
+                    .single();
 
-            const username = profile?.username || user.email.split('@')[0];
-            
-            let adminLinkHtml = '';
-            if (profile && profile.role === 'admin') {
-                adminLinkHtml = `<a href="admin.html" class="dropdown-item"><i class="fa-solid fa-user-shield"></i> Panel Admin</a>`;
-            }
+                if (error) throw error;
 
-            // AÑADIMOS EL CONTENEDOR PRINCIPAL
-            section.innerHTML = `
-                <div class="user-menu-container">
-                    <button id="user-menu-button" class="btn btn-secondary">
-                        Hola, ${username} <i class="fa-solid fa-chevron-down"></i>
-                    </button>
-                    <div id="user-dropdown-menu" class="dropdown-menu">
-                        <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user-circle"></i> Mi Perfil</a>
-                        <a href="agregar.html" class="dropdown-item"><i class="fa-solid fa-plus-circle"></i> Publicar Servidor</a>
-                        ${adminLinkHtml}
-                        <div class="dropdown-divider"></div>
-                        <button id="logout-button-main" class="dropdown-item logout-btn">
-                            <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                const username = profile?.username || user.email.split('@')[0];
+                
+                let adminLinkHtml = '';
+                if (profile && profile.role === 'admin') {
+                    adminLinkHtml = `<a href="admin.html" class="dropdown-item"><i class="fa-solid fa-user-shield"></i> Panel Admin</a>`;
+                }
+
+                // AÑADIMOS EL CONTENEDOR PRINCIPAL
+                section.innerHTML = `
+                    <div class="user-menu-container">
+                        <button id="user-menu-button" class="btn btn-secondary">
+                            Hola, ${username} <i class="fa-solid fa-chevron-down"></i>
                         </button>
+                        <div id="user-dropdown-menu" class="dropdown-menu">
+                            <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user-circle"></i> Mi Perfil</a>
+                            <a href="agregar.html" class="dropdown-item"><i class="fa-solid fa-plus-circle"></i> Publicar Servidor</a>
+                            ${adminLinkHtml}
+                            <div class="dropdown-divider"></div>
+                            <button id="logout-button-main" class="dropdown-item logout-btn">
+                                <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `;
-            
-            // INICIALIZAMOS LAS NOTIFICACIONES AQUÍ
-            await initNotifications(user);
+                `;
+                
+                // INICIALIZAMOS LAS NOTIFICACIONES AQUÍ
+                await initNotifications(user);
 
-            // Lógica para el menú desplegable (existente)
-            const menuButton = section.querySelector('#user-menu-button');
-            const dropdownMenu = section.querySelector('#user-dropdown-menu');
-            const chevron = menuButton?.querySelector('.fa-chevron-down');
+                // Lógica para el menú desplegable (existente)
+                const menuButton = section.querySelector('#user-menu-button');
+                const dropdownMenu = section.querySelector('#user-dropdown-menu');
+                const chevron = menuButton?.querySelector('.fa-chevron-down');
 
-            menuButton?.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isActive = dropdownMenu.classList.toggle('active');
-                if (isActive) {
-                    chevron.style.transform = 'rotate(180deg)';
-                } else {
-                    chevron.style.transform = 'rotate(0deg)';
-                }
-            });
-            
-            document.addEventListener('click', () => {
-                if (dropdownMenu?.classList.contains('active')) {
-                    dropdownMenu.classList.remove('active');
-                    if(chevron) chevron.style.transform = 'rotate(0deg)';
-                }
-            });
+                menuButton?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isActive = dropdownMenu.classList.toggle('active');
+                    if (isActive) {
+                        chevron.style.transform = 'rotate(180deg)';
+                    } else {
+                        chevron.style.transform = 'rotate(0deg)';
+                    }
+                });
+                
+                document.addEventListener('click', () => {
+                    if (dropdownMenu?.classList.contains('active')) {
+                        dropdownMenu.classList.remove('active');
+                        if(chevron) chevron.style.transform = 'rotate(0deg)';
+                    }
+                });
 
-            section.querySelector('#logout-button-main')?.addEventListener('click', async () => {
-                if (notificationListener) {
-                    window.supabaseClient.removeChannel(notificationListener);
-                }
-                await window.supabaseClient.auth.signOut();
-                if (window.location.pathname.includes('profile.html') || window.location.pathname.includes('admin.html')) {
-                    window.location.href = 'index.html';
-                } else {
-                    window.location.reload(); 
-                }
-            });
+                section.querySelector('#logout-button-main')?.addEventListener('click', async () => {
+                    if (notificationListener) {
+                        window.supabaseClient.removeChannel(notificationListener);
+                    }
+                    await window.supabaseClient.auth.signOut();
+                    if (window.location.pathname.includes('profile.html') || window.location.pathname.includes('admin.html')) {
+                        window.location.href = 'index.html';
+                    } else {
+                        window.location.reload(); 
+                    }
+                });
 
-        } else {
-            // Usuario no autenticado: Mostrar botón de Iniciar Sesión
+            } else {
+                // Usuario no autenticado: Mostrar botón de Iniciar Sesión
+                section.innerHTML = `<button id="login-button-main" class="btn btn-primary">Iniciar Sesión</button>`;
+            }
+        }
+    } catch (error) {
+        console.error('Error al actualizar UI de autenticación:', error);
+        // Fallback en caso de error - mostrar botón de login
+        for (const section of authSections) {
             section.innerHTML = `<button id="login-button-main" class="btn btn-primary">Iniciar Sesión</button>`;
         }
     }
 }
 
+// Reforzar la inicialización de autenticación
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!window.supabaseClient) return;
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    await updateAuthUI(session?.user || null);
-    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (!window.supabaseClient) {
+        console.error('Cliente Supabase no inicializado');
+        return;
+    }
+    
+    try {
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+        if (error) throw error;
+        
         await updateAuthUI(session?.user || null);
-    });
+        
+        // Suscribirse a cambios de autenticación
+        const { data: authListener } = window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            console.log('Cambio de estado de autenticación:', event);
+            await updateAuthUI(session?.user || null);
+        });
+    } catch (error) {
+        console.error('Error en la inicialización de autenticación:', error);
+        await updateAuthUI(null); // Fallback a estado no autenticado
+    }
 });
 
 /**

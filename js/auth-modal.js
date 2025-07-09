@@ -1,4 +1,4 @@
-// js/auth-modal.js (v3 - Con recarga en login y correcciones)
+// js/auth-modal.js (v4 - Corregido con manejo robusto de autenticación)
 
 document.addEventListener('DOMContentLoaded', () => {
     initAuthModal();
@@ -37,8 +37,16 @@ function initAuthModal() {
         }, 300);
     };
     
+    // Mejorar la detección de botones de login
     document.addEventListener('click', (e) => {
-        if (e.target && (e.target.id === 'login-button-main' || e.target.id === 'login-link' || e.target.id === 'login-redirect-btn')) {
+        if (e.target && (
+            e.target.id === 'login-button-main' || 
+            e.target.id === 'login-link' || 
+            e.target.id === 'login-redirect-btn' ||
+            e.target.closest('#login-button-main') ||
+            e.target.closest('#login-link') ||
+            e.target.closest('#login-redirect-btn')
+        )) {
             e.preventDefault();
             showLogin();
             openModal();
@@ -67,25 +75,61 @@ function initAuthModal() {
     if (showRegisterLink) showRegisterLink.addEventListener('click', showRegister);
     if (showLoginLink) showLoginLink.addEventListener('click', showLogin);
 
+    // Mejorar el flujo de inicio de sesión
     if (loginForm) loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Deshabilitar el formulario durante el proceso
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Procesando...';
+        
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        
         setFeedback(loginFeedback, 'Iniciando sesión...', 'info');
 
-        const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+        try {
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({ 
+                email, 
+                password 
+            });
 
-        if (error) {
-            setFeedback(loginFeedback, getErrorMessage(error), 'error');
-            return;
+            if (error) {
+                setFeedback(loginFeedback, getErrorMessage(error), 'error');
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+                return;
+            }
+
+            setFeedback(loginFeedback, '¡Inicio de sesión exitoso! Actualizando...', 'success');
+            
+            // Cerrar el modal después de un breve retraso
+            setTimeout(() => {
+                closeModal();
+                // Recargar la página para asegurar que todo el estado se actualice
+                window.location.reload();
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error durante el inicio de sesión:', error);
+            setFeedback(loginFeedback, 'Error inesperado. Por favor, inténtalo de nuevo.', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
         }
-
-        setFeedback(loginFeedback, '¡Inicio de sesión exitoso! Actualizando...', 'success');
-        setTimeout(() => window.location.reload(), 1500);
     });
 
+    // Mejorar el flujo de registro
     if (registerForm) registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Deshabilitar el formulario durante el proceso
+        const submitButton = registerForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Procesando...';
+        
         const username = document.getElementById('register-username').value;
         const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
@@ -93,30 +137,50 @@ function initAuthModal() {
 
         if (password !== confirmPassword) {
             setFeedback(registerFeedback, 'Las contraseñas no coinciden', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
             return;
         }
 
         setFeedback(registerFeedback, 'Creando cuenta...', 'info');
 
-        const { data, error } = await window.supabaseClient.auth.signUp({
-            email,
-            password,
-            options: { data: { username } } // Pasamos el username para que el trigger lo use
-        });
+        try {
+            const { data, error } = await window.supabaseClient.auth.signUp({
+                email,
+                password,
+                options: { data: { username } } // Pasamos el username para que el trigger lo use
+            });
 
-        if (error) {
-            setFeedback(registerFeedback, getErrorMessage(error), 'error');
-            return;
+            if (error) {
+                setFeedback(registerFeedback, getErrorMessage(error), 'error');
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+                return;
+            }
+
+            // Registro exitoso
+            setFeedback(registerFeedback, '¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.', 'success');
+            registerForm.reset();
+            
+            // Después de un breve retraso, mostrar la vista de login
+            setTimeout(() => {
+                showLogin();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Error durante el registro:', error);
+            setFeedback(registerFeedback, 'Error inesperado. Por favor, inténtalo de nuevo.', 'error');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
         }
-
-        setFeedback(registerFeedback, '¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.', 'success');
-        registerForm.reset();
     });
 
     function setFeedback(element, message, type) {
         if (!element) return;
         element.textContent = message;
         element.className = `feedback-message ${type}`;
+        element.style.display = 'block'; // Asegurar que sea visible
     }
 
     function clearFeedback() {
@@ -138,6 +202,6 @@ function initAuthModal() {
             'User already registered': 'Ya existe una cuenta con este correo electrónico.',
             'Unable to validate email address: invalid format': 'El formato del email no es válido.'
         };
-        return errorMap[error.message] || 'Ha ocurrido un error inesperado.';
+        return errorMap[error.message] || `Error: ${error.message || 'Ha ocurrido un error inesperado.'}`;
     }
 }
