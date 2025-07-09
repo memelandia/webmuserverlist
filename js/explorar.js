@@ -1,10 +1,10 @@
-// js/explorar.js (v6 - con optimización de imágenes)
+// js/explorar.js (v7 - con Filtros Avanzados y Ordenación)
 
 document.addEventListener('DOMContentLoaded', () => {
     initExplorar();
 });
 
-// La función checkServerStatus no necesita cambios
+// Función para chequear el estado online (sin cambios)
 async function checkServerStatus(serverId, url) {
     const statusBadge = document.getElementById(`status-${serverId}`);
     if (!statusBadge || !url) {
@@ -12,7 +12,7 @@ async function checkServerStatus(serverId, url) {
         return;
     }
     try {
-        const { data, error } = await window.supabaseClient.functions.invoke('check-status', { body: JSON.stringify({ url: url }) });
+        const { data, error } = await window.supabaseClient.functions.invoke('check-status', { body: JSON.stringify({ url }) });
         if (error) throw error;
         statusBadge.classList.remove('loading');
         if (data.status === 'online') {
@@ -29,63 +29,121 @@ async function checkServerStatus(serverId, url) {
     }
 }
 
+// Función principal de la página explorar
 function initExplorar() {
+    // Referencias a los elementos del DOM
     const serversGridContainer = document.getElementById('servers-grid-container');
     const filtersForm = document.getElementById('explore-filters-form');
     const resetBtn = document.getElementById('reset-filters-btn');
+    const expSlider = document.getElementById('filter-exp');
+    const expValueSpan = document.getElementById('exp-value');
 
     if (!serversGridContainer || !filtersForm) return;
 
-    let currentFilters = { name: '', version: '', type: '' };
-    loadServers();
+    // Actualiza el valor del slider de EXP en la UI
+    expSlider.addEventListener('input', () => {
+        if (parseInt(expSlider.value, 10) >= 10000) {
+            expValueSpan.textContent = 'Cualquiera';
+        } else {
+            expValueSpan.textContent = `< ${expSlider.value}x`;
+        }
+    });
 
+    // Event listener para el formulario de filtros
     filtersForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        currentFilters.name = document.getElementById('filter-name').value.trim();
-        currentFilters.version = document.getElementById('filter-version').value.trim();
-        currentFilters.type = document.getElementById('filter-type').value;
-        loadServers();
+        loadServers(); // Llama a la función principal de carga
     });
 
+    // Event listener para el botón de resetear
     resetBtn.addEventListener('click', () => {
         filtersForm.reset();
-        currentFilters = { name: '', version: '', type: '' };
+        expValueSpan.textContent = 'Cualquiera'; // Resetea también el span del slider
         loadServers();
     });
 
+    // Carga inicial de servidores al entrar en la página
+    loadServers();
+
+    // Función principal que construye la query y carga los servidores
     async function loadServers() {
-        serversGridContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando servidores...</div>`;
+        serversGridContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Aplicando filtros y cargando servidores...</div>`;
+
         try {
+            // Recoger todos los valores del formulario
+            const filters = {
+                name: document.getElementById('filter-name').value.trim(),
+                version: document.getElementById('filter-version').value.trim(),
+                type: document.getElementById('filter-type').value,
+                exp: parseInt(document.getElementById('filter-exp').value, 10),
+                sort: document.getElementById('filter-sort').value
+            };
+
+            // Construir la consulta a Supabase dinámicamente
             let query = window.supabaseClient
                 .from('servers')
                 .select('id, name, image_url, banner_url, version, type, exp_rate, drop_rate, description, website_url')
                 .eq('status', 'aprobado');
 
-            if (currentFilters.name) query = query.ilike('name', `%${currentFilters.name}%`);
-            if (currentFilters.version) query = query.ilike('version', `%${currentFilters.version}%`);
-            if (currentFilters.type) query = query.eq('type', currentFilters.type);
+            // Aplicar filtros de texto
+            if (filters.name) {
+                query = query.ilike('name', `%${filters.name}%`);
+            }
+            if (filters.version) {
+                query = query.ilike('version', `%${filters.version}%`);
+            }
+            if (filters.type) {
+                query = query.eq('type', filters.type);
+            }
             
-            query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false });
+            // Aplicar filtro de rango de EXP (menor o igual que)
+            if (filters.exp < 10000) {
+                query = query.lte('exp_rate', filters.exp);
+            }
             
+            // Aplicar opciones de ordenación
+            switch (filters.sort) {
+                case 'newest':
+                    query = query.order('created_at', { ascending: false });
+                    break;
+                case 'opening_soon':
+                    // Filtra solo servidores con fecha futura y los ordena
+                    query = query.not('opening_date', 'is', null)
+                                 .gt('opening_date', new Date().toISOString())
+                                 .order('opening_date', { ascending: true });
+                    break;
+                case 'votes_desc':
+                default:
+                    query = query.order('votes_count', { ascending: false, nullsFirst: false });
+                    break;
+            }
+            
+            // Añadimos un orden secundario por si hay empates
+            query = query.order('is_featured', { ascending: false });
+
+            // Ejecutar la consulta
             const { data, error } = await query;
+
             if (error) throw error;
+
+            // Renderizar los resultados
             renderServers(data);
 
         } catch (error) {
-            serversGridContainer.innerHTML = `<div class="error-text">Error al cargar los servidores.</div>`;
+            console.error("Error cargando servidores:", error);
+            serversGridContainer.innerHTML = `<div class="error-text">Error al cargar los servidores. Por favor, intenta de nuevo.</div>`;
         }
     }
 
+    // Función que renderiza las tarjetas de los servidores (sin cambios en su lógica interna)
     function renderServers(servers) {
         if (!servers || servers.length === 0) {
-            serversGridContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">No se encontraron servidores.</p>`;
+            serversGridContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">No se encontraron servidores con los filtros aplicados.</p>`;
             return;
         }
 
         serversGridContainer.innerHTML = servers.map(server => {
-            const shortDescription = server.description ? server.description.substring(0, 100) + '...' : 'Sin descripción.';
-            
-            // Usando la nueva función de optimización
+            const shortDescription = server.description ? server.description.substring(0, 100) + (server.description.length > 100 ? '...' : '') : 'Sin descripción.';
             const optimizedLogoUrl = getOptimizedImageUrl('server-images', server.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
             const optimizedBannerUrl = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 120 }, 'https://via.placeholder.com/400x120.png?text=Banner');
             
@@ -115,6 +173,9 @@ function initExplorar() {
             </div>`;
         }).join('');
 
-        servers.forEach(server => checkServerStatus(server.id, server.website_url));
+        // Comprueba el estado online de cada servidor después de renderizarlos
+        servers.forEach(server => {
+            checkServerStatus(server.id, server.website_url);
+        });
     }
 }
