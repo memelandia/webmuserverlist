@@ -1,4 +1,4 @@
-// js/main.js (v10 - Solución final para Servidor del Mes)
+// js/main.js (v11 - Servidor del Mes con Stats)
 
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
@@ -105,7 +105,20 @@ async function loadServerOfTheMonth() {
 
         const optimizedBanner = getOptimizedImageUrl('server-banners', data.banner_url, { width: 1200, height: 400, resize: 'cover' }, 'https://via.placeholder.com/1200x300.png?text=Banner');
         container.style.backgroundImage = `url('${optimizedBanner}')`;
-        container.innerHTML = `<div class="som-content"><span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span><h2>${data.name}</h2><p>${data.description ? data.description.substring(0, 150) + '...' : 'El servidor más votado.'}</p><a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a></div>`;
+
+        // Se reemplaza el párrafo <p> por un div con los stats del servidor.
+        container.innerHTML = `
+            <div class="som-content">
+                <span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span>
+                <h2>${data.name}</h2>
+                <div class="som-stats">
+                    <span class="som-stat-item"><i class="fa-solid fa-gamepad"></i> ${data.version || 'N/A'}</span>
+                    <span class="som-stat-item"><i class="fa-solid fa-cogs"></i> ${data.configuration || 'N/A'}</span>
+                    <span class="som-stat-item"><i class="fa-solid fa-bolt"></i> ${data.exp_rate ? data.exp_rate + 'x' : 'N/A'}</span>
+                    <span class="som-stat-item"><i class="fa-solid fa-gem"></i> ${data.drop_rate ? data.drop_rate + '%' : 'N/A'}</span>
+                </div>
+                <a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a>
+            </div>`;
     
     } catch (error) { 
         container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`; 
