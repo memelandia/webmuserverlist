@@ -1,23 +1,20 @@
-// js/add-server.js (v8 - Solución para URLs de imágenes)
+// js/add-server.js (v9 - Con subida de solo path y optimización)
 
 document.addEventListener('DOMContentLoaded', () => {
     initAddServer();
 });
 
-// Función mejorada para subir archivos a Supabase Storage
+// Función de subida de archivos modificada para devolver solo el PATH
 async function uploadFile(file, bucket) {
     if (!file) return null;
     
     try {
-        // Generar nombre único para el archivo
         const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
         
-        // Verificar tamaño del archivo (límite de 50MB según config.toml)
         if (file.size > 50 * 1024 * 1024) {
             throw new Error(`El archivo ${file.name} excede el límite de 50MB.`);
         }
         
-        // Subir archivo
         const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
             .from(bucket)
             .upload(fileName, file, {
@@ -29,20 +26,13 @@ async function uploadFile(file, bucket) {
             console.error('Error al subir archivo:', uploadError);
             throw new Error(`No se pudo subir ${file.name}: ${uploadError.message}`);
         }
+
+        // ¡CAMBIO CLAVE! Devolvemos solo el nombre del archivo (path).
+        return fileName;
         
-        // Obtener URL pública
-        const { data: urlData } = await window.supabaseClient.storage
-            .from(bucket)
-            .getPublicUrl(fileName);
-            
-        if (!urlData || !urlData.publicUrl) {
-            throw new Error(`No se pudo obtener la URL pública para ${file.name}`);
-        }
-        
-        return urlData.publicUrl;
     } catch (error) {
         console.error(`Error en uploadFile para ${file.name}:`, error);
-        throw error; // Re-lanzar para manejo en la función llamadora
+        throw error;
     }
 }
 
@@ -71,53 +61,30 @@ async function initAddServer() {
         feedbackEl.className = 'feedback-message';
 
         try {
-            // 1. Subida de archivos
             feedbackEl.textContent = 'Subiendo imágenes...';
             const logoFile = document.getElementById('logo-file').files[0];
             const bannerFile = document.getElementById('banner-file').files[0];
             const galleryFiles = document.getElementById('gallery-files').files;
 
-            // Subir logo (si existe)
-            let logoUrl = null;
-            if (logoFile) {
-                feedbackEl.textContent = `Subiendo logo: ${logoFile.name}...`;
-                logoUrl = await uploadFile(logoFile, 'server-images');
-            }
+            let logoPath = await uploadFile(logoFile, 'server-images');
+            let bannerPath = await uploadFile(bannerFile, 'server-banners');
             
-            // Subir banner (si existe) - CORREGIDO: aseguramos que sea un string, no un array
-            let bannerUrl = null;
-            if (bannerFile) {
-                feedbackEl.textContent = `Subiendo banner: ${bannerFile.name}...`;
-                bannerUrl = await uploadFile(bannerFile, 'server-banners');
-                // Aseguramos que bannerUrl sea un string, no un array
-                if (Array.isArray(bannerUrl)) {
-                    bannerUrl = bannerUrl[0];
-                }
-            }
-            
-            // Subir imágenes de galería (si existen)
-            let galleryUrls = [];
+            let galleryPaths = [];
             if (galleryFiles.length > 0) {
                 if (galleryFiles.length > 6) {
                     throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
-                
-                // Subir cada imagen de la galería de forma secuencial para mejor control
                 for (let i = 0; i < galleryFiles.length; i++) {
                     const file = galleryFiles[i];
-                    feedbackEl.textContent = `Subiendo imagen ${i+1}/${galleryFiles.length}: ${file.name}...`;
-                    const url = await uploadFile(file, 'server-gallery');
-                    // Aseguramos que url sea un string, no un array
-                    galleryUrls.push(typeof url === 'string' ? url : url[0]);
+                    feedbackEl.textContent = `Subiendo imagen ${i + 1}/${galleryFiles.length}: ${file.name}...`;
+                    const path = await uploadFile(file, 'server-gallery');
+                    galleryPaths.push(path);
                 }
             }
             
-            // 2. Recopilación de datos del formulario
             feedbackEl.textContent = 'Guardando datos del servidor...';
             
-            // Creamos el objeto de datos directamente
             const serverData = {
-                // Campos de texto
                 name: form.name.value,
                 description: form.description.value,
                 version: form.version.value,
@@ -126,27 +93,18 @@ async function initAddServer() {
                 antihack_info: form.antihack_info.value,
                 website_url: form.website_url.value,
                 discord_url: form.discord_url.value,
-                
-                // Campos numéricos
                 exp_rate: parseInt(form.exp_rate.value) || null,
                 drop_rate: parseInt(form.drop_rate.value) || null,
-
-                // Fecha
                 opening_date: form.opening_date.value || null,
-                
-                // Checkboxes (recopilamos todos los marcados)
                 events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value),
-                
-                // Datos generados por el sistema
                 user_id: session.user.id,
-                image_url: logoUrl,
-                banner_url: bannerUrl, // Ahora aseguramos que es un string
-                gallery_urls: galleryUrls, // Array de strings
-                status: 'pendiente' // El estado por defecto al agregar
+                // Guardamos los PATHS en la base de datos
+                image_url: logoPath, 
+                banner_url: bannerPath,
+                gallery_urls: galleryPaths.length > 0 ? galleryPaths : null,
+                status: 'pendiente'
             };
 
-            // 3. Inserción en la base de datos
-            feedbackEl.textContent = 'Registrando servidor en la base de datos...';
             const { data: insertData, error: insertError } = await window.supabaseClient
                 .from('servers')
                 .insert([serverData])
@@ -157,13 +115,11 @@ async function initAddServer() {
                 throw new Error(`Error en la base de datos: ${insertError.message}`);
             }
 
-            feedbackEl.textContent = '¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo a tu perfil...';
+            feedbackEl.textContent = '¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo...';
             feedbackEl.className = 'feedback-message success';
             form.reset();
 
-            setTimeout(() => {
-                window.location.href = 'profile.html';
-            }, 2500);
+            setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
 
         } catch (error) {
             console.error('Error al enviar el formulario:', error);

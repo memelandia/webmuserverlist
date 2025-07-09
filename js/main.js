@@ -1,26 +1,20 @@
-// js/main.js (Versión Completa y Funcional - v7 - Con Servidor del Mes)
+// js/main.js (v8 - Con optimización de imágenes en todos los widgets)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Estas son las 4 funciones principales que se cargan en la página de inicio.
     initParticles();
     initNavigation();
     loadHomeWidgets();
 });
 
-// Función que agrupa la carga de todos los widgets del home.
 function loadHomeWidgets() {
     loadFeaturedCarousel();
-    loadServerOfTheMonth(); // Cargar el Servidor del Mes
+    loadServerOfTheMonth();
     loadTopRanking();
     loadUpcomingEvents();
     loadStats();
 }
 
-// ------------------------------------
-// --- SECCIÓN 1: COMPONENTES VISUALES
-// ------------------------------------
-
-// Inicializa las partículas del fondo del Hero Section
+// Inicializa las partículas del fondo
 function initParticles() {
     const particlesContainer = document.getElementById('particles-js');
     if (particlesContainer) {
@@ -36,7 +30,6 @@ function initParticles() {
 function initNavigation() {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const navMenu = document.querySelector('.nav-menu');
-    
     if (mobileMenuBtn && navMenu) {
         mobileMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -50,11 +43,7 @@ function initNavigation() {
     }
 }
 
-// ------------------------------------
-// --- SECCIÓN 2: CARGA DE WIDGETS
-// ------------------------------------
-
-// --- CARRUSEL DE DESTACADOS ---
+// --- CARRUSEL DE DESTACADOS (CON IMÁGENES OPTIMIZADAS) ---
 async function loadFeaturedCarousel() {
     const container = document.getElementById('featured-carousel');
     if (!container) return;
@@ -70,7 +59,7 @@ async function loadFeaturedCarousel() {
 
         if (error) throw error;
         if (!data || data.length === 0) {
-            container.innerHTML = '<p style="padding: 2rem; text-align: center;">No hay servidores destacados en este momento.</p>';
+            container.innerHTML = '<p style="padding: 2rem; text-align: center;">No hay servidores destacados.</p>';
             return;
         }
 
@@ -80,13 +69,15 @@ async function loadFeaturedCarousel() {
             const expRate = server.exp_rate ? `${server.exp_rate}x` : '?x';
             const dropRate = server.drop_rate ? `${server.drop_rate}%` : '?%';
             
-            const bannerUrl = Array.isArray(server.banner_url) ? server.banner_url[0] : server.banner_url;
+            // ¡OPTIMIZACIÓN!
+            const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 400, height: 400 }, 'https://via.placeholder.com/90');
+            const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 150 }, 'https://via.placeholder.com/400x150.png?text=Banner');
 
             return `
             <div class="carousel-card">
-                <a href="servidor.html?id=${server.id}" class="card-banner-link" style="background-image: url('${bannerUrl || 'https://via.placeholder.com/400x150.png?text=Banner'}');"></a>
+                <a href="servidor.html?id=${server.id}" class="card-banner-link" style="background-image: url('${optimizedBanner}');"></a>
                 <div class="carousel-card-info">
-                    <img src="${server.image_url || 'https://via.placeholder.com/90'}" alt="Logo de ${server.name}" class="carousel-card-logo">
+                    <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="carousel-card-logo" width="200" height="200">
                     <h3><a href="servidor.html?id=${server.id}">${server.name}</a></h3>
                     <div class="carousel-card-meta">
                         <span title="Versión"><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
@@ -105,8 +96,7 @@ async function loadFeaturedCarousel() {
         initCarousel();
 
     } catch (error) {
-        console.error('Error cargando carrusel:', error);
-        container.innerHTML = `<p class="error-text">No se pudieron cargar los servidores destacados.</p>`;
+        container.innerHTML = `<p class="error-text">No se pudieron cargar los servidores.</p>`;
     }
 }
 
@@ -115,10 +105,13 @@ function initCarousel() {
     const prevBtn = document.getElementById('carousel-prev');
     const nextBtn = document.getElementById('carousel-next');
     if (!carousel || !prevBtn || !nextBtn) return;
+
     const updateButtons = () => {
-        prevBtn.style.display = carousel.scrollWidth > carousel.clientWidth ? 'block' : 'none';
-        nextBtn.style.display = carousel.scrollWidth > carousel.clientWidth ? 'block' : 'none';
+        const canScroll = carousel.scrollWidth > carousel.clientWidth;
+        prevBtn.style.display = canScroll ? 'block' : 'none';
+        nextBtn.style.display = canScroll ? 'block' : 'none';
     };
+    
     setTimeout(() => {
         updateButtons();
         const card = carousel.querySelector('.carousel-card');
@@ -130,7 +123,7 @@ function initCarousel() {
     }, 500);
 }
 
-// --- WIDGET SERVIDOR DEL MES ---
+// --- WIDGET SERVIDOR DEL MES (CON IMAGEN OPTIMIZADA) ---
 async function loadServerOfTheMonth() {
     const container = document.getElementById('server-of-the-month-widget');
     if (!container) return;
@@ -146,32 +139,30 @@ async function loadServerOfTheMonth() {
                 <div class="som-content">
                     <span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span>
                     <h2>Aún no hay ganador</h2>
-                    <p>¡Vota por tus servidores favoritos! El más votado del mes anterior aparecerá aquí.</p>
-                </div>
-            `;
+                    <p>¡Vota por tus servidores favoritos para que aparezcan aquí!</p>
+                </div>`;
             return;
         }
         
-        const bannerUrl = Array.isArray(data.banner_url) ? data.banner_url[0] : data.banner_url;
-        container.style.backgroundImage = `url(${bannerUrl || 'https://via.placeholder.com/1200x300.png?text=Banner'})`;
+        // ¡OPTIMIZACIÓN!
+        const optimizedBanner = getOptimizedImageUrl('server-banners', data.banner_url, { width: 1200, height: 400, resize: 'contain' }, 'https://via.placeholder.com/1200x300.png?text=Banner');
+        container.style.backgroundImage = `url('${optimizedBanner}')`;
 
         container.innerHTML = `
             <div class="som-content">
                 <span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span>
                 <h2>${data.name}</h2>
-                <p>${data.description ? data.description.substring(0, 150) + '...' : 'El servidor más votado por la comunidad el mes pasado.'}</p>
+                <p>${data.description ? data.description.substring(0, 150) + '...' : 'El servidor más votado.'}</p>
                 <a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a>
-            </div>
-        `;
+            </div>`;
 
     } catch (error) {
-        console.error("Error al cargar el Servidor del Mes:", error);
         container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`;
     }
 }
 
 
-// --- WIDGET DE RANKING ---
+// --- WIDGET DE RANKING (CON IMÁGENES OPTIMIZADAS) ---
 async function loadTopRanking() {
     const container = document.getElementById('ranking-widget-list');
     if (!container) return;
@@ -189,17 +180,18 @@ async function loadTopRanking() {
         
         if (data && data.length > 0) {
             container.innerHTML = data.map((server, index) => {
-                const rankClass = index === 0 ? 'top-1' : (index === 1 ? 'top-2' : (index === 2 ? 'top-3' : ''));
-                let medalIcon = '';
-                if (index === 0) medalIcon = '<i class="fa-solid fa-medal rank-medal gold"></i>';
-                else if (index === 1) medalIcon = '<i class="fa-solid fa-medal rank-medal silver"></i>';
-                else if (index === 2) medalIcon = '<i class="fa-solid fa-medal rank-medal bronze"></i>';
+                const rankClass = index < 3 ? `top-${index + 1}` : '';
+                const medalIcon = ['gold', 'silver', 'bronze'][index] ? `<i class="fa-solid fa-medal rank-medal ${['gold', 'silver', 'bronze'][index]}"></i>` : '';
                 const expRate = server.exp_rate ? `${server.exp_rate}x` : '?x';
+                
+                // ¡OPTIMIZACIÓN!
+                const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 80, height: 80 }, 'https://via.placeholder.com/40');
+
                 return `
                 <a href="servidor.html?id=${server.id}" class="ranking-item-link">
                     <li class="ranking-item ${rankClass}">
                         <div class="rank-position-container"><span class="rank-number">${index + 1}</span>${medalIcon}</div>
-                        <img src="${server.image_url || 'https://via.placeholder.com/40'}" alt="${server.name}" class="ranking-logo-icon">
+                        <img src="${optimizedLogo}" alt="${server.name}" class="ranking-logo-icon" width="40" height="40">
                         <div class="ranking-item-info">
                           <span class="ranking-name">${server.name}</span>
                           <small>${server.version || 'N/A'}</small>
@@ -215,12 +207,11 @@ async function loadTopRanking() {
             container.innerHTML = '<li class="loading-text">No hay servidores en el ranking.</li>';
         }
     } catch (error) {
-        console.error('Error al cargar el widget de ranking:', error);
         container.innerHTML = '<li class="error-text">Error al cargar ranking.</li>';
     }
 }
 
-// Carga las próximas aperturas en el widget del calendario.
+// Carga próximas aperturas
 async function loadUpcomingEvents() {
     const container = document.getElementById('calendar-widget-list');
     if (!container) return;
@@ -245,18 +236,16 @@ async function loadUpcomingEvents() {
                         <p><i class="fa-solid fa-calendar-day"></i> ${new Date(server.opening_date).toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'})}</p>
                     </div>
                     <i class="fa-solid fa-chevron-right"></i>
-                </a>
-            `).join('');
+                </a>`).join('');
         } else {
             container.innerHTML = '<p class="loading-text">No hay próximas aperturas.</p>';
         }
     } catch (error) {
-        console.error('Error al cargar el widget de calendario:', error);
         container.innerHTML = '<p class="error-text">Error al cargar calendario.</p>';
     }
 }
 
-// Carga las estadísticas generales del sitio (servidores, votos, usuarios).
+// Carga las estadísticas generales
 async function loadStats() {
     const totalServersEl = document.getElementById('total-servers');
     const totalVotesEl = document.getElementById('total-votes');
@@ -264,23 +253,15 @@ async function loadStats() {
 
     try {
         const { count: serverCount } = await window.supabaseClient
-            .from('servers')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'aprobado');
+            .from('servers').select('*', { count: 'exact', head: true }).eq('status', 'aprobado');
             
         const { count: userCount } = await window.supabaseClient
-            .from('profiles')
-            .select('*', { count: 'exact', head: true });
+            .from('profiles').select('*', { count: 'exact', head: true });
         
         const { data: servers, error } = await window.supabaseClient
-            .from('servers')
-            .select('votes_count')
-            .eq('status', 'aprobado');
+            .from('servers').select('votes_count').eq('status', 'aprobado');
             
-        let totalVotes = 0;
-        if (!error && servers) {
-            totalVotes = servers.reduce((acc, server) => acc + (server.votes_count || 0), 0);
-        }
+        let totalVotes = servers ? servers.reduce((acc, s) => acc + (s.votes_count || 0), 0) : 0;
 
         if (totalServersEl) totalServersEl.textContent = serverCount || 0;
         if (totalUsersEl) totalUsersEl.textContent = userCount || 0;

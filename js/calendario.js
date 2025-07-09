@@ -1,24 +1,19 @@
-// js/calendario.js (v5 - Diseño y Lógica de Tarjeta Corregidos - Final)
+// js/calendario.js (v6 - Con imágenes optimizadas)
 
 document.addEventListener('DOMContentLoaded', () => {
     initCalendario();
 });
 
-// Función para comprobar el estado online/offline de un servidor
+// La función checkServerStatus no necesita cambios
 async function checkServerStatus(serverId, url) {
     const statusBadge = document.getElementById(`status-${serverId}`);
     if (!statusBadge || !url) {
         if (statusBadge) statusBadge.style.display = 'none';
         return;
     }
-
     try {
-        const { data, error } = await window.supabaseClient.functions.invoke('check-status', {
-            body: JSON.stringify({ url: url }),
-        });
-
+        const { data, error } = await window.supabaseClient.functions.invoke('check-status', { body: JSON.stringify({ url: url }) });
         if (error) throw error;
-        
         statusBadge.classList.remove('loading');
         if (data.status === 'online') {
             statusBadge.classList.add('online');
@@ -28,19 +23,17 @@ async function checkServerStatus(serverId, url) {
             statusBadge.innerHTML = `<i class="fa-solid fa-circle"></i> Offline`;
         }
     } catch (e) {
-        console.error(`Error al chequear estado para ${url}:`, e);
         statusBadge.classList.remove('loading');
         statusBadge.classList.add('offline');
         statusBadge.innerHTML = `<i class="fa-solid fa-circle"></i> Error`;
     }
 }
 
-// Función principal para inicializar la página del calendario
 async function initCalendario() {
     const calendarContainer = document.getElementById('calendar-container');
     if (!calendarContainer) return;
 
-    calendarContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando calendario...</div>`;
+    calendarContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>`;
 
     try {
         const { data, error } = await window.supabaseClient
@@ -54,22 +47,22 @@ async function initCalendario() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            calendarContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">No hay próximas aperturas programadas en este momento.</p>`;
+            calendarContainer.innerHTML = `<p style="text-align: center; padding: 2rem;">No hay próximas aperturas programadas.</p>`;
             return;
         }
 
         calendarContainer.innerHTML = data.map(server => {
-            const shortDescription = server.description ? server.description.substring(0, 80) + (server.description.length > 80 ? '...' : '') : 'Sin descripción.';
+            const shortDescription = server.description ? server.description.substring(0, 80) + '...' : 'Sin descripción.';
             
-            // CORREGIDO: Aseguramos que banner_url e image_url sean strings, no arrays
-            const bannerUrl = Array.isArray(server.banner_url) ? server.banner_url[0] : server.banner_url;
-            const imageUrl = Array.isArray(server.image_url) ? server.image_url[0] : server.image_url;
+            // ¡OPTIMIZACIÓN!
+            const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 120 }, 'https://via.placeholder.com/400x120.png?text=Banner');
+            const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
             
             return `
             <div class="server-card-new opening-card">
-                <div class="card-banner" style="background-image: url('${bannerUrl || 'https://via.placeholder.com/400x120.png?text=Banner'}')"></div>
+                <div class="card-banner" style="background-image: url('${optimizedBanner}')"></div>
                 <div class="card-header">
-                    <img src="${imageUrl || 'https://via.placeholder.com/80'}" alt="Logo de ${server.name}" class="card-logo">
+                    <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="card-logo" width="80" height="80">
                     <div class="card-status">
                          <div class="status-badge loading" id="status-${server.id}"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     </div>
@@ -83,33 +76,25 @@ async function initCalendario() {
                      <p class="card-description">${shortDescription}</p>
                 </div>
                 <div class="card-countdown" data-countdown="${server.opening_date}">
-                    <div class="countdown-main">
-                        <span class="days">...</span> DÍAS
-                    </div>
-                    <div class="countdown-secondary">
-                       <span class="hours">00</span>h : <span class="minutes">00</span>m : <span class="seconds">00</span>s
-                    </div>
+                    <div class="countdown-main"><span class="days">...</span> DÍAS</div>
+                    <div class="countdown-secondary"><span class="hours">00</span>h : <span class="minutes">00</span>m : <span class="seconds">00</span>s</div>
                 </div>
                 <div class="card-actions">
                     <a href="${server.website_url || '#'}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fa-solid fa-globe"></i> Sitio Web</a>
                     <a href="servidor.html?id=${server.id}" class="btn btn-primary"><i class="fa-solid fa-eye"></i> Ver Detalles</a>
                 </div>
-            </div>
-        `;
+            </div>`;
         }).join('');
 
         startCountdownTimers();
         data.forEach(server => checkServerStatus(server.id, server.website_url));
 
     } catch (error) {
-        console.error('Error cargando calendario:', error);
-        calendarContainer.innerHTML = `<p class="error-text">No se pudo cargar el calendario: ${error.message}</p>`;
+        calendarContainer.innerHTML = `<p class="error-text">No se pudo cargar el calendario.</p>`;
     }
 }
 
-// Función para manejar todos los contadores de tiempo en la página
 function startCountdownTimers() {
-    // Limpia contadores previos para evitar duplicados si se llama de nuevo
     if (window.runningCountdownTimers) {
         window.runningCountdownTimers.forEach(timer => clearInterval(timer));
     }
@@ -124,19 +109,16 @@ function startCountdownTimers() {
         const secondsEl = el.querySelector('.countdown-secondary .seconds');
         
         const updateTimer = () => {
-            const now = Date.now();
-            const diff = target - now;
-
+            const diff = target - Date.now();
             if (diff <= 0) {
                 clearInterval(timer);
                 el.innerHTML = '<div class="countdown-live"><i class="fa-solid fa-circle-play"></i> ¡YA ABIERTO!</div>';
                 return;
             }
-
-            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
             
             daysEl.textContent = d;
             hoursEl.textContent = String(h).padStart(2, '0');
@@ -144,7 +126,7 @@ function startCountdownTimers() {
             secondsEl.textContent = String(s).padStart(2, '0');
         };
         
-        updateTimer(); // Llamada inicial para no esperar 1s
+        updateTimer();
         const timer = setInterval(updateTimer, 1000);
         window.runningCountdownTimers.push(timer);
     });

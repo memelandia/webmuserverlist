@@ -1,77 +1,54 @@
-// js/editar-servidor.js (v4 - Lógica de subida de archivos mejorada y consistente)
+// js/editar-servidor.js (v5 - Con subida de solo path y optimización)
 
-// Función robusta para subir archivos (idéntica a la de add-server.js para consistencia)
+// Función de subida de archivos modificada para devolver solo el PATH
 async function uploadFile(file, bucket) {
     if (!file) return null;
-    
     try {
         const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        
         if (file.size > 50 * 1024 * 1024) {
             throw new Error(`El archivo ${file.name} excede el límite de 50MB.`);
         }
-        
-        const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+        const { error: uploadError } = await window.supabaseClient.storage
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
                 upsert: false
             });
-            
         if (uploadError) {
-            console.error('Error al subir archivo:', uploadError);
             throw new Error(`No se pudo subir ${file.name}: ${uploadError.message}`);
         }
-        
-        const { data: urlData } = window.supabaseClient.storage
-            .from(bucket)
-            .getPublicUrl(fileName);
-            
-        if (!urlData || !urlData.publicUrl) {
-            throw new Error(`No se pudo obtener la URL pública para ${file.name}`);
-        }
-        
-        return urlData.publicUrl;
+        return fileName; // Devolvemos el path
     } catch (error) {
-        console.error(`Error en uploadFile para ${file.name}:`, error);
         throw error;
     }
 }
 
-
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('edit-server-form');
     const loadingMessage = document.getElementById('loading-message');
-    
     const urlParams = new URLSearchParams(window.location.search);
     const serverId = urlParams.get('id');
 
     if (!serverId) {
         loadingMessage.textContent = 'Error: No se especificó un ID de servidor.';
-        form.classList.add('hidden');
         return;
     }
 
     const { data: { session } } = await window.supabaseClient.auth.getSession();
     if (!session) {
         loadingMessage.innerHTML = 'Debes <a href="#" id="login-redirect-btn">iniciar sesión</a> para editar un servidor.';
-        form.classList.add('hidden');
         return;
     }
+    
+    //... (el resto de la lógica de permisos es la misma)
 
-    // Un administrador también debería poder editar cualquier servidor
     const { data: profile } = await window.supabaseClient
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .single();
 
-    let serverQuery = window.supabaseClient
-        .from('servers')
-        .select('*')
-        .eq('id', serverId);
-
-    // Si no es admin, solo puede editar sus propios servidores
+    let serverQuery = window.supabaseClient.from('servers').select('*').eq('id', serverId);
     if (!profile || profile.role !== 'admin') {
         serverQuery = serverQuery.eq('user_id', session.user.id);
     }
@@ -80,11 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (error || !server) {
         loadingMessage.textContent = 'Error: Servidor no encontrado o no tienes permiso para editarlo.';
-        form.classList.add('hidden');
         return;
     }
-
-    // Poblar el formulario
+    
+    // Poblar formulario (sin cambios)
     form.name.value = server.name || '';
     form.description.value = server.description || '';
     form.version.value = server.version || '';
@@ -101,9 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const timezoneOffset = date.getTimezoneOffset() * 60000;
             const localDate = new Date(date.getTime() - timezoneOffset);
             form.opening_date.value = localDate.toISOString().slice(0, 16);
-        } catch (e) {
-            console.error("Fecha de apertura inválida:", server.opening_date);
-        }
+        } catch (e) { console.error("Fecha de apertura inválida:", server.opening_date); }
     }
     if (server.events && server.events.length > 0) {
         server.events.forEach(eventValue => {
@@ -122,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Actualizando...';
-        feedbackEl.textContent = '';
         feedbackEl.className = 'feedback-message';
 
         try {
@@ -141,45 +114,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value),
             };
 
-            feedbackEl.textContent = 'Verificando imágenes para actualizar...';
             const logoFile = document.getElementById('logo-file').files[0];
-            const bannerFile = document.getElementById('banner-file').files[0];
-            const galleryFiles = document.getElementById('gallery-files').files;
-
             if (logoFile) {
                 updatedData.image_url = await uploadFile(logoFile, 'server-images');
             }
+
+            const bannerFile = document.getElementById('banner-file').files[0];
             if (bannerFile) {
                 updatedData.banner_url = await uploadFile(bannerFile, 'server-banners');
             }
+
+            const galleryFiles = document.getElementById('gallery-files').files;
             if (galleryFiles.length > 0) {
-                if (galleryFiles.length > 6) {
+                 if (galleryFiles.length > 6) {
                     throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
-                const galleryUrls = [];
+                const galleryPaths = [];
                 for (const file of galleryFiles) {
-                    const url = await uploadFile(file, 'server-gallery');
-                    galleryUrls.push(url);
+                    galleryPaths.push(await uploadFile(file, 'server-gallery'));
                 }
-                updatedData.gallery_urls = galleryUrls;
+                updatedData.gallery_urls = galleryPaths;
             }
 
-            feedbackEl.textContent = 'Guardando cambios...';
             const { error: updateError } = await window.supabaseClient
                 .from('servers')
                 .update(updatedData)
                 .eq('id', serverId);
 
-            if (updateError) {
-                throw updateError;
-            }
+            if (updateError) throw updateError;
             
             feedbackEl.textContent = '¡Servidor actualizado con éxito! Redirigiendo...';
             feedbackEl.className = 'feedback-message success';
-            setTimeout(() => {
-                // Redirigir a la página del servidor o al perfil
-                window.location.href = `servidor.html?id=${serverId}`;
-            }, 2000);
+            setTimeout(() => { window.location.href = `servidor.html?id=${serverId}`; }, 2000);
 
         } catch (error) {
             console.error('Error al actualizar el servidor:', error);

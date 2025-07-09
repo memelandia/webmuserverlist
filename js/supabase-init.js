@@ -232,3 +232,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateAuthUI(session?.user || null);
     });
 });
+
+// js/supabase-init.js
+
+// ... (todo tu código existente) ...
+
+/**
+ * Genera una URL pública de Supabase Storage con transformaciones de imagen.
+ * @param {string} bucketName - El nombre del bucket (ej. 'server-images').
+ * @param {string} imagePath - La ruta/nombre del archivo de imagen.
+ * @param {object} options - Opciones de transformación (ej. { width: 100, height: 100 }).
+ * @param {string} fallbackUrl - Una URL de respaldo si imagePath es nulo.
+ * @returns {string} - La URL transformada o la de respaldo.
+ */
+function getOptimizedImageUrl(bucketName, imagePath, options, fallbackUrl) {
+    if (!imagePath) {
+        return fallbackUrl;
+    }
+    
+    // Si la URL ya es una URL completa (por retrocompatibilidad o datos antiguos), la devolvemos.
+    if (imagePath.startsWith('http')) {
+        return imagePath;
+    }
+    
+    const { data } = window.supabaseClient.storage
+        .from(bucketName)
+        .getPublicUrl(imagePath, {
+            transform: {
+                ...options,
+                resize: options.resize || 'cover' // 'cover' es un buen default
+            },
+        });
+
+    return data.publicUrl;
+}
