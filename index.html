@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuServerList - Tu Guía de Servidores de Mu Online</title>
+    <meta name="description" content="Encuentra, vota y explora los mejores servidores privados de Mu Online. Ranking actualizado, calendario de aperturas y más.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <nav class="main-nav container">
+            <a href="index.html" class="logo">MuServer<span>List</span></a>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="active">Inicio</a></li>
+                <li><a href="explorar.html">Explorar</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="calendario.html">Calendario</a></li>
+            </ul>
+            <div id="auth-section" class="nav-actions">
+                <!-- Contenido dinámico desde supabase-init.js -->
+            </div>
+            <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-particles" id="particles-js"></div>
+            <div class="hero-content container">
+                <h1>Encuentra tu Próxima Aventura</h1>
+                <p class="subtitle">La lista definitiva de servidores de Mu Online. Vota, explora y únete a nuevas comunidades.</p>
+                <div class="hero-actions">
+                    <a href="explorar.html" class="btn btn-primary btn-lg"><i class="fa-solid fa-compass"></i> Explorar Servidores</a>
+                    <a href="agregar.html" class="btn btn-secondary btn-lg"><i class="fa-solid fa-plus-circle"></i> Publica tu Servidor</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-servers">0</span>
+                        <span class="stat-label">Servidores</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-votes">0</span>
+                        <span class="stat-label">Votos</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-users">0</span>
+                        <span class="stat-label">Usuarios</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Carrusel de Servidores Destacados -->
+        <section class="featured-carousel-section">
+            <div class="container">
+                <h2 class="section-title"><i class="fa-solid fa-crown"></i> Servidores Destacados</h2>
+                <div class="featured-carousel-container">
+                    <div class="featured-carousel" id="featured-carousel">
+                        <div class="loading-text">Cargando servidores...</div>
+                    </div>
+                    <button id="carousel-prev" class="carousel-control prev"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button id="carousel-next" class="carousel-control next"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sección de Contenido Principal (Widgets) -->
+        <section class="home-layout-section container">
+            <div class="ranking-widget widget">
+                <h3 class="widget-title"><i class="fa-solid fa-trophy"></i> Top 5 Ranking</h3>
+                <ol class="ranking-list" id="ranking-widget-list">
+                    <li class="loading-text">Cargando ranking...</li>
+                </ol>
+                <a href="ranking.html" class="view-all-link">Ver Ranking Completo <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="calendar-widget widget">
+                <h3 class="widget-title"><i class="fa-solid fa-calendar-days"></i> Próximas Aperturas</h3>
+                <div class="calendar-list" id="calendar-widget-list">
+                   <p class="loading-text">Cargando calendario...</p>
+                </div>
+                <a href="calendario.html" class="view-all-link">Ver Calendario Completo <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </section>
+
+        <!-- Sección de Llamada a la Acción (CTA) -->
+        <section class="cta-section-v2">
+            <div class="container cta-content">
+                <div class="cta-icon">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+                <div class="cta-text">
+                    <h2>¿Administras un Servidor de Mu Online?</h2>
+                    <p>Publica tu servidor en nuestra lista de forma gratuita y llega a miles de jugadores potenciales.</p>
+                </div>
+                <div class="cta-action">
+                    <a href="agregar.html" class="btn btn-primary btn-lg">Publicar Ahora</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Modal de Autenticación -->
+    <div id="auth-modal-overlay" class="modal-overlay">
+        <div id="auth-modal" class="modal-container">
+            <button id="close-auth-modal" class="close-modal">×</button>
+            <div id="login-container">
+                <h2>Iniciar Sesión</h2>
+                <form id="login-form">
+                    <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" required></div>
+                    <div class="form-group"><label for="login-password">Contraseña</label><input type="password" id="login-password" required></div>
+                    <div id="login-feedback" class="feedback-message"></div>
+                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                </form>
+                <p class="auth-switch">¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
+            </div>
+            <div id="register-container" class="hidden">
+                 <h2>Crear Cuenta</h2>
+                <form id="register-form">
+                    <div class="form-group"><label for="register-username">Nombre de Usuario</label><input type="text" id="register-username" required></div>
+                    <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" required></div>
+                    <div class="form-group"><label for="register-password">Contraseña (mín. 6 caracteres)</label><input type="password" id="register-password" required minlength="6"></div>
+                    <div class="form-group"><label for="register-confirm-password">Confirmar Contraseña</label><input type="password" id="register-confirm-password" required minlength="6"></div>
+                    <div id="register-feedback" class="feedback-message"></div>
+                    <button type="submit" class="btn btn-primary">Registrarme</button>
+                </form>
+                <p class="auth-switch">¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
+            </div>
+        </div>
+    </div>
+
+<footer class="main-footer">
+    <div class="footer-content container">
+        <div class="footer-column">
+            <a href="index.html" class="logo">MuServer<span>List</span></a>
+            <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
+        </div>
+        <div class="footer-column">
+            <h4>Navegación</h4>
+            <ul class="footer-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="explorar.html">Explorar</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="calendario.html">Calendario</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Para Dueños</h4>
+            <ul class="footer-links">
+                <li><a href="agregar.html">Publica tu Servidor</a></li>
+                <li><a href="#">Términos de Servicio</a></li>
+                <li><a href="#">Política de Privacidad</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Síguenos</h4>
+            <div class="footer-social">
+                <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 MuServerList. Todos los derechos reservados.</p>
+    </div>
+</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script src="js/auth-modal.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>

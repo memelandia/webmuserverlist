@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuServerList - Tu Guía de Servidores de Mu Online</title> 
+    <meta name="description" content="Encuentra, vota y explora los mejores servidores privados de Mu Online. Ranking actualizado, calendario de aperturas y más.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <nav class="main-nav container">
+            <a href="index.html" class="logo">MuServer<span>List</span></a>
+            <ul class="nav-menu">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="explorar.html">Explorar</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="calendario.html">Calendario</a></li>
+            </ul>
+            <div class="nav-actions" id="auth-section"></div>
+            <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+        </nav>
+    </header>
+
+    <main class="container page-container">
+        <div class="page-header">
+            <h1><i class="fa-solid fa-plus-circle"></i> Publica tu Servidor</h1>
+            <p>Añade tu servidor a nuestra lista y llega a miles de jugadores.</p>
+        </div>
+
+        <div class="form-container" id="add-server-container">
+            <div id="auth-required-message" class="hidden widget" style="text-align: center;">
+                <h2><i class="fa-solid fa-lock"></i> Acceso Restringido</h2>
+                <p>Debes <a href="#" id="login-link">iniciar sesión</a> para publicar un servidor.</p>
+            </div>
+
+            <form id="add-server-form" class="hidden">
+                
+                <h4><i class="fa-solid fa-server"></i> Información Principal</h4>
+                <div class="form-group">
+                    <label for="name">Nombre del Servidor</label>
+                    <input type="text" id="name" name="name" required placeholder="Ej: Mu-Legend S18">
+                </div>
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Describe las características únicas de tu servidor..."></textarea>
+                </div>
+
+                <h4><i class="fa-solid fa-cogs"></i> Configuración del Juego</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="version">Versión</label>
+                        <input type="text" id="version" name="version" required placeholder="Ej: Season 18 Part 2-2">
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Tipo de Servidor</label>
+                        <select id="type" name="type" required>
+                            <option value="Slow">Slow</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Fast">Fast</option>
+                            <option value="PvP">PvP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exp_rate">Experiencia (sólo número)</label>
+                        <input type="number" id="exp_rate" name="exp_rate" placeholder="Ej: 500">
+                    </div>
+                     <div class="form-group">
+                        <label for="drop_rate">Drop Rate (sólo número)</label>
+                        <input type="number" id="drop_rate" name="drop_rate" placeholder="Ej: 30">
+                    </div>
+                </div>
+                 <div class="form-group">
+                    <label for="reset_info">Información del Reset</label>
+                    <input type="text" id="reset_info" name="reset_info" placeholder="Ej: Nivel 400, borra stats, da 500 puntos">
+                </div>
+                 <div class="form-group">
+                    <label for="antihack_info">Sistema Anti-Hack</label>
+                    <input type="text" id="antihack_info" name="antihack_info" placeholder="Ej: Sistema Premium / Propio">
+                </div>
+
+                <h4><i class="fa-solid fa-images"></i> Medios Gráficos</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="logo-file">Logo del Servidor</label>
+                        <input type="file" id="logo-file" name="logo-file-input" class="file-input" accept="image/png, image/jpeg, image/gif">
+                        <small>Recomendado: 200x200px.</small>
+                    </div>
+                    <div class="form-group">
+                         <label for="banner-file">Banner del Servidor</label>
+                         <input type="file" id="banner-file" name="banner-file-input" class="file-input" accept="image/png, image/jpeg">
+                         <small>Recomendado: 1200x300px.</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="gallery-files">Galería de Imágenes (Máx. 6)</label>
+                    <input type="file" id="gallery-files" name="gallery-files-input" class="file-input" accept="image/png, image/jpeg" multiple>
+                    <small>Selecciona hasta 6 imágenes para la galería.</small>
+                </div>
+
+
+                <h4><i class="fa-solid fa-calendar-check"></i> Eventos Principales</h4>
+                <div class="checklist-grid">
+                    <div><input type="checkbox" id="evt-bc" name="events" value="Blood Castle"><label for="evt-bc">Blood Castle</label></div>
+                    <div><input type="checkbox" id="evt-ds" name="events" value="Devil Square"><label for="evt-ds">Devil Square</label></div>
+                    <div><input type="checkbox" id="evt-cc" name="events" value="Chaos Castle"><label for="evt-cc">Chaos Castle</label></div>
+                    <div><input type="checkbox" id="evt-it" name="events" value="Illusion Temple"><label for="evt-it">Illusion Temple</label></div>
+                    <div><input type="checkbox" id="evt-dg" name="events" value="Doppelganger"><label for="evt-dg">Doppelganger</label></div>
+                    <div><input type="checkbox" id="evt-cs" name="events" value="Castle Siege"><label for="evt-cs">Castle Siege</label></div>
+                    <div><input type="checkbox" id="evt-cw" name="events" value="Crywolf Event"><label for="evt-cw">Crywolf Event</label></div>
+                    <div><input type="checkbox" id="evt-kanturu" name="events" value="Kanturu Event"><label for="evt-kanturu">Kanturu Event</label></div>
+                    <div><input type="checkbox" id="evt-lms" name="events" value="Last Man Standing"><label for="evt-lms">Last Man Standing</label></div>
+                    <div><input type="checkbox" id="evt-gi" name="events" value="Golden Invasion"><label for="evt-gi">Golden Invasion</label></div>
+                    <div><input type="checkbox" id="evt-ww" name="events" value="White Wizard"><label for="evt-ww">White Wizard</label></div>
+                    <div><input type="checkbox" id="evt-raklion" name="events" value="Rabbits Invasion"><label for="evt-raklion">Invasión de Conejos</label></div>
+                </div>
+
+                <h4><i class="fa-solid fa-link"></i> Enlaces Externos</h4>
+                 <div class="form-grid">
+                    <div class="form-group">
+                        <label for="website_url">Página Web</label>
+                        <input type="url" id="website_url" name="website_url" placeholder="https://..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="discord_url">Enlace de Discord</label>
+                        <input type="url" id="discord_url" name="discord_url" placeholder="https://discord.gg/...">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="opening_date">Fecha y Hora de Apertura (Opcional)</label>
+                    <input type="datetime-local" id="opening_date" name="opening_date">
+                    <small>Si tu servidor aún no ha abierto, indica cuándo será la apertura.</small>
+                </div>
+
+                <div id="form-feedback" class="feedback-message"></div>
+                
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" style="width:100%; margin-top: 2rem;">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar Servidor
+                </button>
+            </form>
+        </div>
+    </main>
+    
+    <footer class="main-footer">
+    <div class="footer-content container">
+        <div class="footer-column">
+            <a href="index.html" class="logo">MuServer<span>List</span></a>
+            <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
+        </div>
+        <div class="footer-column">
+            <h4>Navegación</h4>
+            <ul class="footer-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="explorar.html">Explorar</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="calendario.html">Calendario</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Para Dueños</h4>
+            <ul class="footer-links">
+                <li><a href="agregar.html">Publica tu Servidor</a></li>
+                <li><a href="#">Términos de Servicio</a></li>
+                <li><a href="#">Política de Privacidad</a></li>
+            </ul>
+        </div>
+        <div class="footer-column">
+            <h4>Síguenos</h4>
+            <div class="footer-social">
+                <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 MuServerList. Todos los derechos reservados.</p>
+    </div>
+</footer>
+
+    <div id="auth-modal-overlay" class="modal-overlay">
+        <!-- Contenido del modal -->
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script src="js/auth-modal.js"></script>
+    <script src="js/add-server.js"></script>
+</body>
+</html>
