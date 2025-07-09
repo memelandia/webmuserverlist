@@ -1,4 +1,4 @@
-// js/ranking.js (v11 - A PRUEBA DE BALAS con logs de depuración)
+// js/ranking.js (v12 - SOLUCIÓN RANKING MENSUAL)
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("==> SCRIPT DE RANKING INICIADO (DOM COMPLETAMENTE CARGADO) <==");
@@ -6,26 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initRanking() {
-    // Corregido: Usar el ID correcto 'ranking-container' en lugar de 'ranking-table-body'
     const rankingContainer = document.getElementById('ranking-container');
     const paginationContainer = document.getElementById('pagination-controls');
     const generalBtn = document.getElementById('rank-general-btn');
     const monthlyBtn = document.getElementById('rank-monthly-btn');
 
-    // Logs de depuración para verificar que los elementos se encuentran correctamente
-    console.log("Resultado de búsqueda de 'ranking-container':", rankingContainer);
-    console.log("Resultado de búsqueda de 'pagination-controls':", paginationContainer);
-    console.log("Resultado de búsqueda de 'rank-general-btn':", generalBtn);
-    console.log("Resultado de búsqueda de 'rank-monthly-btn':", monthlyBtn);
-
     if (!rankingContainer || !paginationContainer || !generalBtn || !monthlyBtn) {
-        console.error("ERROR CRÍTICO: No se encontraron todos los elementos necesarios. Verifica que los IDs en ranking.html coincidan EXACTAMENTE con los que se buscan aquí.");
+        console.error("ERROR CRÍTICO: No se encontraron todos los elementos necesarios. Verifica que los IDs en ranking.html coincidan.");
         return;
     }
 
     let currentPage = 1;
     const pageSize = 15;
-    let currentRankingType = 'general';
+    // Hacemos que la variable sea accesible en todo el scope de initRanking
+    let currentRankingType = 'general'; 
 
     generalBtn.addEventListener('click', () => {
         if (currentRankingType === 'general') return;
@@ -49,34 +43,27 @@ function initRanking() {
         paginationContainer.innerHTML = '';
 
         try {
-            let data, count, error;
+            let query;
 
             if (currentRankingType === 'general') {
-                console.log("Querying 'servers' table directly for general ranking.");
-                const response = await window.supabaseClient
+                console.log("Querying 'servers' table for general ranking.");
+                query = window.supabaseClient
                     .from('servers')
                     .select('id, name, image_url, version, type, configuration, exp_rate, drop_rate, votes_count, average_rating, review_count', { count: 'exact' })
                     .eq('status', 'aprobado')
-                    .order('votes_count', { ascending: false, nullsFirst: false })
-                    .range((page - 1) * pageSize, page * pageSize - 1);
-                
-                data = response.data;
-                count = response.count;
-                error = response.error;
-            } else {
-                console.log("Executing RPC call 'get_monthly_ranking'.");
-                const rpcResponse = await window.supabaseClient.rpc('get_monthly_ranking', {
-                    page_size: pageSize,
-                    page_num: page
-                });
-                
-                console.log("Executing RPC call 'get_total_monthly_servers_count'.");
-                 const countResponse = await window.supabaseClient.rpc('get_total_monthly_servers_count');
+                    .order('votes_count', { ascending: false, nullsFirst: false });
 
-                data = rpcResponse.data;
-                count = countResponse.data;
-                error = rpcResponse.error || countResponse.error;
+            } else {
+                // <-- CAMBIO CLAVE 1: Usar la vista correcta para el ranking mensual.
+                console.log("Querying 'monthly_server_votes' view for monthly ranking.");
+                query = window.supabaseClient
+                    .from('monthly_server_votes')
+                    .select('*', { count: 'exact' }) // La vista ya tiene las columnas que necesitamos
+                    .order('monthly_votes_count', { ascending: false, nullsFirst: false }); // <-- CAMBIO CLAVE 2: Ordenar por votos mensuales.
             }
+
+            // Aplicar paginación a la consulta
+            const { data, count, error } = await query.range((page - 1) * pageSize, page * pageSize - 1);
             
             console.log("Supabase response received:", { data, count, error });
 
@@ -98,7 +85,6 @@ function initRanking() {
             renderPagination(count, page);
 
         } catch (err) {
-            // Este bloque CATCH es nuestra red de seguridad final.
             console.error("CRITICAL ERROR while fetching ranking data:", err);
             rankingContainer.innerHTML = `<tr><td colspan="9" class="error-text"><b>Error al cargar:</b> ${err.message}. Revisa la consola (F12) para más detalles.</td></tr>`;
         }
@@ -109,8 +95,12 @@ function initRanking() {
             const position = (page - 1) * pageSize + index + 1;
             const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
             const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
-            // Para la nueva función, los votos mensuales ya vienen con el nombre correcto.
-            const votes = (currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count) || 0;
+            
+            // <-- CAMBIO CLAVE 3: Mostrar los votos correctos según el tipo de ranking.
+            const votes = currentRankingType === 'monthly'
+                ? server.monthly_votes_count || 0
+                : server.votes_count || 0;
+            
             const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
             return `
                 <tr>
@@ -167,6 +157,7 @@ function initRanking() {
         return `${full}${empty}`;
     }
 
+    // Carga inicial
     updateButtonStyles();
     fetchRankingData(currentPage);
 }
