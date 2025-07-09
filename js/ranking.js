@@ -1,6 +1,7 @@
-// js/ranking.js (v10 - Usando RPC para máxima fiabilidad)
+// js/ranking.js (v11 - A PRUEBA DE BALAS con logs de depuración)
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Ranking Page Initialized.");
     initRanking();
 });
 
@@ -10,13 +11,15 @@ function initRanking() {
     const generalBtn = document.getElementById('rank-general-btn');
     const monthlyBtn = document.getElementById('rank-monthly-btn');
 
-    if (!rankingContainer || !generalBtn || !monthlyBtn) return;
+    if (!rankingContainer || !generalBtn || !monthlyBtn) {
+        console.error("Error: Elementos del DOM para el ranking no encontrados.");
+        return;
+    }
 
     let currentPage = 1;
     const pageSize = 15;
     let currentRankingType = 'general';
 
-    // --- MANEJADORES DE EVENTOS PARA LOS BOTONES ---
     generalBtn.addEventListener('click', () => {
         if (currentRankingType === 'general') return;
         currentRankingType = 'general';
@@ -33,89 +36,83 @@ function initRanking() {
         fetchRankingData(currentPage);
     });
 
-    // --- FUNCIÓN PRINCIPAL PARA OBTENER Y RENDERIZAR DATOS ---
     async function fetchRankingData(page) {
+        console.log(`Fetching data for ranking type: "${currentRankingType}", page: ${page}`);
         rankingContainer.innerHTML = `<tr><td colspan="9" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</td></tr>`;
-        paginationContainer.innerHTML = ''; // Limpiar paginación mientras carga
+        paginationContainer.innerHTML = '';
 
         try {
             let data, count, error;
 
             if (currentRankingType === 'general') {
-                // RANKING GENERAL: Consulta directa a la tabla
-                const from = (page - 1) * pageSize;
-                const to = page * pageSize - 1;
-                
+                console.log("Querying 'servers' table directly for general ranking.");
                 const response = await window.supabaseClient
                     .from('servers')
                     .select('id, name, image_url, version, type, configuration, exp_rate, drop_rate, votes_count, average_rating, review_count', { count: 'exact' })
                     .eq('status', 'aprobado')
                     .order('votes_count', { ascending: false, nullsFirst: false })
-                    .range(from, to);
+                    .range((page - 1) * pageSize, page * pageSize - 1);
                 
                 data = response.data;
                 count = response.count;
                 error = response.error;
-
             } else {
-                // RANKING MENSUAL: Llamada a la función RPC
-                const { data: rpcData, error: rpcError } = await window.supabaseClient
-                    .rpc('get_monthly_ranking', { page_size: pageSize, page_num: page });
+                console.log("Executing RPC call 'get_monthly_ranking'.");
+                const rpcResponse = await window.supabaseClient.rpc('get_monthly_ranking', {
+                    page_size: pageSize,
+                    page_num: page
+                });
+                
+                console.log("Executing RPC call 'get_total_monthly_servers_count'.");
+                 const countResponse = await window.supabaseClient.rpc('get_total_monthly_servers_count');
 
-                // Para la paginación, llamamos a la función de conteo
-                const { data: totalCount, error: countError } = await window.supabaseClient
-                    .rpc('get_total_monthly_servers_count');
-
-                data = rpcData;
-                count = totalCount;
-                error = rpcError || countError; // Si alguna de las dos llamadas falla
+                data = rpcResponse.data;
+                count = countResponse.data;
+                error = rpcResponse.error || countResponse.error;
             }
             
-            // Manejo de errores unificado
+            console.log("Supabase response received:", { data, count, error });
+
             if (error) {
+                // Si hay un error, lo lanzamos para que el bloque catch lo capture.
                 throw new Error(error.message);
             }
 
-            // Si no hay datos, mostrar mensaje amigable
             if (!data || data.length === 0) {
+                console.log("No data found for this ranking/page.");
                 rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 2rem;">No hay servidores en este ranking.</td></tr>`;
                 return;
             }
 
-            // Si todo está bien, renderizar tabla y paginación
+            console.log(`Rendering ${data.length} servers.`);
             renderRankingTable(data, page);
+            
+            console.log(`Rendering pagination for a total of ${count} items.`);
             renderPagination(count, page);
 
         } catch (err) {
-            console.error("Error definitivo cargando el ranking:", err);
-            rankingContainer.innerHTML = `<tr><td colspan="9" class="error-text">Error al cargar el ranking: ${err.message}</td></tr>`;
+            // Este bloque CATCH es nuestra red de seguridad final.
+            console.error("CRITICAL ERROR while fetching ranking data:", err);
+            rankingContainer.innerHTML = `<tr><td colspan="9" class="error-text"><b>Error al cargar:</b> ${err.message}. Revisa la consola (F12) para más detalles.</td></tr>`;
         }
     }
 
-    // --- FUNCIONES AUXILIARES DE RENDERIZADO ---
     function renderRankingTable(servers, page) {
         rankingContainer.innerHTML = servers.map((server, index) => {
             const position = (page - 1) * pageSize + index + 1;
             const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
             const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
+            // Para la nueva función, los votos mensuales ya vienen con el nombre correcto.
             const votes = (currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count) || 0;
-
             const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
-
             return `
                 <tr>
                     <td><span class="rank-position">${position}</span></td>
                     <td class="server-info-cell">
                         <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="server-logo-table" width="45" height="45">
-                        <div>
-                            <a href="servidor.html?id=${server.id}" class="server-name-link">${server.name}</a>
-                            <div class="server-version-tag">${server.version || 'N/A'}</div>
-                        </div>
+                        <div><a href="servidor.html?id=${server.id}" class="server-name-link">${server.name}</a><div class="server-version-tag">${server.version || 'N/A'}</div></div>
                     </td>
-                    <td class="table-rating">
-                        <span class="stars">${renderStars(server.average_rating || 0)}</span>
-                        <span class="review-count">(${server.review_count || 0})</span>
-                    </td>
+                    <td class="table-rating"><span class="stars">${renderStars(server.average_rating || 0)}</span><span class="review-count">(${server.review_count || 0})</span></td>
                     <td>${server.type || 'N/A'}</td>
                     <td>${server.configuration || 'N/A'}</td>
                     <td>${expRate}</td>
@@ -129,23 +126,16 @@ function initRanking() {
 
     function renderPagination(totalItems, page) {
         const totalPages = Math.ceil(totalItems / pageSize);
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
+        if (totalPages <= 1) { paginationContainer.innerHTML = ''; return; }
         const prevDisabled = page === 1 ? 'disabled' : '';
         const nextDisabled = page === totalPages ? 'disabled' : '';
-
         paginationContainer.innerHTML = `
             <button class="btn btn-secondary" data-page="${page - 1}" ${prevDisabled}><i class="fa-solid fa-chevron-left"></i> Anterior</button>
             <span class="pagination-info">Página ${page} de ${totalPages}</span>
             <button class="btn btn-secondary" data-page="${page + 1}" ${nextDisabled}>Siguiente <i class="fa-solid fa-chevron-right"></i></button>`;
-        
         paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if(btn.hasAttribute('disabled')) return;
+                e.preventDefault(); if (btn.hasAttribute('disabled')) return;
                 currentPage = parseInt(btn.dataset.page);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 fetchRankingData(currentPage);
@@ -165,12 +155,11 @@ function initRanking() {
     
     function renderStars(rating) {
         if (typeof rating !== 'number' || rating <= 0) return 'Sin Rating';
-        const fullStars = '★'.repeat(Math.floor(rating));
-        const emptyStars = '☆'.repeat(5 - Math.floor(rating));
-        return `${fullStars}${emptyStars}`;
+        const full = '★'.repeat(Math.floor(rating));
+        const empty = '☆'.repeat(5 - Math.floor(rating));
+        return `${full}${empty}`;
     }
 
-    // Carga inicial
     updateButtonStyles();
     fetchRankingData(currentPage);
 }
