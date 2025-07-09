@@ -1,18 +1,25 @@
 // js/ranking.js (v11 - A PRUEBA DE BALAS con logs de depuración)
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Ranking Page Initialized.");
+    console.log("==> SCRIPT DE RANKING INICIADO (DOM COMPLETAMENTE CARGADO) <==");
     initRanking();
 });
 
 function initRanking() {
-    const rankingContainer = document.getElementById('ranking-table-body');
+    // Corregido: Usar el ID correcto 'ranking-container' en lugar de 'ranking-table-body'
+    const rankingContainer = document.getElementById('ranking-container');
     const paginationContainer = document.getElementById('pagination-controls');
     const generalBtn = document.getElementById('rank-general-btn');
     const monthlyBtn = document.getElementById('rank-monthly-btn');
 
-    if (!rankingContainer || !generalBtn || !monthlyBtn) {
-        console.error("Error: Elementos del DOM para el ranking no encontrados.");
+    // Logs de depuración para verificar que los elementos se encuentran correctamente
+    console.log("Resultado de búsqueda de 'ranking-container':", rankingContainer);
+    console.log("Resultado de búsqueda de 'pagination-controls':", paginationContainer);
+    console.log("Resultado de búsqueda de 'rank-general-btn':", generalBtn);
+    console.log("Resultado de búsqueda de 'rank-monthly-btn':", monthlyBtn);
+
+    if (!rankingContainer || !paginationContainer || !generalBtn || !monthlyBtn) {
+        console.error("ERROR CRÍTICO: No se encontraron todos los elementos necesarios. Verifica que los IDs en ranking.html coincidan EXACTAMENTE con los que se buscan aquí.");
         return;
     }
 
