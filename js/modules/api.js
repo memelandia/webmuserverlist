@@ -247,3 +247,42 @@ export async function setServerOfTheMonth(newWinnerId) {
     const { error } = await supabase.rpc('set_server_of_the_month', { new_winner_id: newWinnerId });
     if (error) throw new Error("No se pudo actualizar el Servidor del Mes.");
 }
+
+// --- API de Ranking ---
+
+export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
+    console.log(`Obteniendo ranking ${rankingType}, página ${page}, tamaño ${pageSize}`);
+    
+    let query = supabase
+        .from('servers')
+        .select(`
+            id, name, image_url, version, type, configuration, 
+            exp_rate, drop_rate, votes_count, monthly_votes_count,
+            average_rating, review_count
+        `)
+        .eq('status', 'aprobado');
+    
+    // Ordenamos según el tipo de ranking
+    if (rankingType === 'monthly') {
+        query = query.order('monthly_votes_count', { ascending: false, nullsFirst: false });
+    } else {
+        query = query.order('votes_count', { ascending: false, nullsFirst: false });
+    }
+    
+    // Calculamos el rango para la paginación
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    
+    // Obtenemos los datos paginados
+    const { data, error, count } = await query
+        .range(from, to)
+        .order('is_featured', { ascending: false })
+        .select('*', { count: 'exact' });
+    
+    if (error) {
+        console.error("Error al obtener ranking:", error);
+        throw error;
+    }
+    
+    return { data, count };
+}
