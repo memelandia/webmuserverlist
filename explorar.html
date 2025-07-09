@@ -49,7 +49,22 @@
                         <label for="filter-version">
                             <i class="fa-solid fa-gamepad"></i> Versión
                         </label>
-                        <input type="text" id="filter-version" name="version" placeholder="Ej: Season 6">
+                        <select id="filter-version" name="version">
+                            <option value="">Todas</option>
+                            <option value="0.97d">0.97d</option>
+                            <option value="0.99b">0.99b</option>
+                            <option value="0.99c">0.99c</option>
+                            <option value="Season 2">Season 2</option>
+                            <option value="Season 3">Season 3</option>
+                            <option value="Season 4">Season 4</option>
+                            <option value="Season 6">Season 6</option>
+                            <option value="Season 9">Season 9</option>
+                            <option value="Season 12">Season 12</option>
+                            <option value="Season 14">Season 14</option>
+                            <option value="Season 16">Season 16</option>
+                            <option value="Season 18">Season 18</option>
+                            <option value="Season 19">Season 19</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="filter-sort">
@@ -83,7 +98,16 @@
                             <option value="Slow">Slow</option>
                             <option value="Medium">Medium</option>
                             <option value="Fast">Fast</option>
-                            <option value="PvP">PvP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-configuration">
+                            <i class="fa-solid fa-cogs"></i> Configuración
+                        </label>
+                        <select id="filter-configuration" name="configuration">
+                            <option value="">Todas</option>
+                            <option value="Clásico">Clásico</option>
+                            <option value="Custom">Custom</option>
                         </select>
                     </div>
                 </div>

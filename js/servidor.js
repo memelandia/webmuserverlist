@@ -112,6 +112,7 @@ function renderServerPage(server) {
                      <div class="server-header-tags">
                          <span><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
                          <span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                         <span><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
                          <span><i class="fa-solid fa-heart"></i> <span id="votes-count">${server.votes_count || 0}</span> Votos</span>
                      </div>
                  </div>
@@ -141,6 +142,9 @@ function renderServerPage(server) {
                     <h3 class="widget-title"><i class="fa-solid fa-circle-info"></i> Ficha Técnica</h3>
                     <!-- ¡CAMBIO! Nuevo HTML para la ficha técnica con íconos -->
                     <ul class="tech-details-list">
+                        <li><strong><i class="fa-solid fa-gamepad"></i>Versión</strong> <span>${server.version || 'N/A'}</span></li>
+                        <li><strong><i class="fa-solid fa-shield-halved"></i>Tipo</strong> <span>${server.type || 'N/A'}</span></li>
+                        <li><strong><i class="fa-solid fa-cogs"></i>Configuración</strong> <span>${server.configuration || 'N/A'}</span></li>
                         <li><strong><i class="fa-solid fa-bolt"></i>Experiencia</strong> <span>${server.exp_rate ? server.exp_rate + 'x' : 'N/A'}</span></li>
                         <li><strong><i class="fa-solid fa-gem"></i>Drop Rate</strong> <span>${server.drop_rate ? server.drop_rate + '%' : 'N/A'}</span></li>
                         <li><strong><i class="fa-solid fa-sync-alt"></i>Reset Info</strong> <span>${server.reset_info || 'N/A'}</span></li>

@@ -52,7 +52,7 @@ async function loadFeaturedCarousel() {
     try {
         const { data, error } = await window.supabaseClient
             .from('servers')
-            .select('id, name, image_url, banner_url, version, type, exp_rate, drop_rate, opening_date')
+            .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, opening_date')
             .eq('status', 'aprobado')
             .eq('is_featured', true)
             .limit(5);
@@ -82,6 +82,7 @@ async function loadFeaturedCarousel() {
                     <div class="carousel-card-meta">
                         <span title="Versión"><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
                         <span title="Tipo"><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                        <span title="Configuración"><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
                     </div>
                     <div class="carousel-card-rates">
                         <span title="Experiencia"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg> ${expRate}</span>

@@ -1155,3 +1155,38 @@ a:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* Añadir estilos para la nueva etiqueta de configuración */
+.server-header-tags span i.fa-cogs,
+.carousel-card-meta span i.fa-cogs,
+.calendar-card-meta span i.fa-cogs,
+.tech-details-list li i.fa-cogs {
+    color: var(--accent-color);
+}
+
+/* Actualizar el ancho de las columnas en la tabla de ranking */
+.ranking-table th:nth-child(5),
+.ranking-table td:nth-child(5) {
+    width: 10%;
+    text-align: center;
+}
+
+/* Ajustar el espaciado en las tarjetas para acomodar la nueva etiqueta */
+.carousel-card-meta span,
+.calendar-card-meta span {
+    margin-right: 8px;
+    font-size: 0.85rem;
+}
+
+/* Asegurar que las etiquetas de configuración se vean bien en móviles */
+@media (max-width: 768px) {
+    .carousel-card-meta,
+    .calendar-card-meta {
+        flex-wrap: wrap;
+    }
+    
+    .carousel-card-meta span,
+    .calendar-card-meta span {
+        margin-bottom: 4px;
+    }
+}

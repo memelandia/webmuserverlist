@@ -60,11 +60,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Poblar formulario (sin cambios)
+    // Poblar formulario
     form.name.value = server.name || '';
     form.description.value = server.description || '';
     form.version.value = server.version || '';
     form.type.value = server.type || 'Medium';
+    form.configuration.value = server.configuration || 'Custom';
     form.exp_rate.value = server.exp_rate || '';
     form.drop_rate.value = server.drop_rate || '';
     form.reset_info.value = server.reset_info || '';
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 description: form.description.value,
                 version: form.version.value,
                 type: form.type.value,
+                configuration: form.configuration.value,
                 reset_info: form.reset_info.value,
                 antihack_info: form.antihack_info.value,
                 website_url: form.website_url.value,

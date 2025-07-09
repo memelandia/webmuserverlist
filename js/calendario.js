@@ -38,11 +38,10 @@ async function initCalendario() {
     try {
         const { data, error } = await window.supabaseClient
             .from('servers')
-            .select('id, name, image_url, banner_url, opening_date, version, type, website_url, description')
+            .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
             .not('opening_date', 'is', null)
             .gt('opening_date', new Date().toISOString())
-            .order('opening_date', { ascending: true })
-            .eq('status', 'aprobado');
+            .order('opening_date', { ascending: true });
 
         if (error) throw error;
 
@@ -57,31 +56,28 @@ async function initCalendario() {
             // ¡OPTIMIZACIÓN!
             const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 120 }, 'https://via.placeholder.com/400x120.png?text=Banner');
             const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
-            
+
             return `
-            <div class="server-card-new opening-card">
-                <div class="card-banner" style="background-image: url('${optimizedBanner}')"></div>
-                <div class="card-header">
-                    <img src="${optimizedLogo}" alt="Logo de ${server.name}" class="card-logo" width="80" height="80">
-                    <div class="card-status">
-                         <div class="status-badge loading" id="status-${server.id}"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            <div class="calendar-card">
+                <div class="calendar-card-banner" style="background-image: url('${optimizedBanner}');">
+                    <div class="calendar-date">
+                        <span class="calendar-day">${new Date(server.opening_date).getDate()}</span>
+                        <span class="calendar-month">${new Date(server.opening_date).toLocaleString('es-ES', {month: 'short'})}</span>
                     </div>
                 </div>
-                <div class="card-content">
-                    <h3>${server.name}</h3>
-                    <div class="card-tags-icons">
-                        <span title="Versión"><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
-                        <span title="Tipo"><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                <div class="calendar-card-content">
+                    <div class="calendar-card-header">
+                        <img src="${optimizedLogo}" alt="${server.name}" class="calendar-card-logo">
+                        <h3><a href="servidor.html?id=${server.id}">${server.name}</a></h3>
                     </div>
-                     <p class="card-description">${shortDescription}</p>
-                </div>
-                <div class="card-countdown" data-countdown="${server.opening_date}">
-                    <div class="countdown-main"><span class="days">...</span> DÍAS</div>
-                    <div class="countdown-secondary"><span class="hours">00</span>h : <span class="minutes">00</span>m : <span class="seconds">00</span>s</div>
-                </div>
-                <div class="card-actions">
-                    <a href="${server.website_url || '#'}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fa-solid fa-globe"></i> Sitio Web</a>
-                    <a href="servidor.html?id=${server.id}" class="btn btn-primary"><i class="fa-solid fa-eye"></i> Ver Detalles</a>
+                    <p class="calendar-card-description">${shortDescription}</p>
+                    <div class="calendar-card-meta">
+                        <span><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
+                        <span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
+                        <span><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
+                        <span><i class="fa-solid fa-bolt"></i> ${server.exp_rate ? server.exp_rate + 'x' : 'N/A'}</span>
+                    </div>
+                    <a href="servidor.html?id=${server.id}" class="btn btn-primary btn-sm">Ver Detalles</a>
                 </div>
             </div>`;
         }).join('');

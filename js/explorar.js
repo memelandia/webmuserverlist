@@ -71,11 +71,14 @@ function initExplorar() {
         loadServers();
     });
 
-    // Event listener para el botón de resetear
+    // Event listener para el botón de resetear filtros
     resetBtn.addEventListener('click', () => {
-        filtersForm.reset();
-        expSlider.value = expSteps.length - 1; // Resetea el slider al máximo
-        updateExpLabel(getExpValueFromSlider(expSlider.value)); // Actualiza la etiqueta
+        document.getElementById('filter-name').value = '';
+        document.getElementById('filter-version').value = '';
+        document.getElementById('filter-type').value = '';
+        document.getElementById('filter-configuration').value = '';
+        document.getElementById('filter-exp-slider').value = 17;
+        updateExpLabel(getExpValueFromSlider(17));
         loadServers();
     });
 
@@ -84,32 +87,43 @@ function initExplorar() {
     loadServers();
 
     async function loadServers() {
-        serversGridContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Aplicando filtros y cargando servidores...</div>`;
-
+        serversGridContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando servidores...</div>`;
+        
         try {
             // Recoger todos los valores del formulario
             const expFilterValue = getExpValueFromSlider(document.getElementById('filter-exp-slider').value);
 
             const filters = {
                 name: document.getElementById('filter-name').value.trim(),
-                version: document.getElementById('filter-version').value.trim(),
+                version: document.getElementById('filter-version').value,
                 type: document.getElementById('filter-type').value,
+                configuration: document.getElementById('filter-configuration').value,
                 exp: expFilterValue,
                 sort: document.getElementById('filter-sort').value
             };
 
             let query = window.supabaseClient
                 .from('servers')
-                .select('id, name, image_url, banner_url, version, type, exp_rate, drop_rate, description, website_url')
+                .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url')
                 .eq('status', 'aprobado');
 
-            // Aplicar filtros de texto
-            if (filters.name) query = query.ilike('name', `%${filters.name}%`);
-            if (filters.version) query = query.ilike('version', `%${filters.version}%`);
-            if (filters.type) query = query.eq('type', filters.type);
+            // Aplicar filtros
+            if (filters.name) {
+                query = query.ilike('name', `%${filters.name}%`);
+            }
             
-            // Aplicar filtro de rango de EXP (menor o igual que)
-            // Solo se aplica si el valor no es el máximo (nuestro "Cualquiera")
+            if (filters.version) {
+                query = query.eq('version', filters.version);
+            }
+            
+            if (filters.type) {
+                query = query.eq('type', filters.type);
+            }
+            
+            if (filters.configuration) {
+                query = query.eq('configuration', filters.configuration);
+            }
+            
             if (filters.exp < 99999) {
                 query = query.lte('exp_rate', filters.exp);
             }

@@ -47,7 +47,7 @@ function initRanking() {
     }
 
     async function fetchRanking(page) {
-        rankingContainer.innerHTML = `<tr><td colspan="8" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</td></tr>`;
+        rankingContainer.innerHTML = `<tr><td colspan="9" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</td></tr>`;
         
         const from = (page - 1) * pageSize;
         const to = page * pageSize - 1;
@@ -56,7 +56,7 @@ function initRanking() {
         if (currentRankingType === 'general') {
             query = window.supabaseClient
                 .from('servers')
-                .select('id, name, image_url, version, average_rating, review_count, type, exp_rate, drop_rate, votes_count', { count: 'exact' })
+                .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, votes_count', { count: 'exact' })
                 .eq('status', 'aprobado')
                 .order('votes_count', { ascending: false, nullsFirst: false });
         } else {
@@ -106,6 +106,7 @@ function initRanking() {
                         <span class="review-count">(${server.review_count || 0})</span>
                     </td>
                     <td>${server.type || 'N/A'}</td>
+                    <td>${server.configuration || 'N/A'}</td>
                     <td>${expRate}</td>
                     <td>${dropRate}</td>
                     <td class="votes-count">${votes || 0}</td>
