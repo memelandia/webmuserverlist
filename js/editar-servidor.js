@@ -126,14 +126,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const galleryFiles = document.getElementById('gallery-files').files;
             if (galleryFiles.length > 0) {
-                 if (galleryFiles.length > 6) {
+                if (galleryFiles.length > 6) {
                     throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
-                const galleryPaths = [];
-                for (const file of galleryFiles) {
-                    galleryPaths.push(await uploadFile(file, 'server-gallery'));
-                }
-                updatedData.gallery_urls = galleryPaths;
+                
+                // Crear un array de promesas para subir todas las imágenes en paralelo
+                const uploadPromises = Array.from(galleryFiles).map(file => uploadFile(file, 'server-gallery'));
+                
+                // Esperar a que todas las promesas se resuelvan
+                updatedData.gallery_urls = await Promise.all(uploadPromises);
             }
 
             const { error: updateError } = await window.supabaseClient

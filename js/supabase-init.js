@@ -233,10 +233,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// js/supabase-init.js
-
-// ... (todo tu código existente) ...
-
 /**
  * Genera una URL pública de Supabase Storage con transformaciones de imagen.
  * @param {string} bucketName - El nombre del bucket (ej. 'server-images').

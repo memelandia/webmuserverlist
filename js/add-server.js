@@ -74,12 +74,14 @@ async function initAddServer() {
                 if (galleryFiles.length > 6) {
                     throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
-                for (let i = 0; i < galleryFiles.length; i++) {
-                    const file = galleryFiles[i];
-                    feedbackEl.textContent = `Subiendo imagen ${i + 1}/${galleryFiles.length}: ${file.name}...`;
-                    const path = await uploadFile(file, 'server-gallery');
-                    galleryPaths.push(path);
-                }
+                
+                feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
+                
+                // Crear un array de promesas para subir todas las imágenes en paralelo
+                const uploadPromises = Array.from(galleryFiles).map(file => uploadFile(file, 'server-gallery'));
+                
+                // Esperar a que todas las promesas se resuelvan
+                galleryPaths = await Promise.all(uploadPromises);
             }
             
             feedbackEl.textContent = 'Guardando datos del servidor...';
