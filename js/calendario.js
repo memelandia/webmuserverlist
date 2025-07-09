@@ -1,4 +1,4 @@
-// js/calendario.js (v8 - Diseño y contador 100% funcionales)
+// js/calendario.js (v9 - Diseño de contador mejorado)
 
 document.addEventListener('DOMContentLoaded', () => {
     initCalendario();
@@ -55,10 +55,11 @@ async function initCalendario() {
                         <span><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
                         <span><i class="fa-solid fa-bolt"></i> ${server.exp_rate ? server.exp_rate + 'x' : 'N/A'}</span>
                     </div>
-                     <div class="card-countdown">
-                        <!-- El contador se renderizará aquí -->
-                     </div>
                     <a href="servidor.html?id=${server.id}" class="btn btn-primary btn-sm">Ver Detalles</a>
+                </div>
+                <!-- ¡CAMBIO! El contador ahora va FUERA del content para ocupar todo el ancho -->
+                <div class="card-countdown">
+                    <!-- El contador se renderizará aquí -->
                 </div>
             </div>`;
         }).join('');
@@ -80,7 +81,6 @@ function startCountdownTimers() {
 
     document.querySelectorAll('[data-countdown]').forEach(card => {
         const target = new Date(card.dataset.countdown).getTime();
-        // Se busca el contenedor del contador DENTRO de la tarjeta actual
         const countdownEl = card.querySelector('.card-countdown');
         if (!countdownEl) return;
         
@@ -96,15 +96,13 @@ function startCountdownTimers() {
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             
-            // Se genera el HTML correcto para el contador
+            // ¡CAMBIO! Se genera el HTML con la nueva estructura visual
             countdownEl.innerHTML = `
                 <div class="countdown-main">
                     <span class="days">${d}</span>d
                 </div>
                 <div class="countdown-secondary">
-                    <span class="hours">${String(h).padStart(2, '0')}</span>h : 
-                    <span class="minutes">${String(m).padStart(2, '0')}</span>m : 
-                    <span class="seconds">${String(s).padStart(2, '0')}</span>s
+                    ${String(h).padStart(2, '0')}h : ${String(m).padStart(2, '0')}m : ${String(s).padStart(2, '0')}s
                 </div>
             `;
         };

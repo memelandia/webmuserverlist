@@ -1,7 +1,6 @@
-// js/admin.js (v4 - Corregido con refresco de UI automático)
+// js/admin.js (v6 - Solución final para Servidor del Mes)
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Verificar si el usuario es administrador
     const { data: { session } } = await window.supabaseClient.auth.getSession();
 
     if (!session) {
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // 2. Si es admin, mostrar el panel e inicializarlo
     document.getElementById('admin-panel').style.display = 'block';
     document.getElementById('admin-auth-required').style.display = 'none';
     initAdminPanel();
@@ -56,6 +54,9 @@ function initAdminPanel() {
                 break;
             case 'users':
                 await loadUsers();
+                break;
+            case 'server-of-the-month':
+                await loadServerOfTheMonthManager();
                 break;
         }
     }
@@ -133,21 +134,135 @@ function initAdminPanel() {
         addUserActionListeners();
     }
 
+    // --- PESTAÑA 4: GESTIONAR SERVIDOR DEL MES (LÓGICA FINAL Y CORRECTA) ---
+    async function loadServerOfTheMonthManager() {
+        try {
+            // 1. Obtener el ganador actual de la tabla 'servers'
+            const { data: currentWinner, error: winnerError } = await window.supabaseClient
+                .from('servers')
+                .select('id, name, image_url')
+                .eq('is_server_of_the_month', true)
+                .single();
+
+            // 2. Obtener la lista de todos los servidores aprobados
+            const { data: allServers, error: serversError } = await window.supabaseClient
+                .from('servers')
+                .select('id, name')
+                .eq('status', 'aprobado')
+                .order('name', { ascending: true });
+            
+            if (winnerError && winnerError.code !== 'PGRST116') throw winnerError;
+            if (serversError) throw serversError;
+
+            // 3. Renderizar el HTML
+            let currentWinnerHtml = `
+                <div id="som-current-winner">
+                    <i class="fa-solid fa-trophy fa-3x" style="color: var(--text-secondary);"></i>
+                    <div>
+                        <h4>Aún no hay ganador</h4>
+                        <p>Selecciona un servidor de la lista para establecerlo como ganador.</p>
+                    </div>
+                </div>`;
+            
+            if (currentWinner) {
+                const logoUrl = getOptimizedImageUrl('server-images', currentWinner.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
+                currentWinnerHtml = `
+                    <div id="som-current-winner">
+                        <img src="${logoUrl}" alt="Logo de ${currentWinner.name}">
+                        <div>
+                             <h4>Ganador Actual: ${currentWinner.name}</h4>
+                             <p>ID: ${currentWinner.id}</p>
+                        </div>
+                    </div>`;
+            }
+
+            const serverOptionsHtml = allServers.map(server => 
+                `<option value="${server.id}" ${currentWinner && currentWinner.id == server.id ? 'selected' : ''}>
+                    ${server.name} (ID: ${server.id})
+                </option>`
+            ).join('');
+
+            contentContainer.innerHTML = `
+                ${currentWinnerHtml}
+                <form id="som-selection-form">
+                    <div class="form-group">
+                        <label for="som-select">Seleccionar Nuevo Servidor del Mes</label>
+                        <select id="som-select" class="form-control" required>
+                            <option value="">-- Elige un servidor --</option>
+                            ${serverOptionsHtml}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">Establecer como Ganador</button>
+                </form>
+                <div id="som-feedback" class="feedback-message" style="margin-top: 1rem;"></div>
+            `;
+
+            // 4. Añadir el event listener al formulario
+            document.getElementById('som-selection-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const selectedServerId = document.getElementById('som-select').value;
+                const feedbackEl = document.getElementById('som-feedback');
+                
+                if (!selectedServerId) {
+                    feedbackEl.textContent = 'Por favor, selecciona un servidor.';
+                    feedbackEl.className = 'feedback-message error';
+                    return;
+                }
+
+                const button = e.target.querySelector('button');
+                button.disabled = true;
+                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Actualizando...';
+
+                try {
+                    // Paso A: Quitar la marca de ganador a CUALQUIER servidor que la tenga
+                    const { error: resetError } = await window.supabaseClient
+                        .from('servers')
+                        .update({ is_server_of_the_month: false })
+                        .eq('is_server_of_the_month', true);
+
+                    if (resetError) throw resetError;
+
+                    // Paso B: Poner la marca de ganador al servidor seleccionado
+                    const { error: setError } = await window.supabaseClient
+                        .from('servers')
+                        .update({ is_server_of_the_month: true })
+                        .eq('id', selectedServerId);
+                    
+                    if (setError) throw setError;
+                    
+                    feedbackEl.textContent = '¡Servidor del Mes actualizado con éxito!';
+                    feedbackEl.className = 'feedback-message success';
+
+                    setTimeout(renderAdminContent, 2000);
+
+                } catch (error) {
+                    feedbackEl.textContent = `Error: ${error.message}`;
+                    feedbackEl.className = 'feedback-message error';
+                    button.disabled = false;
+                    button.innerHTML = 'Establecer como Ganador';
+                }
+            });
+
+        } catch (error) {
+            contentContainer.innerHTML = `<p class="error-text">Error cargando el gestor: ${error.message}</p>`;
+        }
+    }
+
+
     // --- LÓGICA DE EVENTOS (para no repetir código) ---
     function addServerActionListeners() {
         contentContainer.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', async (e) => {
             await window.supabaseClient.from('servers').update({ status: 'aprobado' }).eq('id', e.target.dataset.id);
-            renderAdminContent(); // <<< CORRECCIÓN: Refrescar la vista
+            renderAdminContent(); 
         }));
         contentContainer.querySelectorAll('.deny-btn').forEach(btn => btn.addEventListener('click', async (e) => {
             if (confirm('¿Seguro que quieres eliminar/rechazar este servidor? Esta acción no se puede deshacer.')) {
                 await window.supabaseClient.from('servers').delete().eq('id', e.target.dataset.id);
-                renderAdminContent(); // <<< CORRECCIÓN: Refrescar la vista
+                renderAdminContent(); 
             }
         }));
         contentContainer.querySelectorAll('.featured-toggle').forEach(toggle => toggle.addEventListener('change', async (e) => {
             await window.supabaseClient.from('servers').update({ is_featured: e.target.checked }).eq('id', e.target.dataset.id);
-            // Opcional: podrías mostrar un pequeño feedback "Guardado" en lugar de recargar todo
         }));
     }
 
@@ -155,7 +270,7 @@ function initAdminPanel() {
         contentContainer.querySelectorAll('.user-role-select').forEach(select => select.addEventListener('change', async (e) => {
             await window.supabaseClient.from('profiles').update({ role: e.target.value }).eq('id', e.target.dataset.id);
             alert(`Rol de usuario actualizado a ${e.target.value}.`);
-            renderAdminContent(); // <<< CORRECCIÓN: Refrescar la vista para consistencia
+            renderAdminContent();
         }));
         contentContainer.querySelectorAll('.ban-toggle-btn').forEach(btn => btn.addEventListener('click', async (e) => {
             const currentStatus = e.target.dataset.status;
@@ -163,7 +278,7 @@ function initAdminPanel() {
             const actionText = newStatus === 'banned' ? 'banear' : 'quitar el ban a';
             if (confirm(`¿Seguro que quieres ${actionText} este usuario?`)) {
                 await window.supabaseClient.from('profiles').update({ status: newStatus }).eq('id', e.target.dataset.id);
-                renderAdminContent(); // <<< CORRECCIÓN: Refrescar la vista
+                renderAdminContent();
             }
         }));
     }

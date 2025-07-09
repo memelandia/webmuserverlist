@@ -911,14 +911,20 @@ a:hover {
 
 /* css/style.css - AÑADIR AL FINAL */
 
+/* css/style.css - REEMPLAZAR ESTA SECCIÓN */
+
 /* =================================================================
-   ESTILOS PARA EL CONTADOR DEL CALENDARIO CORREGIDO
+   ESTILOS PARA EL CONTADOR DEL CALENDARIO CORREGIDO Y MEJORADO
    ================================================================= */
+.calendar-card .btn {
+    margin: 1.5rem 0 0 auto; /* Empuja el botón al final del contenido */
+    width: 100%;
+}
+
 .card-countdown {
     text-align: center;
     background: var(--bg-dark);
     border-top: 1px solid var(--border-color);
-    margin: 1.5rem -1.5rem -1.5rem -1.5rem; /* Ajuste para que ocupe todo el ancho inferior */
     padding: 1rem;
     border-bottom-left-radius: var(--border-radius);
     border-bottom-right-radius: var(--border-radius);
@@ -930,12 +936,12 @@ a:hover {
     margin-bottom: 0.25rem;
     font-size: 1.2rem;
     color: var(--text-secondary);
+    font-weight: 700;
 }
 
 .card-countdown .countdown-main .days {
     font-size: 2.5rem;
     color: var(--primary-color);
-    font-weight: 700;
 }
 
 .card-countdown .countdown-secondary {

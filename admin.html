@@ -16,6 +16,38 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary-color); }
         input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Estilos para la nueva sección del Servidor del Mes */
+        #som-current-winner {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background-color: var(--bg-dark);
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+        }
+        #som-current-winner img {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        #som-current-winner h4 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary-color);
+        }
+        #som-current-winner p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+        #som-selection-form label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -32,11 +64,14 @@
             <h1><i class="fa-solid fa-user-shield"></i> Panel de Administración</h1>
         </div>
         <div id="admin-panel" style="display: none;">
+            <!-- PESTAÑAS: Añadida la nueva pestaña 'server-of-the-month' -->
             <div class="admin-tabs">
                 <div class="admin-tab active" data-tab="pending-servers">Servidores Pendientes</div>
                 <div class="admin-tab" data-tab="all-servers">Gestionar Servidores</div>
                 <div class="admin-tab" data-tab="users">Gestionar Usuarios</div>
+                <div class="admin-tab" data-tab="server-of-the-month"><i class="fa-solid fa-medal"></i> Servidor del Mes</div>
             </div>
+            
             <div id="admin-content" class="widget">
                 <div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>
             </div>

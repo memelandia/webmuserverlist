@@ -1,4 +1,4 @@
-// js/main.js (v9 - Con Servidor del Mes y mejoras)
+// js/main.js (v10 - Solución final para Servidor del Mes)
 
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadHomeWidgets() {
     loadFeaturedCarousel();
-    loadServerOfTheMonth(); // ¡NUEVO!
+    loadServerOfTheMonth(); // ¡Lógica actualizada!
     loadTopRanking();
     loadUpcomingEvents();
     loadStats();
@@ -86,21 +86,32 @@ function initCarousel() {
     }, 500);
 }
 
-// ¡NUEVO! Carga del widget Servidor del Mes
+// LÓGICA FINAL Y CORRECTA PARA SERVIDOR DEL MES
 async function loadServerOfTheMonth() {
     const container = document.getElementById('server-of-the-month-widget');
     if (!container) return;
     try {
-        const { data, error } = await window.supabaseClient.from('server_of_the_month').select('*').single();
+        // Buscamos en la tabla 'servers' al que esté marcado como ganador.
+        const { data, error } = await window.supabaseClient
+            .from('servers')
+            .select('*')
+            .eq('is_server_of_the_month', true)
+            .single();
+
         if (error || !data) {
             container.innerHTML = `<div class="som-content"><span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span><h2>Aún no hay ganador</h2><p>¡Vota por tus servidores favoritos para que aparezcan aquí!</p></div>`;
             return;
         }
+
         const optimizedBanner = getOptimizedImageUrl('server-banners', data.banner_url, { width: 1200, height: 400, resize: 'cover' }, 'https://via.placeholder.com/1200x300.png?text=Banner');
         container.style.backgroundImage = `url('${optimizedBanner}')`;
         container.innerHTML = `<div class="som-content"><span class="som-badge"><i class="fa-solid fa-medal"></i> Servidor del Mes</span><h2>${data.name}</h2><p>${data.description ? data.description.substring(0, 150) + '...' : 'El servidor más votado.'}</p><a href="servidor.html?id=${data.id}" class="btn btn-primary btn-lg">Ver Servidor</a></div>`;
-    } catch (error) { container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`; }
+    
+    } catch (error) { 
+        container.innerHTML = `<p class="error-text">No se pudo cargar el Servidor del Mes.</p>`; 
+    }
 }
+
 
 async function loadTopRanking() {
     const container = document.getElementById('ranking-widget-list');
