@@ -1,37 +1,38 @@
-// js/admin.js (v6 - Solución final para Servidor del Mes)
+// js/admin.js (v13 - Controlador del Panel de Admin)
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
+import * as api from './modules/api.js';
+import * as ui from './modules/ui.js';
 
-    if (!session) {
-        showAccessDenied();
-        return;
-    }
-
-    const { data: profile } = await window.supabaseClient
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
+// La función principal que se llamará desde main-app.js
+export async function initAdminPage() {
+    console.log("🚀 Inicializando Panel de Administración (admin.js)...");
     
-    if (!profile || profile.role !== 'admin') {
-        showAccessDenied();
-        return;
-    }
-    
-    document.getElementById('admin-panel').style.display = 'block';
-    document.getElementById('admin-auth-required').style.display = 'none';
-    initAdminPanel();
-});
-
-function showAccessDenied() {
-    document.getElementById('admin-panel').style.display = 'none';
-    document.getElementById('admin-auth-required').style.display = 'block';
-}
-
-function initAdminPanel() {
-    const tabs = document.querySelectorAll('.admin-tab');
+    const adminPanel = document.getElementById('admin-panel');
+    const authRequired = document.getElementById('admin-auth-required');
     const contentContainer = document.getElementById('admin-content');
+    const tabs = document.querySelectorAll('.admin-tab');
+
+    // 1. Verificación de permisos
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) throw new Error("Acceso restringido. Debes iniciar sesión.");
+
+        const profile = await api.getUserProfile(session.user.id);
+        if (profile.role !== 'admin') throw new Error("Debes ser administrador para ver esta página.");
+
+        // Si todo está bien, mostramos el panel
+        adminPanel.style.display = 'block';
+        authRequired.style.display = 'none';
+
+    } catch (error) {
+        adminPanel.style.display = 'none';
+        authRequired.style.display = 'block';
+        const p = authRequired.querySelector('p');
+        if (p) p.textContent = error.message;
+        return; // Detenemos la ejecución si no hay permisos
+    }
+
+    // 2. Lógica de Pestañas (Tabs)
     let currentTab = 'pending-servers';
 
     tabs.forEach(tab => {
@@ -39,250 +40,112 @@ function initAdminPanel() {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             currentTab = tab.dataset.tab;
-            renderAdminContent();
+            renderAdminContent(contentContainer, currentTab);
         });
     });
 
-    async function renderAdminContent() {
-        contentContainer.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando contenido...</div>`;
-        switch (currentTab) {
-            case 'pending-servers':
-                await loadPendingServers();
-                break;
-            case 'all-servers':
-                await loadAllServers();
-                break;
-            case 'users':
-                await loadUsers();
-                break;
-            case 'server-of-the-month':
-                await loadServerOfTheMonthManager();
-                break;
-        }
-    }
-
-    // --- PESTAÑA 1: SERVIDORES PENDIENTES ---
-    async function loadPendingServers() {
-        const { data, error } = await window.supabaseClient.from('servers').select('*').eq('status', 'pendiente');
-        if (error) {
-            contentContainer.innerHTML = `<p class="error-text">Error: ${error.message}</p>`;
-            return;
-        }
-        if (data.length === 0) {
-            contentContainer.innerHTML = '<p>No hay servidores pendientes de aprobación.</p>';
-            return;
-        }
-        contentContainer.innerHTML = data.map(s => `
-            <div class="detail-card">
-                <h4>${s.name} <small>(${s.version})</small></h4>
-                <div class="actions">
-                    <button data-id="${s.id}" class="btn btn-sm btn-primary approve-btn">Aprobar</button>
-                    <a href="servidor.html?id=${s.id}" target="_blank" class="btn btn-sm btn-secondary">Ver</a>
-                    <button data-id="${s.id}" class="btn btn-sm btn-danger deny-btn">Rechazar</button>
-                </div>
-            </div>`).join('');
+    // 3. Renderizado de Contenido y asignación de eventos
+    // Se usa delegación de eventos en el contenedor para manejar clics y cambios
+    contentContainer.addEventListener('click', async (e) => {
+        const target = e.target;
         
-        addServerActionListeners();
-    }
+        // Botones de acción de servidores
+        const approveBtn = target.closest('.approve-btn');
+        const denyBtn = target.closest('.deny-btn');
 
-    // --- PESTAÑA 2: GESTIONAR TODOS LOS SERVIDORES ---
-    async function loadAllServers() {
-        const { data, error } = await window.supabaseClient.from('servers').select('*').neq('status', 'pendiente').order('created_at', { ascending: false });
-        if (error) {
-            contentContainer.innerHTML = `<p class="error-text">Error: ${error.message}</p>`;
-            return;
+        if (approveBtn) {
+            await api.updateServer(approveBtn.dataset.id, { status: 'aprobado' });
+            renderAdminContent(contentContainer, currentTab); 
         }
-        contentContainer.innerHTML = data.map(s => `
-            <div class="detail-card">
-                <h4>${s.name} <span class="status-tag status-${s.status}">${s.status}</span></h4>
-                <div class="actions">
-                    <span>Destacado:</span>
-                    <label class="switch">
-                        <input type="checkbox" class="featured-toggle" data-id="${s.id}" ${s.is_featured ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                    <a href="editar-servidor.html?id=${s.id}" class="btn btn-sm btn-secondary">Editar</a>
-                    <button data-id="${s.id}" class="btn btn-sm btn-danger deny-btn">Eliminar</button>
-                </div>
-            </div>`).join('');
-        
-        addServerActionListeners();
-    }
-    
-    // --- PESTAÑA 3: GESTIONAR USUARIOS ---
-    async function loadUsers() {
-        const { data, error } = await window.supabaseClient.from('profiles').select('*').order('role');
-        if (error) {
-            contentContainer.innerHTML = `<p class="error-text">Error: ${error.message}</p>`;
-            return;
-        }
-        contentContainer.innerHTML = data.map(u => `
-            <div class="detail-card">
-                <h4>${u.username || u.email} <span class="status-tag status-${u.status === 'banned' ? 'rechazado' : 'aprobado'}">${u.status || 'active'}</span></h4>
-                <div class="actions">
-                    <span>Rol:</span>
-                    <select class="user-role-select" data-id="${u.id}">
-                        <option value="user" ${u.role === 'user' ? 'selected' : ''}>Usuario</option>
-                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                    </select>
-                    <button class="btn btn-sm btn-danger ban-toggle-btn" data-id="${u.id}" data-status="${u.status || 'active'}">
-                        ${u.status === 'banned' ? 'Quitar Ban' : 'Banear'}
-                    </button>
-                </div>
-            </div>`).join('');
-        
-        addUserActionListeners();
-    }
 
-    // --- PESTAÑA 4: GESTIONAR SERVIDOR DEL MES (LÓGICA FINAL Y CORRECTA) ---
-    async function loadServerOfTheMonthManager() {
-        try {
-            // 1. Obtener el ganador actual de la tabla 'servers'
-            const { data: currentWinner, error: winnerError } = await window.supabaseClient
-                .from('servers')
-                .select('id, name, image_url')
-                .eq('is_server_of_the_month', true)
-                .single();
-
-            // 2. Obtener la lista de todos los servidores aprobados
-            const { data: allServers, error: serversError } = await window.supabaseClient
-                .from('servers')
-                .select('id, name')
-                .eq('status', 'aprobado')
-                .order('name', { ascending: true });
-            
-            if (winnerError && winnerError.code !== 'PGRST116') throw winnerError;
-            if (serversError) throw serversError;
-
-            // 3. Renderizar el HTML
-            let currentWinnerHtml = `
-                <div id="som-current-winner">
-                    <i class="fa-solid fa-trophy fa-3x" style="color: var(--text-secondary);"></i>
-                    <div>
-                        <h4>Aún no hay ganador</h4>
-                        <p>Selecciona un servidor de la lista para establecerlo como ganador.</p>
-                    </div>
-                </div>`;
-            
-            if (currentWinner) {
-                const logoUrl = getOptimizedImageUrl('server-images', currentWinner.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
-                currentWinnerHtml = `
-                    <div id="som-current-winner">
-                        <img src="${logoUrl}" alt="Logo de ${currentWinner.name}">
-                        <div>
-                             <h4>Ganador Actual: ${currentWinner.name}</h4>
-                             <p>ID: ${currentWinner.id}</p>
-                        </div>
-                    </div>`;
-            }
-
-            const serverOptionsHtml = allServers.map(server => 
-                `<option value="${server.id}" ${currentWinner && currentWinner.id == server.id ? 'selected' : ''}>
-                    ${server.name} (ID: ${server.id})
-                </option>`
-            ).join('');
-
-            contentContainer.innerHTML = `
-                ${currentWinnerHtml}
-                <form id="som-selection-form">
-                    <div class="form-group">
-                        <label for="som-select">Seleccionar Nuevo Servidor del Mes</label>
-                        <select id="som-select" class="form-control" required>
-                            <option value="">-- Elige un servidor --</option>
-                            ${serverOptionsHtml}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg">Establecer como Ganador</button>
-                </form>
-                <div id="som-feedback" class="feedback-message" style="margin-top: 1rem;"></div>
-            `;
-
-            // 4. Añadir el event listener al formulario
-            document.getElementById('som-selection-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const selectedServerId = document.getElementById('som-select').value;
-                const feedbackEl = document.getElementById('som-feedback');
-                
-                if (!selectedServerId) {
-                    feedbackEl.textContent = 'Por favor, selecciona un servidor.';
-                    feedbackEl.className = 'feedback-message error';
-                    return;
-                }
-
-                const button = e.target.querySelector('button');
-                button.disabled = true;
-                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Actualizando...';
-
-                try {
-                    // Paso A: Quitar la marca de ganador a CUALQUIER servidor que la tenga
-                    const { error: resetError } = await window.supabaseClient
-                        .from('servers')
-                        .update({ is_server_of_the_month: false })
-                        .eq('is_server_of_the_month', true);
-
-                    if (resetError) throw resetError;
-
-                    // Paso B: Poner la marca de ganador al servidor seleccionado
-                    const { error: setError } = await window.supabaseClient
-                        .from('servers')
-                        .update({ is_server_of_the_month: true })
-                        .eq('id', selectedServerId);
-                    
-                    if (setError) throw setError;
-                    
-                    feedbackEl.textContent = '¡Servidor del Mes actualizado con éxito!';
-                    feedbackEl.className = 'feedback-message success';
-
-                    setTimeout(renderAdminContent, 2000);
-
-                } catch (error) {
-                    feedbackEl.textContent = `Error: ${error.message}`;
-                    feedbackEl.className = 'feedback-message error';
-                    button.disabled = false;
-                    button.innerHTML = 'Establecer como Ganador';
-                }
-            });
-
-        } catch (error) {
-            contentContainer.innerHTML = `<p class="error-text">Error cargando el gestor: ${error.message}</p>`;
-        }
-    }
-
-
-    // --- LÓGICA DE EVENTOS (para no repetir código) ---
-    function addServerActionListeners() {
-        contentContainer.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', async (e) => {
-            await window.supabaseClient.from('servers').update({ status: 'aprobado' }).eq('id', e.target.dataset.id);
-            renderAdminContent(); 
-        }));
-        contentContainer.querySelectorAll('.deny-btn').forEach(btn => btn.addEventListener('click', async (e) => {
+        if (denyBtn) {
             if (confirm('¿Seguro que quieres eliminar/rechazar este servidor? Esta acción no se puede deshacer.')) {
-                await window.supabaseClient.from('servers').delete().eq('id', e.target.dataset.id);
-                renderAdminContent(); 
+                await api.deleteServer(denyBtn.dataset.id);
+                renderAdminContent(contentContainer, currentTab); 
             }
-        }));
-        contentContainer.querySelectorAll('.featured-toggle').forEach(toggle => toggle.addEventListener('change', async (e) => {
-            await window.supabaseClient.from('servers').update({ is_featured: e.target.checked }).eq('id', e.target.dataset.id);
-        }));
-    }
+        }
+    });
+    
+    contentContainer.addEventListener('change', async (e) => {
+        const target = e.target;
 
-    function addUserActionListeners() {
-        contentContainer.querySelectorAll('.user-role-select').forEach(select => select.addEventListener('change', async (e) => {
-            await window.supabaseClient.from('profiles').update({ role: e.target.value }).eq('id', e.target.dataset.id);
-            alert(`Rol de usuario actualizado a ${e.target.value}.`);
-            renderAdminContent();
-        }));
-        contentContainer.querySelectorAll('.ban-toggle-btn').forEach(btn => btn.addEventListener('click', async (e) => {
-            const currentStatus = e.target.dataset.status;
-            const newStatus = currentStatus === 'banned' ? 'active' : 'banned';
-            const actionText = newStatus === 'banned' ? 'banear' : 'quitar el ban a';
-            if (confirm(`¿Seguro que quieres ${actionText} este usuario?`)) {
-                await window.supabaseClient.from('profiles').update({ status: newStatus }).eq('id', e.target.dataset.id);
-                renderAdminContent();
-            }
-        }));
-    }
+        // Toggle de servidor destacado
+        if (target.matches('.featured-toggle')) {
+            await api.updateServer(target.dataset.id, { is_featured: target.checked });
+        }
+
+        // Cambio de rol de usuario
+        if (target.matches('.user-role-select')) {
+             await api.updateUserProfile(target.dataset.id, { role: target.value });
+             alert(`Rol de usuario actualizado a ${target.value}.`);
+             renderAdminContent(contentContainer, currentTab);
+        }
+    });
 
     // Carga inicial
-    renderAdminContent();
+    renderAdminContent(contentContainer, currentTab);
+}
+
+// Función que decide qué contenido mostrar según la pestaña activa
+async function renderAdminContent(container, tabName) {
+    ui.renderLoading(container, "Cargando contenido del panel...");
+
+    try {
+        switch (tabName) {
+            case 'pending-servers':
+                const pendingServers = await api.getServersByStatus('pendiente');
+                ui.renderAdminPendingServers(container, pendingServers);
+                break;
+            case 'all-servers':
+                const allOtherServers = await api.getAllServersForAdmin();
+                ui.renderAdminAllServers(container, allOtherServers);
+                break;
+            case 'users':
+                const allUsers = await api.getAllUsersForAdmin();
+                ui.renderAdminUsers(container, allUsers);
+                break;
+            case 'server-of-the-month':
+                const { currentWinner, allServers } = await api.getDataForSomAdmin();
+                ui.renderAdminSoM(container, { currentWinner, allServers });
+
+                // Añadimos el listener específico para el form de SoM después de renderizarlo
+                const somForm = document.getElementById('som-selection-form');
+                if(somForm) somForm.addEventListener('submit', handleSoMSubmit);
+                break;
+        }
+    } catch(error) {
+        console.error("Error en panel de admin:", error);
+        ui.renderError(container, error.message);
+    }
+}
+
+async function handleSoMSubmit(e) {
+    e.preventDefault();
+    const selectedServerId = document.getElementById('som-select').value;
+    const feedbackEl = document.getElementById('som-feedback');
+    const button = e.target.querySelector('button');
+
+    if (!selectedServerId) {
+        ui.setFormFeedback(feedbackEl, 'Por favor, selecciona un servidor.', 'error');
+        return;
+    }
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Actualizando...';
+
+    try {
+        await api.setServerOfTheMonth(selectedServerId);
+        ui.setFormFeedback(feedbackEl, '¡Servidor del Mes actualizado con éxito!', 'success');
+        
+        // Recargar la pestaña actual después de 2 segundos
+        setTimeout(() => {
+            const container = document.getElementById('admin-content');
+            renderAdminContent(container, 'server-of-the-month');
+        }, 2000);
+
+    } catch (error) {
+        ui.setFormFeedback(feedbackEl, `Error: ${error.message}`, 'error');
+        button.disabled = false;
+        button.innerHTML = 'Establecer como Ganador';
+    }
 }

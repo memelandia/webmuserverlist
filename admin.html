@@ -54,7 +54,7 @@
         }
     </style>
 </head>
-<body>
+<body id="page-admin">
     <header class="main-header">
         <nav class="main-nav container">
             <a href="index.html" class="logo">Mu<span>Admin</span></a>
@@ -86,9 +86,13 @@
         </div>
     </main>
 
+   <!-- 1. Carga la librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-    <script src="js/auth-modal.js"></script>
-    <script src="js/admin.js"></script>
+
+    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
+    <script type="module" src="js/main-app.js"></script>
 </body>
 </html>

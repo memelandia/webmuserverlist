@@ -11,8 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-
+<body id="page-explorar">    
     <header class="main-header">
         <nav class="main-nav container">
             <a href="index.html" class="logo-container">
@@ -192,10 +191,14 @@
         </div>
     </footer>
 
+   <!-- 1. Carga la librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-    <script src="js/auth-modal.js"></script>
-    <script src="js/explorar.js"></script>
+
+    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
+    <script type="module" src="js/main-app.js"></script>
 
 </body>
 </html>
