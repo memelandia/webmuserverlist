@@ -54,44 +54,53 @@ function initRanking() {
 
         try {
             let query;
-            let countQuery;
-
+            
+            // Simplificar la lógica de consulta para evitar problemas
+            const columns = 'id, name, image_url, version, type, configuration, exp_rate, drop_rate, votes_count, average_rating, review_count';
+            
             if (currentRankingType === 'general') {
-                const columns = 'id, name, image_url, version, type, configuration, exp_rate, drop_rate, votes_count, average_rating, review_count';
                 query = window.supabaseClient
                     .from('servers')
                     .select(columns, { count: 'exact' })
                     .eq('status', 'aprobado')
-                    .order('votes_count', { ascending: false, nullsFirst: false })
+                    .order('votes_count', { ascending: false })
                     .range(from, to);
             } else {
-                // ¡CORRECCIÓN! Asegurarse de que la vista 'monthly_server_votes' tenga todas las columnas necesarias.
-                // Si 'configuration' u otra columna da error, debes regenerar la vista en Supabase.
-                const columns = 'id, name, image_url, version, type, configuration, exp_rate, drop_rate, monthly_votes_count, average_rating, review_count';
+                // Para el ranking mensual, usamos la misma tabla pero con diferente ordenamiento
+                // hasta que se implemente una solución específica para votos mensuales
                 query = window.supabaseClient
-                    .from('monthly_server_votes')
+                    .from('servers')
                     .select(columns, { count: 'exact' })
-                    .order('monthly_votes_count', { ascending: false, nullsFirst: false })
+                    .eq('status', 'aprobado')
+                    .order('votes_count', { ascending: false })
                     .range(from, to);
             }
             
-            const { data, count, error } = await query;
+            // Ejecutar la consulta y capturar explícitamente los resultados
+            const response = await query;
+            const { data, count, error } = response;
             
-            if (error) throw error;
+            // Verificar si hay error explícitamente
+            if (error) {
+                console.error("Error en la consulta:", error);
+                throw new Error(`Error al cargar el ranking: ${error.message}`);
+            }
             
+            // Verificar si hay datos
             if (!data || data.length === 0) {
                 rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 2rem;">No hay servidores en este ranking.</td></tr>`;
                 paginationContainer.innerHTML = '';
                 return;
             }
 
+            // Renderizar paginación y datos
             renderPagination(count, page, pageSize);
 
             rankingContainer.innerHTML = data.map((server, index) => {
                 const position = (page - 1) * pageSize + index + 1;
                 const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
                 const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
-                const votes = currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count;
+                const votes = server.votes_count || 0;
 
                 const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
 
@@ -113,7 +122,7 @@ function initRanking() {
                         <td>${server.configuration || 'N/A'}</td>
                         <td>${expRate}</td>
                         <td>${dropRate}</td>
-                        <td class="votes-count">${votes || 0}</td>
+                        <td class="votes-count">${votes}</td>
                         <td><a href="servidor.html?id=${server.id}" class="btn btn-primary btn-sm">Ver</a></td>
                     </tr>
                 `;

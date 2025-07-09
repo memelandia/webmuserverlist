@@ -20,7 +20,7 @@ async function initProfile() {
         `;
         return;
     }
-
+    
     try {
         profileContent.innerHTML = `<div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando perfil...</div>`;
 
@@ -53,9 +53,14 @@ async function initProfile() {
 function renderProfile(profile, servers, reviews, session) {
     const profileContent = document.getElementById('profile-content');
     
-    const serversHtml = servers.length > 0 ? servers.map(server => `
+    // Corregido: Mantener la estructura HTML original pero arreglar las imágenes
+    const serversHtml = servers.length > 0 ? servers.map(server => {
+        // Usar getOptimizedImageUrl para las imágenes
+        const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
+        
+        return `
         <div class="detail-card">
-            <img src="${server.image_url || 'https://via.placeholder.com/45'}" alt="Logo" class="server-logo-table">
+            <img src="${optimizedLogo}" alt="Logo" class="server-logo-table">
             <h4><a href="servidor.html?id=${server.id}" class="server-name">${server.name}</a></h4>
             <span class="status-tag status-${server.status || 'pendiente'}">${server.status || 'pendiente'}</span>
             <div class="actions">
@@ -63,7 +68,7 @@ function renderProfile(profile, servers, reviews, session) {
                 <a href="editar-servidor.html?id=${server.id}" class="btn btn-sm btn-primary">Editar</a>
             </div>
         </div>
-    `).join('') : '<p>Aún no has añadido ningún servidor.</p>';
+    `}).join('') : '<p>Aún no has añadido ningún servidor.</p>';
 
     const reviewsHtml = reviews.length > 0 ? reviews.map(review => {
         const starsHtml = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
@@ -84,6 +89,7 @@ function renderProfile(profile, servers, reviews, session) {
         `;
     }).join('') : '<p>Aún no has dejado ninguna reseña.</p>';
 
+    // Mantener la estructura HTML original
     profileContent.innerHTML = `
         <div class="page-header">
             <h1><i class="fa-solid fa-user-circle"></i> Mi Perfil</h1>
@@ -117,29 +123,4 @@ function renderProfile(profile, servers, reviews, session) {
             </div>
         </div>
     `;
-}
-
-// Función para renderizar la lista de servidores del usuario
-function renderUserServers(servers) {
-    const serversContainer = document.getElementById('user-servers');
-    if (!serversContainer) return;
-    
-    const serversHtml = servers.length > 0 ? servers.map(server => {
-        // Usar la función de optimización de imágenes
-        const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
-        
-        return `
-        <div class="detail-card">
-            <img src="${optimizedLogo}" alt="Logo" class="server-logo-table" width="45" height="45">
-            <h4><a href="servidor.html?id=${server.id}" class="server-name">${server.name}</a></h4>
-            <span class="status-tag status-${server.status || 'pendiente'}">${server.status || 'pendiente'}</span>
-            <div class="actions">
-                <a href="servidor.html?id=${server.id}" class="btn btn-sm btn-secondary">Ver</a>
-                <a href="editar-servidor.html?id=${server.id}" class="btn btn-sm btn-primary">Editar</a>
-            </div>
-        </div>
-        `;
-    }).join('') : '<p>Aún no has añadido ningún servidor.</p>';
-    
-    serversContainer.innerHTML = serversHtml;
 }
