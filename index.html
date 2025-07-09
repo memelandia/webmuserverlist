@@ -19,19 +19,28 @@
 <body>
 
     <header class="main-header">
+        <!-- NAVEGACIÓN CORREGIDA -->
         <nav class="main-nav container">
+            <!-- 1. Contenedor del Logo (a la izquierda) -->
             <a href="index.html" class="logo-container">
-            <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
-            <span class="logo-text">MuServer<span>List</span></span>
+                <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                <span class="logo-text">MuServer<span>List</span></span>
+            </a>
+
+            <!-- 2. Menú de Navegación (centrado) -->
             <ul class="nav-menu">
                 <li><a href="index.html" class="active">Inicio</a></li>
                 <li><a href="explorar.html">Explorar</a></li>
                 <li><a href="ranking.html">Ranking</a></li>
                 <li><a href="calendario.html">Calendario</a></li>
             </ul>
+
+            <!-- 3. Acciones de Usuario (a la derecha) -->
             <div id="auth-section" class="nav-actions">
                 <!-- Contenido dinámico desde supabase-init.js -->
             </div>
+            
+            <!-- 4. Botón Móvil -->
             <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
         </nav>
     </header>
@@ -91,9 +100,9 @@
         <section class="home-layout-section container">
             <div class="ranking-widget widget">
                 <h3 class="widget-title"><i class="fa-solid fa-trophy"></i> Top 5 Ranking</h3>
-                <ol class="ranking-list" id="ranking-widget-list">
-                    <li class="loading-text">Cargando ranking...</li>
-                </ol>
+                <div class="ranking-list" id="ranking-widget-list"> <!-- Corregido: Usar DIV en vez de OL -->
+                    <div class="loading-text">Cargando ranking...</div>
+                </div>
                 <a href="ranking.html" class="view-all-link">Ver Ranking Completo <i class="fa-solid fa-arrow-right"></i></a>
             </div>
             <div class="calendar-widget widget">
@@ -154,10 +163,10 @@
 <footer class="main-footer">
     <div class="footer-content container">
         <div class="footer-column">
+            <!-- FOOTER CORREGIDO -->
             <a href="index.html" class="logo-container">
                 <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
                 <span class="logo-text">MuServer<span>List</span></span>
-            </a>
             </a>
             <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
         </div>
@@ -188,7 +197,7 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; 2024 MuServerList. Todos los derechos reservados.</p>
+        <p>© 2024 MuServerList. Todos los derechos reservados.</p>
     </div>
 </footer>
 

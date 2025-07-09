@@ -1,23 +1,6 @@
 /*
 --- MuServerList Stylesheet ---
----   VERSIÓN DEFINITIVA Y COMPLETA v12.0   ---
-   Análisis y Reconstrucción por IA de Google
-
-   Estructura:
-   1.  Variables Globales y Reseteo Base
-   2.  Componentes y Clases Globales
-   3.  Estilos del Header y Navegación
-   4.  Estilos del Footer (MEJORADO)
-   5.  Página de Inicio (CON MEJORAS VISUALES)
-   6.  Página Ficha de Servidor (servidor.html)
-   7.  Tarjetas de Servidor (CON MEJORAS VISUALES Y CENTRADO)
-   8.  Tablas y Paginación (ranking.html)
-   9.  Formularios (agregar.html, editar-servidor.html, etc.)
-   10. Perfil de Usuario y Panel de Admin (profile.html, admin.html)
-   11. Modal de Autenticación
-   12. Clases de Utilidad (Feedback, Estados, etc.)
-   13. Animaciones y Transiciones
-   14. Media Queries para Responsividad Total
+---   VERSIÓN 13.0 - NAVEGACIÓN CORREGIDA   ---
 */
 
 /* --- 1. Variables Globales y Reseteo Base --- */
@@ -40,7 +23,7 @@
 
     --font-body: 'Poppins', sans-serif;
     --font-headings: 'Rajdhani', sans-serif;
-    --border-radius: 8px; /* Un poco más redondeado */
+    --border-radius: 8px;
     --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
     --transition-speed: 0.3s;
 }
@@ -181,10 +164,7 @@ a:hover {
     box-shadow: none; 
 }
 
-/* --- 3. Estilos del Header y Navegación --- */
-/* css/style.css - REEMPLAZA TODA LA SECCIÓN 3 */
-
-/* --- 3. Estilos del Header y Navegación --- */
+/* --- 3. Estilos del Header y Navegación (VERSIÓN CORREGIDA) --- */
 .main-header {
     background-color: rgba(15, 15, 15, 0.9);
     border-bottom: 1px solid var(--border-color);
@@ -197,28 +177,25 @@ a:hover {
 
 .main-nav { 
     display: grid;
-    grid-template-columns: 1fr auto 1fr; /* Tres columnas: izquierda, centro, derecha */
+    /* Divide la nav en 3 columnas: izquierda, centro (automático), derecha */
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     width: 100%;
 }
 
-/* Contenedor del logo y el texto - alineado a la izquierda */
+/* Columna 1: Logo a la izquierda */
 .logo-container {
+    grid-column: 1;
+    justify-self: start; /* Alinea al inicio de la columna */
     display: flex;
     align-items: center;
     gap: 0.75rem;
     text-decoration: none;
-    grid-column: 1;
-    justify-self: start;
 }
-
-/* Estilos para la imagen del logo */
 .logo-img {
     height: 35px;
     display: block;
 }
-
-/* Estilos para el texto del logo */
 .logo-text { 
     font-family: var(--font-headings); 
     font-size: 1.8rem;
@@ -226,23 +203,21 @@ a:hover {
     color: var(--text-headings);
     white-space: nowrap;
 }
-
 .logo-text span { 
     color: var(--primary-color); 
 }
 
-/* Menú de navegación - centrado exactamente */
+/* Columna 2: Menú centrado */
 .nav-menu { 
+    grid-column: 2;
+    justify-self: center; /* Centra el menú en su columna */
     list-style: none; 
     display: flex; 
     align-items: center; 
     gap: 2rem;
     padding: 0;
     margin: 0;
-    grid-column: 2;
-    justify-self: center; /* Centra el menú en su columna */
 }
-
 .nav-menu a { 
     color: var(--text-secondary); 
     font-weight: 600; 
@@ -250,64 +225,32 @@ a:hover {
     border-bottom: 2px solid transparent; 
     transition: all var(--transition-speed) ease; 
 }
-
 .nav-menu a:hover, .nav-menu a.active { 
     color: var(--text-headings); 
     border-bottom-color: var(--primary-color); 
 }
 
-/* Contenedor de botones de acción - alineado a la derecha */
+/* Columna 3: Acciones a la derecha */
 .nav-actions { 
+    grid-column: 3;
+    justify-self: end; /* Alinea al final de la columna */
     display: flex; 
     align-items: center; 
     gap: 1rem;
-    grid-column: 3;
-    justify-self: end; /* Alinea a la derecha */
 }
 
-/* Botón de menú móvil */
-.mobile-menu-btn { 
-    display: none; 
-    background: none; 
-    border: none; 
-    color: white; 
-    font-size: 1.5rem; 
-    cursor: pointer; 
-    z-index: 1001; 
-}
-
-/* Menú de usuario */
+/* Menú de usuario (sin cambios) */
 .user-menu-container { position: relative; }
 .dropdown-menu { 
-    position: absolute; 
-    top: 120%; 
-    right: 0; 
-    background-color: var(--bg-light); 
-    border: 1px solid var(--border-color); 
-    border-radius: var(--border-radius); 
-    width: 220px; 
-    z-index: 1010; 
-    padding: 0.5rem 0; 
-    opacity: 0; 
-    visibility: hidden; 
-    transform: translateY(10px); 
-    transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+    position: absolute; top: 120%; right: 0; background-color: var(--bg-light); border: 1px solid var(--border-color); 
+    border-radius: var(--border-radius); width: 220px; z-index: 1010; padding: 0.5rem 0; opacity: 0; visibility: hidden; 
+    transform: translateY(10px); transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
 }
 .dropdown-menu.active { opacity: 1; visibility: visible; transform: translateY(0); }
 .dropdown-item { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    padding: 0.75rem 1.25rem; 
-    color: var(--text-secondary); 
-    font-size: 0.95rem; 
-    font-weight: 500; 
-    background: none; 
-    border: none; 
-    width: 100%; 
-    text-align: left; 
-    cursor: pointer; 
-    transition: background-color var(--transition-speed), color var(--transition-speed); 
+    display: flex; align-items: center; gap: 12px; padding: 0.75rem 1.25rem; color: var(--text-secondary); 
+    font-size: 0.95rem; font-weight: 500; background: none; border: none; width: 100%; text-align: left; 
+    cursor: pointer; transition: background-color var(--transition-speed), color var(--transition-speed); 
 }
 .dropdown-item:hover { background-color: var(--bg-contrast); color: var(--text-primary); }
 .dropdown-item i { width: 16px; text-align: center; transition: color var(--transition-speed); }
@@ -315,6 +258,14 @@ a:hover {
 .dropdown-divider { height: 1px; background-color: var(--border-color); margin: 0.5rem 0; }
 .logout-btn:hover, .logout-btn:hover i { color: var(--primary-color) !important; }
 #user-menu-button i.fa-chevron-down { transition: transform var(--transition-speed) ease-in-out; margin-left: 8px; }
+
+/* Botón de menú móvil (oculto en desktop) */
+.mobile-menu-btn { 
+    display: none; 
+    grid-column: 3; /* Se coloca en la misma columna que las acciones */
+    justify-self: end;
+    background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; z-index: 1001;
+}
 
 /* --- 4. Estilos del Footer (NUEVO Y MEJORADO) --- */
 .main-footer { 
@@ -332,10 +283,8 @@ a:hover {
     padding-bottom: 4rem;
 }
 
-.footer-column .logo {
-    font-size: 1.8rem;
+.footer-column .logo-container { /* Aplicar estilos al contenedor del logo también en el footer */
     margin-bottom: 1rem;
-    display: inline-block;
 }
 
 .footer-description {
@@ -356,6 +305,7 @@ a:hover {
 
 .footer-links {
     list-style: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -420,12 +370,12 @@ a:hover {
 
 .home-layout-section { display: grid; grid-template-columns: 2fr 1fr; gap: 2.5rem; padding: 3rem 0; }
 
-/* MEJORA VISUAL: WIDGET DE RANKING PROFESIONAL */
 .ranking-list { 
     list-style: none; 
     display: flex; 
     flex-direction: column; 
     gap: 0.75rem; 
+    padding: 0;
 }
 .ranking-item-link { 
     display: block; 
@@ -511,12 +461,6 @@ a:hover {
     align-items: center; 
     gap: 5px; 
 }
-.ranking-item-stats span i { 
-    color: var(--primary-color); 
-    font-size: 1.1em; 
-    width: 16px; 
-    text-align: center; 
-}
 .calendar-list { 
     display: flex; 
     flex-direction: column; 
@@ -540,7 +484,6 @@ a:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
-
 .opening-date-box {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
@@ -595,62 +538,42 @@ a:hover {
 .opening-item-widget:hover .arrow-icon {
     transform: translateX(5px);
 }   
-
-/* MEJORA VISUAL: SECCIÓN DE SERVIDORES RECIENTES */
 .view-all-link { display: inline-block; margin-top: 1.5rem; font-weight: 600; font-size: 0.9rem; }
 .cta-section-v2 { 
-    background-color: var(--bg-dark); /* Color base por si el degradado no carga */
+    background-color: var(--bg-dark);
     background-image: 
-        radial-gradient(ellipse at center, rgba(255, 51, 51, 0.1) 0%, transparent 70%), /* Un resplandor rojo en el centro */
-        linear-gradient(180deg, var(--bg-light) 0%, var(--bg-dark) 100%); /* Un degradado sutil de arriba a abajo */
-    
+        radial-gradient(ellipse at center, rgba(255, 51, 51, 0.1) 0%, transparent 70%),
+        linear-gradient(180deg, var(--bg-light) 0%, var(--bg-dark) 100%);
     border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color); /* Añadimos un borde inferior para enmarcarlo mejor */
+    border-bottom: 1px solid var(--border-color);
     padding: 5rem 0; 
     margin-top: 4rem; 
     text-align: center;
 }
 .cta-content { 
-    display: flex; 
-    flex-direction: column;
-    align-items: center; 
-    gap: 1.5rem; 
+    display: flex; flex-direction: column; align-items: center; gap: 1.5rem; 
 }
 .cta-icon { 
-    font-size: 2.5rem; 
-    color: var(--primary-color); 
-    background-color: rgba(255, 51, 51, 0.1); 
-    width: 80px; 
-    height: 80px; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border: 2px solid rgba(255, 51, 51, 0.3); 
-    animation: pulse 2s infinite; /* Animación para atraer la atención */
+    font-size: 2.5rem; color: var(--primary-color); background-color: rgba(255, 51, 51, 0.1); 
+    width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; 
+    justify-content: center; border: 2px solid rgba(255, 51, 51, 0.3); animation: pulse 2s infinite;
 }
 .cta-text h2 { 
-    font-size: 2.5rem; 
-    margin: 0 0 0.75rem 0; 
-    color: var(--text-headings); 
-    font-family: var(--font-headings); 
+    font-size: 2.5rem; margin: 0 0 0.75rem 0; color: var(--text-headings); font-family: var(--font-headings); 
 }
 .cta-text p {
-    color: var(--text-secondary);
-    max-width: 600px;
-    margin: 0 auto;
-    font-size: 1.1rem;
+    color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-size: 1.1rem;
 }
 .cta-action {
     margin-top: 1rem;
 }
-/* Animación de pulso para el icono CTA */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.4); }
     70% { box-shadow: 0 0 0 20px rgba(255, 51, 51, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); }
 }
 
+/* Resto del CSS se mantiene igual... */
 /* --- 6. Página Ficha de Servidor (servidor.html) --- */
 .server-header { background-size: cover; background-position: center; position: relative; padding: 4rem 0; }
 .server-header-content { position: relative; z-index: 2; display: flex; align-items: flex-end; gap: 2rem; }
@@ -675,7 +598,6 @@ a:hover {
 .event-tag { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 30px; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
 .event-tag:hover { background-color: var(--primary-color); border-color: var(--primary-color); color: var(--text-headings); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(255, 51, 51, 0.2); }
 .event-tag i { font-size: 1.1em; }
-
 #review-form .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 5px; }
 #review-form .star-rating input[type="radio"] { display: none; }
 #review-form .star-rating label { font-size: 2.5rem; color: var(--border-color); cursor: pointer; transition: color var(--transition-speed), transform var(--transition-speed); }
@@ -690,7 +612,7 @@ a:hover {
 .review-user-info .review-date { display: block; font-size: 0.85rem; color: var(--text-secondary); }
 .review-stars { font-size: 1.2rem; letter-spacing: 2px; }
 .review-comment { color: var(--text-primary); line-height: 1.7; white-space: pre-wrap; font-style: italic; padding-top: 1rem; margin-top: 1rem; border-top: 1px dashed var(--border-color); }
-
+/* ... y el resto del archivo style.css sigue igual */
 /* --- 7. Tarjetas de Servidor (CON MEJORAS VISUALES Y CENTRADO) --- */
 .server-grid, .openings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; }
 
@@ -784,8 +706,6 @@ a:hover {
 .card-tag-icon i, .card-tag-icon svg { color: var(--text-secondary); width: 16px; text-align: center; }
 .card-description { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem; flex-grow: 1; }
 .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: auto; padding: 0 1.5rem 1.5rem; }
-
-/* ¡NUEVO! TARJETA DEL CALENDARIO CORREGIDA */
 .calendar-card {
     background: var(--bg-light);
     border: 1px solid var(--border-color);
@@ -894,8 +814,40 @@ a:hover {
     width: 100%;
     margin-top: auto;
 }
-
-
+.card-countdown {
+    text-align: center;
+    background: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+.card-countdown .countdown-main {
+    font-family: var(--font-headings);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+.card-countdown .countdown-main .days {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+}
+.card-countdown .countdown-secondary {
+    font-family: var(--font-headings);
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+    opacity: 0.8;
+}
+.card-countdown .countdown-live {
+    font-family: var(--font-headings);
+    font-size: 1.5rem;
+    color: var(--success-color);
+    animation: fadeIn 0.5s;
+    text-shadow: 0 0 10px rgba(47, 133, 90, 0.7);
+}
 /* --- 8. Tablas y Paginación (ranking.html) --- */
 .table-container { background-color: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: auto; }
 .servers-table { width: 100%; border-collapse: collapse; min-width: 800px; }
@@ -913,7 +865,6 @@ a:hover {
 .votes-count { font-weight: 700; color: var(--text-headings); font-size: 1.1rem; }
 .pagination-container { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem; }
 .pagination-info { font-weight: 600; color: var(--text-secondary); }
-
 /* --- 9. Formularios (agregar.html, editar-servidor.html, etc.) --- */
 .form-container { max-width: 800px; margin: 0 auto; background-color: var(--bg-light); padding: 2.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
 .form-container h4 { font-family: var(--font-headings); letter-spacing: 0.5px; font-size: 1.2rem; color: var(--primary-color); margin: 2rem 0 1.5rem 0; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
@@ -940,7 +891,6 @@ a:hover {
 .range-slider input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; background: var(--primary-color); border-radius: 50%; cursor: pointer; border: 3px solid var(--bg-light); }
 .range-slider span { font-family: var(--font-headings); font-weight: 700; color: var(--primary-color); background: var(--bg-dark); padding: 6px 12px; border-radius: 6px; min-width: 100px; text-align: center; }
 .filters-actions { display: flex; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: 0.5rem; }
-
 /* --- 10. Perfil de Usuario y Panel de Admin (profile.html, admin.html) --- */
 .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
 .profile-sidebar h2 { font-family: var(--font-headings); font-size: 2rem; margin-bottom: 0.5rem;}
@@ -959,7 +909,6 @@ a:hover {
 .user-review-card { background: var(--bg-dark); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); }
 .user-review-card .review-header { margin-bottom: 0.5rem; }
 .user-review-card .review-comment { font-style: italic; color: var(--text-secondary); padding-top: 0.75rem; border-top: 1px solid var(--border-color); margin-top: 0.75rem; }
-
 /* --- 11. Modal de Autenticación --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity var(--transition-speed) ease; }
 .modal-overlay.active { display: flex; opacity: 1; }
@@ -970,7 +919,6 @@ a:hover {
 .close-modal:hover { color: var(--primary-color); transform: rotate(90deg); }
 .auth-switch { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); }
 .auth-switch a { color: var(--primary-color); font-weight: 600; }
-
 /* --- 12. Clases de Utilidad (Feedback, Estados, etc.) --- */
 .hidden { display: none !important; }
 .loading-text, .error-text { text-align: center; padding: 3rem; color: var(--text-secondary); font-size: 1.1rem; }
@@ -991,30 +939,56 @@ a:hover {
     transform: translateX(100%);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
-
 /* --- 13. Animaciones y Transiciones --- */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { 
     from { opacity: 0; transform: scale(0.95); } 
     to { opacity: 1; transform: scale(1); }
 }
-
 /* --- 14. Media Queries para Responsividad Total --- */
 @media (max-width: 992px) {
+    .main-nav {
+        grid-template-columns: auto 1fr; /* Logo a la izquierda, resto a la derecha */
+    }
+    .nav-menu {
+        display: none; /* Ocultar menú principal en tablet */
+    }
+    .nav-actions {
+        display: none; /* Ocultar acciones en tablet para dar espacio al menú hamburguesa */
+    }
+    .mobile-menu-btn {
+        display: block; /* Mostrar botón hamburguesa */
+        grid-column: 2; /* Colocarlo en la segunda columna */
+        justify-self: end;
+    }
     .home-layout-section, .server-body-grid, .profile-grid { grid-template-columns: 1fr; }
     .filters-row { grid-template-columns: 1fr 1fr; }
     .form-group.filter-large, .form-group.filter-medium { grid-column: 1 / -1; }
     .filters-actions { grid-column: span 2; justify-content: flex-start; }
-    .nav-actions { margin-left: auto; }
 }
-
 @media (max-width: 768px) {
+    .main-nav {
+        display: flex; /* Volver a flexbox para un control más simple en móvil */
+        justify-content: space-between;
+    }
     .page-header h1, .hero-content h1, .server-header-info h1 { font-size: 2.5rem; }
-    .form-grid, .footer-content, .footer-links, .filters-row, .cta-content { grid-template-columns: 1fr; }
+    .form-grid, .footer-content, .filters-row, .cta-content { grid-template-columns: 1fr; }
     .cta-content { text-align: center; flex-direction: column; }
-    .nav-menu { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: var(--bg-light); flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 6rem 2rem 2rem 2rem; gap: 1rem; transition: left 0.3s ease-in-out; border-right: 1px solid var(--border-color);}
-    .nav-menu.active { left: 0; }
-    .mobile-menu-btn { display: block; }
+    
+    .nav-menu { 
+        position: fixed; top: 0; left: -100%; width: 280px; height: 100%; 
+        background: var(--bg-light); flex-direction: column; align-items: flex-start; 
+        justify-content: flex-start; padding: 6rem 2rem 2rem 2rem; gap: 1rem; 
+        transition: left 0.3s ease-in-out; border-right: 1px solid var(--border-color);
+        /* Aseguramos que el menú se muestre como flex de nuevo cuando esté activo */
+        display: flex;
+    }
+    .nav-menu.active { 
+        left: 0; 
+    }
+    .mobile-menu-btn { 
+        display: block; 
+    }
     .server-header-content { flex-direction: column; align-items: center; text-align: center; }
     .server-logo-detail { margin-top: -80px; margin-bottom: 1rem; }
     .server-header-actions { margin: 1.5rem 0 0 0; align-self: center; }
@@ -1053,9 +1027,9 @@ a:hover {
 .notification-badge.hidden { display: none; }
 #notification-panel {
     position: absolute;
-    top: calc(100% + 20px); /* Más espacio */
+    top: calc(100% + 20px);
     right: 0;
-    background-color: var(--bg-light); /* Coincide con el dropdown */
+    background-color: var(--bg-light);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     width: 350px;
@@ -1080,13 +1054,13 @@ a:hover {
 .notification-item { display: block; padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; text-decoration: none; color: var(--text-primary); }
 .notification-item:last-child { border-bottom: none; }
 .notification-item:hover { background-color: var(--bg-contrast); }
-.notification-item.unread { background-color: rgba(255, 51, 51, 0.1); } /* Usa tu color primario */
+.notification-item.unread { background-color: rgba(255, 51, 51, 0.1); }
 .notification-item.unread:hover { background-color: rgba(255, 51, 51, 0.2); }
 .notification-item p { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
 .notification-item .notification-time { font-size: 0.75rem; color: var(--text-secondary); }
 .no-notifications { text-align: center; padding: 2rem; color: var(--text-secondary); }
 
-/* ¡NUEVO! ESTILOS PARA "SERVIDOR DEL MES" */
+/* ESTILOS PARA "SERVIDOR DEL MES" */
 .server-of-the-month-section {
     padding: 4rem 0;
     background: var(--bg-dark); 
@@ -1138,16 +1112,13 @@ a:hover {
 .som-badge i { margin-right: 0.5rem; vertical-align: middle; }
 .som-content h2 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0 0 0.5rem 0; font-family: var(--font-headings); text-shadow: 2px 2px 8px rgba(0,0,0,0.5); }
 .som-content .btn { font-size: 1.1rem; padding: 0.8rem 2rem; }
-/* css/style.css - AÑADIR ESTO EN LA SECCIÓN DEL SERVIDOR DEL MES */
-
 .som-stats {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1rem 1.5rem; /* Espacio vertical y horizontal */
-    margin: 1.5rem 0 2rem 0; /* Margen superior e inferior */
+    gap: 1rem 1.5rem;
+    margin: 1.5rem 0 2rem 0;
 }
-
 .som-stat-item {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1163,18 +1134,14 @@ a:hover {
     backdrop-filter: blur(3px);
     transition: all 0.2s ease-in-out;
 }
-
 .som-stat-item:hover {
     transform: translateY(-3px);
     background: rgba(0, 0, 0, 0.6);
 }
-
 .som-stat-item i {
     color: var(--primary-color);
     font-size: 1.2rem;
 }
-
-/* ¡NUEVO! ESTILOS PARA LOS BOTONES DE FILTRO DEL RANKING */
 .ranking-filter-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -1185,104 +1152,4 @@ a:hover {
 .goverlay {
     background: rgba(15, 15, 15, 0.95);
     backdrop-filter: blur(5px);
-}
-
-/* css/style.css - AÑADIR AL FINAL */
-
-/* css/style.css - REEMPLAZAR ESTA SECCIÓN */
-
-/* =================================================================
-   ESTILOS PARA EL CONTADOR DEL CALENDARIO CORREGIDO Y MEJORADO
-   ================================================================= */
-.calendar-card .btn {
-    margin: 1.5rem 0 0 auto; /* Empuja el botón al final del contenido */
-    width: 100%;
-}
-
-.card-countdown {
-    text-align: center;
-    background: var(--bg-dark);
-    border-top: 1px solid var(--border-color);
-    padding: 1rem;
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-}
-
-.card-countdown .countdown-main {
-    font-family: var(--font-headings);
-    line-height: 1;
-    margin-bottom: 0.25rem;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    font-weight: 700;
-}
-
-.card-countdown .countdown-main .days {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-}
-
-.card-countdown .countdown-secondary {
-    font-family: var(--font-headings);
-    font-size: 1.2rem;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-    opacity: 0.8;
-}
-
-.card-countdown .countdown-live {
-    font-family: var(--font-headings);
-    font-size: 1.5rem;
-    color: var(--success-color);
-    animation: fadeIn 0.5s;
-    text-shadow: 0 0 10px rgba(47, 133, 90, 0.7);
-}
-
-/* css/style.css - AÑADIR EN LA SECCIÓN DEL HEADER */
-
-.logo { 
-    font-family: var(--font-headings); 
-    font-size: 2rem; 
-    font-weight: 700; 
-    color: var(--text-headings);
-    /* ¡NUEVO! Convertir a flex para alinear imagen y texto */
-    display: flex;
-    align-items: center;
-    gap: 0.75rem; /* Espacio entre el logo y el texto */
-}
-
-/* ¡NUEVO! Estilos para la imagen del logo */
-.logo-img {
-    height: 40px; /* Ajusta este valor según tu preferencia */
-}
-/* Media query para dispositivos móviles - ACTUALIZADO */
-@media (max-width: 768px) {
-    .main-nav {
-        display: flex; /* Volvemos a flexbox en móvil */
-        justify-content: space-between;
-    }
-    
-    .nav-menu { 
-        position: fixed; 
-        top: 0; 
-        left: -100%; 
-        width: 280px; 
-        height: 100%; 
-        background: var(--bg-light); 
-        flex-direction: column; 
-        align-items: flex-start; 
-        justify-content: flex-start; 
-        padding: 6rem 2rem 2rem 2rem; 
-        gap: 1rem; 
-        transition: left 0.3s ease-in-out; 
-        border-right: 1px solid var(--border-color);
-    }
-    
-    .nav-menu.active { 
-        left: 0; 
-    }
-    
-    .mobile-menu-btn { 
-        display: block; 
-    }
 }
