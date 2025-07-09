@@ -162,15 +162,18 @@ function initAuthModal() {
             setFeedback(registerFeedback, '¡Cuenta creada! Revisa tu correo para confirmar tu cuenta.', 'success');
             registerForm.reset();
             
-            // Después de un breve retraso, mostrar la vista de login
+            // Mantener el botón deshabilitado después del registro exitoso
+            // y después de un breve retraso, mostrar la vista de login
             setTimeout(() => {
                 showLogin();
+                // Restaurar el botón solo después de cambiar a la vista de login
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
             }, 3000);
             
         } catch (error) {
             console.error('Error durante el registro:', error);
             setFeedback(registerFeedback, 'Error inesperado. Por favor, inténtalo de nuevo.', 'error');
-        } finally {
             submitButton.disabled = false;
             submitButton.textContent = originalButtonText;
         }
@@ -179,7 +182,7 @@ function initAuthModal() {
     function setFeedback(element, message, type) {
         if (!element) return;
         element.textContent = message;
-        element.className = `feedback-message ${type}`;
+        element.className = `feedback-message ${type} active`;
         element.style.display = 'block'; // Asegurar que sea visible
     }
 
@@ -187,10 +190,12 @@ function initAuthModal() {
         if (loginFeedback) {
             loginFeedback.textContent = '';
             loginFeedback.className = 'feedback-message';
+            loginFeedback.style.display = 'none';
         }
         if (registerFeedback) {
             registerFeedback.textContent = '';
             registerFeedback.className = 'feedback-message';
+            registerFeedback.style.display = 'none';
         }
     }
 
