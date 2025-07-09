@@ -85,12 +85,34 @@ function initAuthModal() {
         submitButton.disabled = true;
         submitButton.textContent = 'Procesando...';
         
-        const email = document.getElementById('login-email').value;
+        const identifier = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         
         setFeedback(loginFeedback, 'Iniciando sesión...', 'info');
 
         try {
+            let email = identifier;
+            
+            // Si el identificador no contiene "@", buscar el email asociado al username
+            if (!identifier.includes('@')) {
+                setFeedback(loginFeedback, 'Verificando nombre de usuario...', 'info');
+                
+                const { data, error } = await window.supabaseClient.functions.invoke('get-email-from-username', {
+                    body: { username: identifier }
+                });
+                
+                if (error || !data.email) {
+                    const errorMsg = error?.message || 'Nombre de usuario no encontrado';
+                    setFeedback(loginFeedback, errorMsg, 'error');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                    return;
+                }
+                
+                email = data.email;
+            }
+
+            // Iniciar sesión con el email (original o encontrado)
             const { data, error } = await window.supabaseClient.auth.signInWithPassword({ 
                 email, 
                 password 
