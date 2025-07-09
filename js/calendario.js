@@ -53,21 +53,26 @@ async function initCalendario() {
         calendarContainer.innerHTML = data.map(server => {
             const shortDescription = server.description ? server.description.substring(0, 80) + '...' : 'Sin descripción.';
             
-            // ¡OPTIMIZACIÓN!
+            // Optimización de imágenes
             const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 400, height: 120 }, 'https://via.placeholder.com/400x120.png?text=Banner');
             const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 160, height: 160 }, 'https://via.placeholder.com/80');
+
+            // Formateo correcto de la fecha
+            const openingDate = new Date(server.opening_date);
+            const day = openingDate.getDate();
+            const month = openingDate.toLocaleString('es-ES', {month: 'short'});
 
             return `
             <div class="calendar-card">
                 <div class="calendar-card-banner" style="background-image: url('${optimizedBanner}');">
                     <div class="calendar-date">
-                        <span class="calendar-day">${new Date(server.opening_date).getDate()}</span>
-                        <span class="calendar-month">${new Date(server.opening_date).toLocaleString('es-ES', {month: 'short'})}</span>
+                        <span class="calendar-day">${day}</span>
+                        <span class="calendar-month">${month}</span>
                     </div>
                 </div>
                 <div class="calendar-card-content">
                     <div class="calendar-card-header">
-                        <img src="${optimizedLogo}" alt="${server.name}" class="calendar-card-logo">
+                        <img src="${optimizedLogo}" alt="${server.name}" class="calendar-card-logo" width="80" height="80">
                         <h3><a href="servidor.html?id=${server.id}">${server.name}</a></h3>
                     </div>
                     <p class="calendar-card-description">${shortDescription}</p>
@@ -82,6 +87,7 @@ async function initCalendario() {
             </div>`;
         }).join('');
 
+        // Iniciar contadores y verificar estado
         startCountdownTimers();
         data.forEach(server => checkServerStatus(server.id, server.website_url));
 

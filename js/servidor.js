@@ -74,7 +74,7 @@ function renderServerPage(server) {
     document.title = `${server.name} - MuServerList`;
     const mainContainer = document.getElementById('server-detail-content');
 
-    // ¡CAMBIO! Modificamos el HTML de los eventos para incluir los nuevos estilos e íconos.
+    // Eventos HTML (sin cambios)
     const eventsHtml = (server.events && server.events.length > 0)
         ? server.events.map(event => `
             <span class="event-tag">
@@ -83,23 +83,10 @@ function renderServerPage(server) {
         `).join('')
         : '<p>No hay eventos principales especificados.</p>';
 
-    // ¡CAMBIO! Modificamos la galería para que funcione con GLightbox.
-    // Añadimos la clase '.gallery-item' a cada enlace `<a>` para que el lightbox los detecte.
+    // Galería (sin cambios)
     const galleryUrls = Array.isArray(server.gallery_urls) ? server.gallery_urls : [];
-
-    const galleryHtml = (galleryUrls.length > 0)
-        ? galleryUrls.map(path => {
-            const thumbnailUrl = getOptimizedImageUrl('server-gallery', path, { width: 400, height: 300, resize: 'cover' }, 'https://via.placeholder.com/400x300');
-            const fullImageUrl = getOptimizedImageUrl('server-gallery', path, { quality: 90 }, thumbnailUrl);
-            
-            return `
-            <a href="${fullImageUrl}" class="gallery-item" data-glightbox="title: ${server.name};">
-                <img src="${thumbnailUrl}" alt="Galería de ${server.name}" loading="lazy">
-            </a>`;
-        }).join('')
-        : '<p>No hay imágenes en la galería.</p>';
-
-    // Optimización de banner y logo (sin cambios aquí)
+    
+    // Optimización de banner y logo
     const optimizedBanner = getOptimizedImageUrl('server-banners', server.banner_url, { width: 1200, quality: 80 }, 'https://via.placeholder.com/1200x300.png?text=Banner');
     const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 360, height: 360 }, 'https://via.placeholder.com/180.png?text=Logo');
 
@@ -110,10 +97,10 @@ function renderServerPage(server) {
                  <div class="server-header-info">
                      <h1>${server.name}</h1>
                      <div class="server-header-tags">
-                         <span><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
-                         <span><i class="fa-solid fa-shield-halved"></i> ${server.type || 'N/A'}</span>
-                         <span><i class="fa-solid fa-cogs"></i> ${server.configuration || 'N/A'}</span>
-                         <span><i class="fa-solid fa-heart"></i> <span id="votes-count">${server.votes_count || 0}</span> Votos</span>
+                         <span><i class="fa-solid fa-gamepad text-accent"></i> ${server.version || 'N/A'}</span>
+                         <span><i class="fa-solid fa-shield-halved text-accent"></i> ${server.type || 'N/A'}</span>
+                         <span><i class="fa-solid fa-cogs text-accent"></i> ${server.configuration || 'N/A'}</span>
+                         <span><i class="fa-solid fa-heart text-accent"></i> <span id="votes-count">${server.votes_count || 0}</span> Votos</span>
                      </div>
                  </div>
                  <div class="server-header-actions">

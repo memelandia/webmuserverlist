@@ -1190,3 +1190,15 @@ a:hover {
         margin-bottom: 4px;
     }
 }
+
+/* Asegurar que todos los iconos en la ficha técnica tengan el mismo color */
+.server-header-tags i.text-accent,
+.server-specs i.text-accent,
+.server-meta-item i.text-accent {
+    color: var(--accent-color);
+}
+
+/* Si hay algún ícono específico que necesite el mismo estilo */
+.fa-cogs.text-accent {
+    color: var(--accent-color) !important;
+}

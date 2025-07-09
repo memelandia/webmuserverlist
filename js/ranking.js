@@ -52,25 +52,37 @@ function initRanking() {
         const from = (page - 1) * pageSize;
         const to = page * pageSize - 1;
 
-        let query;
-        if (currentRankingType === 'general') {
-            query = window.supabaseClient
-                .from('servers')
-                .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, votes_count', { count: 'exact' })
-                .eq('status', 'aprobado')
-                .order('votes_count', { ascending: false, nullsFirst: false });
-        } else {
-            query = window.supabaseClient
-                .from('monthly_server_votes')
-                .select('*', { count: 'exact' });
-        }
-
         try {
-            const { data: servers, count, error } = await query.range(from, to);
+            let data, count, error;
+
+            if (currentRankingType === 'general') {
+                // Ranking general
+                const response = await window.supabaseClient
+                    .from('servers')
+                    .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, votes_count', { count: 'exact' })
+                    .eq('status', 'aprobado')
+                    .order('votes_count', { ascending: false, nullsFirst: false })
+                    .range(from, to);
+                
+                data = response.data;
+                count = response.count;
+                error = response.error;
+            } else {
+                // Ranking mensual
+                const response = await window.supabaseClient
+                    .from('monthly_server_votes')
+                    .select('id, name, image_url, version, average_rating, review_count, type, configuration, exp_rate, drop_rate, monthly_votes_count', { count: 'exact' })
+                    .order('monthly_votes_count', { ascending: false, nullsFirst: false })
+                    .range(from, to);
+                
+                data = response.data;
+                count = response.count;
+                error = response.error;
+            }
             
             if (error) throw error;
             
-            if (!servers || servers.length === 0) {
+            if (!data || data.length === 0) {
                 rankingContainer.innerHTML = `<tr><td colspan="9" class="text-center">No hay servidores para mostrar.</td></tr>`;
                 paginationContainer.innerHTML = '';
                 return;
@@ -80,13 +92,13 @@ function initRanking() {
             const totalPages = Math.ceil(count / pageSize);
             updatePagination(page, totalPages);
 
-            rankingContainer.innerHTML = servers.map((server, index) => {
+            rankingContainer.innerHTML = data.map((server, index) => {
                 const position = (page - 1) * pageSize + index + 1;
                 const expRate = server.exp_rate ? `${server.exp_rate}x` : 'N/A';
                 const dropRate = server.drop_rate ? `${server.drop_rate}%` : 'N/A';
                 const votes = currentRankingType === 'general' ? server.votes_count : server.monthly_votes_count;
 
-                // ¡OPTIMIZACIÓN!
+                // Optimización de imagen
                 const optimizedLogo = getOptimizedImageUrl('server-images', server.image_url, { width: 90, height: 90 }, 'https://via.placeholder.com/45');
 
                 return `
