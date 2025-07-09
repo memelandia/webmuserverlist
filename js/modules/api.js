@@ -158,19 +158,35 @@ export async function getReviewsByServerId(serverId) {
 
 export async function uploadFile(file, bucket) {
     if (!file) return null;
+    
+    // Validar el archivo
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    if (file.size > 50 * 1024 * 1024) throw new Error(`El archivo ${file.name} excede el límite de 50MB.`);
-    
-    // Usamos window.supabaseClient para asegurar que estamos usando la instancia global
-    const { data, error } = await window.supabaseClient.storage
-        .from(bucket)
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-    
-    if (error) {
-        console.error("Error en Supabase Storage:", error);
-        throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
+    if (file.size > 50 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 50MB.`);
     }
-    return data.path;
+    
+    console.log(`Iniciando subida de ${file.name} (${file.size} bytes) a ${bucket}/${fileName}`);
+    
+    try {
+        // Usamos window.supabaseClient para asegurar que estamos usando la instancia global
+        const { data, error } = await window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, { 
+                cacheControl: '3600', 
+                upsert: false 
+            });
+        
+        if (error) {
+            console.error("Error en Supabase Storage:", error);
+            throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
+        }
+        
+        console.log(`Archivo subido exitosamente a ${bucket}/${fileName}`);
+        return data.path;
+    } catch (error) {
+        console.error(`Error al subir archivo ${file.name}:`, error);
+        throw error;
+    }
 }
 
 export async function addServer(serverData) {

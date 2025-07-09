@@ -1,5 +1,4 @@
-// js/add-server.js (v15 - CORRECCIÓN FINAL Y DEFINITIVA)
-// Este código es el correcto y soluciona el problema de la subida de archivos.
+// js/add-server.js (v16 - SOLUCIÓN DEFINITIVA)
 
 import * as api from './modules/api.js';
 
@@ -15,6 +14,15 @@ export async function initAddServerPage() {
     if (!session) {
         authRequiredMessage.classList.remove('hidden');
         form.classList.add('hidden');
+        
+        // Añadir listener al enlace de login
+        const loginLink = document.getElementById('login-link');
+        if (loginLink) {
+            loginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.dispatchEvent(new CustomEvent('show-auth-modal', { detail: { mode: 'login' } }));
+            });
+        }
         return;
     }
     
@@ -56,36 +64,81 @@ async function handleFormSubmit(e) {
             events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value)
         };
         
-        // 2. Recoger los archivos seleccionados usando su ID (la forma más segura)
-        const logoFile = document.getElementById('logo-file').files[0];
-        const bannerFile = document.getElementById('banner-file').files[0];
-        const galleryFiles = document.getElementById('gallery-files').files;
+        // 2. Recoger los archivos seleccionados usando su ID
+        const logoFileInput = document.getElementById('logo-file');
+        const bannerFileInput = document.getElementById('banner-file');
+        const galleryFilesInput = document.getElementById('gallery-files');
+        
+        // Verificar que los elementos existen antes de acceder a sus propiedades
+        if (!logoFileInput || !bannerFileInput || !galleryFilesInput) {
+            throw new Error("No se pudieron encontrar los campos de archivo en el formulario");
+        }
         
         // 3. Subir los archivos a Supabase Storage (si existen) y añadir sus rutas a serverData
-        if (logoFile) {
+        // Subir logo si existe
+        if (logoFileInput.files && logoFileInput.files.length > 0) {
+            const logoFile = logoFileInput.files[0];
             feedbackEl.textContent = 'Subiendo logo...';
             feedbackEl.className = 'feedback-message info active';
-            const logoPath = await api.uploadFile(logoFile, 'server-images');
-            if (logoPath) serverData.image_url = logoPath;
+            
+            try {
+                const logoPath = await api.uploadFile(logoFile, 'server-images');
+                if (logoPath) {
+                    serverData.image_url = logoPath;
+                    console.log("Logo subido exitosamente:", logoPath);
+                }
+            } catch (uploadError) {
+                console.error("Error al subir el logo:", uploadError);
+                throw new Error(`Error al subir el logo: ${uploadError.message}`);
+            }
         }
         
-        if (bannerFile) {
+        // Subir banner si existe
+        if (bannerFileInput.files && bannerFileInput.files.length > 0) {
+            const bannerFile = bannerFileInput.files[0];
             feedbackEl.textContent = 'Subiendo banner...';
             feedbackEl.className = 'feedback-message info active';
-            const bannerPath = await api.uploadFile(bannerFile, 'server-banners');
-            if (bannerPath) serverData.banner_url = bannerPath;
+            
+            try {
+                const bannerPath = await api.uploadFile(bannerFile, 'server-banners');
+                if (bannerPath) {
+                    serverData.banner_url = bannerPath;
+                    console.log("Banner subido exitosamente:", bannerPath);
+                }
+            } catch (uploadError) {
+                console.error("Error al subir el banner:", uploadError);
+                throw new Error(`Error al subir el banner: ${uploadError.message}`);
+            }
         }
         
-        if (galleryFiles.length > 0) {
-            if (galleryFiles.length > 6) throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
+        // Subir imágenes de galería si existen
+        if (galleryFilesInput.files && galleryFilesInput.files.length > 0) {
+            const galleryFiles = galleryFilesInput.files;
+            
+            if (galleryFiles.length > 6) {
+                throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
+            }
             
             feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
             feedbackEl.className = 'feedback-message info active';
-
-            const uploadPromises = Array.from(galleryFiles).map(file => api.uploadFile(file, 'server-gallery'));
-            const galleryPaths = await Promise.all(uploadPromises);
-            if (galleryPaths.every(path => path !== null)) {
-                serverData.gallery_urls = galleryPaths;
+            
+            try {
+                const galleryPaths = [];
+                for (let i = 0; i < galleryFiles.length; i++) {
+                    const file = galleryFiles[i];
+                    const path = await api.uploadFile(file, 'server-gallery');
+                    if (path) {
+                        galleryPaths.push(path);
+                        console.log(`Imagen ${i+1} subida exitosamente:`, path);
+                    }
+                }
+                
+                if (galleryPaths.length > 0) {
+                    serverData.gallery_urls = galleryPaths;
+                }
+            } catch (uploadError) {
+                console.error("Error al subir imágenes de galería:", uploadError);
+                throw new Error(`Error al subir imágenes de galería: ${uploadError.message}`);
             }
         }
         
