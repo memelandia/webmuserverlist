@@ -908,3 +908,48 @@ a:hover {
     background: rgba(15, 15, 15, 0.95);
     backdrop-filter: blur(5px);
 }
+
+/* css/style.css - AÑADIR AL FINAL */
+
+/* =================================================================
+   ESTILOS PARA EL CONTADOR DEL CALENDARIO CORREGIDO
+   ================================================================= */
+.card-countdown {
+    text-align: center;
+    background: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem -1.5rem -1.5rem -1.5rem; /* Ajuste para que ocupe todo el ancho inferior */
+    padding: 1rem;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+
+.card-countdown .countdown-main {
+    font-family: var(--font-headings);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+.card-countdown .countdown-main .days {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.card-countdown .countdown-secondary {
+    font-family: var(--font-headings);
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+    opacity: 0.8;
+}
+
+.card-countdown .countdown-live {
+    font-family: var(--font-headings);
+    font-size: 1.5rem;
+    color: var(--success-color);
+    animation: fadeIn 0.5s;
+    text-shadow: 0 0 10px rgba(47, 133, 90, 0.7);
+}
