@@ -253,12 +253,16 @@ export async function setServerOfTheMonth(newWinnerId) {
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
     console.log(`Obteniendo ranking ${rankingType}, página ${page}, tamaño ${pageSize}`);
     
+    // Determinamos la tabla/vista a consultar según el tipo de ranking
+    const source = rankingType === 'monthly' ? 'monthly_server_votes' : 'servers';
+    
     let query = supabase
-        .from('servers')
+        .from(source)
         .select(`
             id, name, image_url, version, type, configuration, 
-            exp_rate, drop_rate, votes_count, monthly_votes_count,
-            average_rating, review_count
+            exp_rate, drop_rate, votes_count
+            ${rankingType === 'monthly' ? ', monthly_votes_count' : ''}
+            , average_rating, review_count
         `)
         .eq('status', 'aprobado');
     
