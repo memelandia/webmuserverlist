@@ -46,7 +46,7 @@ async function loadPlayerProfile(container, profile, session) {
         api.getReviewsByUserId(session.user.id)
     ]);
     
-    ui.renderPlayerProfile(container, { session, profile, servers, reviews });
+    ui.renderProfilePage(container, { session, profile, servers, reviews });
 }
 
 async function loadOwnerDashboard(container, profile, session) {

@@ -98,8 +98,22 @@ function initAuthModalListeners() {
     });
 
     // Vistas de Login/Registro
-    const showRegisterView = (e) => { e?.preventDefault(); loginContainer?.classList.add('hidden'); registerContainer?.classList.remove('hidden'); clearFeedback(loginForm); };
-    const showLoginView = (e) => { e?.preventDefault(); registerContainer?.classList.add('hidden'); loginContainer?.classList.remove('hidden'); clearFeedback(registerForm); };
+    const showRegisterView = (e) => { 
+        e?.preventDefault(); 
+        loginContainer?.classList.add('hidden'); 
+        document.getElementById('login-title')?.classList.add('hidden');
+        registerContainer?.classList.remove('hidden'); 
+        document.getElementById('register-title')?.classList.remove('hidden');
+        clearFeedback(loginForm); 
+    };
+    const showLoginView = (e) => { 
+        e?.preventDefault(); 
+        registerContainer?.classList.add('hidden'); 
+        document.getElementById('register-title')?.classList.add('hidden');
+        loginContainer?.classList.remove('hidden'); 
+        document.getElementById('login-title')?.classList.remove('hidden');
+        clearFeedback(registerForm); 
+    };
     if (showRegisterLink) showRegisterLink.addEventListener('click', showRegisterView);
     if (showLoginLink) showLoginLink.addEventListener('click', showLoginView);
     
