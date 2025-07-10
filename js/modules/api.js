@@ -1,51 +1,30 @@
-// /js/modules/api.js (v3 - Simplificado)
+// js/modules/api.js (v18 - Final con funciones de perfil y dashboard)
 
-// Accedemos directamente al cliente global. Esto es más robusto.
 const supabase = window.supabaseClient;
 
-// --- API de Servidores ---
+// --- API de Servidores y Widgets ---
 
 export async function getFeaturedServers() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, opening_date')
-        .eq('status', 'aprobado')
-        .eq('is_featured', true)
-        .limit(5);
-    if (error) throw error;
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, opening_date').eq('status', 'aprobado').eq('is_featured', true).limit(5);
+    if (error) { console.error("API Error (getFeaturedServers):", error); throw error; }
     return data;
 }
 
 export async function getServerOfTheMonth() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('*')
-        .eq('is_server_of_the_month', true)
-        .single();
-    if (error && error.code !== 'PGRST116') throw error; // Ignorar error "not found"
+    const { data, error } = await supabase.from('servers').select('*').eq('is_server_of_the_month', true).single();
+    if (error && error.code !== 'PGRST116') { console.error("API Error (getServerOfTheMonth):", error); throw error; }
     return data;
 }
 
 export async function getTopRankingWidget() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, image_url, votes_count, version, type, exp_rate')
-        .eq('status', 'aprobado')
-        .order('votes_count', { ascending: false, nullsFirst: false })
-        .limit(5);
-    if (error) throw error;
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, votes_count, version, type, exp_rate').eq('status', 'aprobado').order('votes_count', { ascending: false, nullsFirst: false }).limit(5);
+    if (error) { console.error("API Error (getTopRankingWidget):", error); throw error; }
     return data;
 }
 
 export async function getUpcomingOpeningsWidget() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, opening_date')
-        .not('opening_date', 'is', null)
-        .gt('opening_date', new Date().toISOString())
-        .order('opening_date', { ascending: true })
-        .limit(3);
-    if (error) throw error;
+    const { data, error } = await supabase.from('servers').select('id, name, opening_date').not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }).limit(3);
+    if (error) { console.error("API Error (getUpcomingOpeningsWidget):", error); throw error; }
     return data;
 }
 
@@ -57,25 +36,16 @@ export async function getGlobalStats() {
     ]);
 
     if (serverCount.error || userCount.error || votesData.error) {
-        console.error("Error fetching stats:", serverCount.error || userCount.error || votesData.error);
+        console.error("API Error (getGlobalStats):", serverCount.error || userCount.error || votesData.error);
         return { totalServers: 0, totalUsers: 0, totalVotes: 0 };
     }
     
     const totalVotes = votesData.data ? votesData.data.reduce((acc, s) => acc + (s.votes_count || 0), 0) : 0;
-
-    return {
-        totalServers: serverCount.count,
-        totalUsers: userCount.count,
-        totalVotes: totalVotes,
-    };
+    return { totalServers: serverCount.count, totalUsers: userCount.count, totalVotes: totalVotes };
 }
 
 export async function getExploreServers(filters) {
-    let query = supabase
-        .from('servers')
-        .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
-        .eq('status', 'aprobado');
-
+    let query = supabase.from('servers').select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date').eq('status', 'aprobado');
     if (filters.name) query = query.ilike('name', `%${filters.name}%`);
     if (filters.version) query = query.eq('version', filters.version);
     if (filters.type) query = query.eq('type', filters.type);
@@ -85,108 +55,117 @@ export async function getExploreServers(filters) {
     switch (filters.sort) {
         case 'newest': query = query.order('created_at', { ascending: false }); break;
         case 'opening_soon': query = query.not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }); break;
-        default: query = query.order('votes_count', { ascending: false, nullsFirst: false }); break;
+        default: query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false }); break;
     }
-    const { data, error } = await query.order('is_featured', { ascending: false });
-    if (error) throw error;
+    const { data, error } = await query;
+    if (error) { console.error("API Error (getExploreServers):", error); throw error; }
     return data;
 }
 
 export async function getCalendarOpenings() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
-        .not('opening_date', 'is', null)
-        .gt('opening_date', new Date().toISOString())
-        .order('opening_date', { ascending: true });
-
-    if (error) throw error;
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date').not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true });
+    if (error) { console.error("API Error (getCalendarOpenings):", error); throw error; }
     return data;
 }
 
+export async function getServerById(id) {
+    const { data, error } = await supabase.from('servers').select('*').eq('id', id).in('status', ['aprobado', 'pendiente']).single();
+    if (error) { console.error("API Error (getServerById):", error); throw new Error("Servidor no encontrado o no disponible."); }
+    return data;
+}
 
-// --- API de Funciones (Votos, etc) ---
+export async function getReviewsByServerId(serverId) {
+    const { data, error } = await supabase.from('reviews').select(`*, profiles ( username, avatar_url )`).eq('server_id', serverId).order('created_at', { ascending: false });
+    if (error) { console.error("API Error (getReviewsByServerId):", error); throw error; }
+    return data;
+}
+
+// --- API de Funciones y Seguimiento ---
 
 export async function voteForServer(serverId) {
-    const { data, error } = await supabase.functions.invoke('vote-server', { 
-        body: { serverId: parseInt(serverId) } 
-    });
+    const { data, error } = await supabase.functions.invoke('vote-server', { body: { serverId: parseInt(serverId) } });
     if (error) throw new Error("Error de red. Inténtalo de nuevo.");
     if (data.error) throw new Error(data.error);
     return data;
 }
 
-// --- API de Usuario ---
+export async function incrementServerView(serverId) {
+    const { error } = await supabase.rpc('increment_server_view', { p_server_id: serverId });
+    if (error) console.error('API Error (incrementServerView):', error.message);
+}
+export async function incrementWebsiteClick(serverId) {
+    const { error } = await supabase.rpc('increment_website_click', { p_server_id: serverId });
+    if (error) console.error('API Error (incrementWebsiteClick):', error.message);
+}
+export async function incrementDiscordClick(serverId) {
+    const { error } = await supabase.rpc('increment_discord_click', { p_server_id: serverId });
+    if (error) console.error('API Error (incrementDiscordClick):', error.message);
+}
+
+
+// --- API de Usuario y Perfil ---
 
 export async function getUserProfile(userId) {
-    const { data, error } = await supabase
-        .from('profiles').select('*').eq('id', userId).single();
-    if (error) throw error;
+    if (!userId) throw new Error("Se requiere un ID de usuario para obtener el perfil.");
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (error) { console.error("API Error (getUserProfile):", error); throw new Error("No se pudo obtener el perfil de usuario."); }
     return data;
 }
 
 export async function getServersByUserId(userId) {
-    const { data, error } = await supabase
-        .from('servers').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-    if (error) throw error;
+    const { data, error } = await supabase.from('servers').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (error) { console.error("API Error (getServersByUserId):", error); throw new Error("No se pudieron obtener los servidores del usuario."); }
     return data;
 }
 
 export async function getReviewsByUserId(userId) {
-    const { data, error } = await supabase
-        .from('reviews').select('*, servers(id, name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
-    if (error) throw error;
+    const { data, error } = await supabase.from('reviews').select('*, servers(id, name)').eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
+    if (error) { console.error("API Error (getReviewsByUserId):", error); throw new Error("No se pudieron obtener las reseñas del usuario."); }
     return data;
 }
 
-export async function getServerById(id) {
-    const { data, error } = await supabase
-        .from('servers').select('*').eq('id', id).in('status', ['aprobado', 'pendiente']).single();
-    if (error) throw error;
+export async function getOwnerDashboardStats(ownerId) {
+    const { data, error } = await supabase.from('servers').select('name, view_count, website_click_count, discord_click_count, votes_count').eq('user_id', ownerId);
+    if (error) { console.error("API Error (getOwnerDashboardStats):", error); throw new Error("No se pudieron obtener las estadísticas del dashboard."); }
     return data;
 }
 
-export async function getReviewsByServerId(serverId) {
-    const { data, error } = await supabase
-        .from('reviews').select(`*, profiles ( username, avatar_url )`).eq('server_id', serverId).order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+export async function updateUserAvatar(userId, avatarPath) {
+    const { error } = await supabase.from('profiles').update({ avatar_url: avatarPath }).eq('id', userId);
+    if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
 
-// --- API de Formularios (Add/Edit) y Admin ---
+// --- API de Formularios y Admin ---
 
 export async function uploadFile(file, bucket) {
     if (!file) return null;
     
-    // Validar el archivo
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    if (file.size > 50 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 50MB.`);
+    // Validar que el bucket existe
+    const { data: buckets, error: bucketsError } = await window.supabaseClient.storage.listBuckets();
+    if (bucketsError) throw new Error(`Error al verificar buckets: ${bucketsError.message}`);
+    
+    const bucketExists = buckets.some(b => b.name === bucket);
+    if (!bucketExists) throw new Error(`El bucket "${bucket}" no existe en Supabase Storage.`);
+    
+    // Generar nombre de archivo seguro
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
+    
+    // Validar tamaño
+    if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
+        throw new Error(`El archivo excede el límite de 2MB.`);
     }
     
-    console.log(`Iniciando subida de ${file.name} (${file.size} bytes) a ${bucket}/${fileName}`);
-    
-    try {
-        // Usamos window.supabaseClient para asegurar que estamos usando la instancia global
-        const { data, error } = await window.supabaseClient.storage
-            .from(bucket)
-            .upload(fileName, file, { 
-                cacheControl: '3600', 
-                upsert: false 
-            });
+    // Subir archivo
+    const { data, error } = await window.supabaseClient.storage
+        .from(bucket)
+        .upload(fileName, file, { 
+            cacheControl: '3600', 
+            upsert: false 
+        });
         
-        if (error) {
-            console.error("Error en Supabase Storage:", error);
-            throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
-        }
-        
-        console.log(`Archivo subido exitosamente a ${bucket}/${fileName}`);
-        return data.path;
-    } catch (error) {
-        console.error(`Error al subir archivo ${file.name}:`, error);
-        throw error;
-    }
+    if (error) throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
+    return data.path;
 }
 
 export async function addServer(serverData) {
@@ -194,7 +173,7 @@ export async function addServer(serverData) {
     if (!session) throw new Error("No estás autenticado.");
     const dataToInsert = { ...serverData, user_id: session.user.id, status: 'pendiente' };
     const { error } = await supabase.from('servers').insert([dataToInsert]);
-    if (error) throw new Error(error.message);
+    if (error) { console.error("API Error (addServer):", error); throw new Error(error.message); }
 }
 
 export async function getServerForEdit(serverId, userId) {
@@ -202,91 +181,71 @@ export async function getServerForEdit(serverId, userId) {
     let query = supabase.from('servers').select('*').eq('id', serverId);
     if (profile.role !== 'admin') query = query.eq('user_id', userId);
     const { data, error } = await query.single();
-    if (error || !data) throw new Error('Servidor no encontrado o no tienes permiso para editarlo.');
+    if (error || !data) { console.error("API Error (getServerForEdit):", error); throw new Error('Servidor no encontrado o no tienes permiso para editarlo.'); }
     return data;
 }
 
 export async function updateServer(serverId, updatedData) {
     const { error } = await supabase.from('servers').update(updatedData).eq('id', serverId);
-    if (error) throw error;
+    if (error) { console.error("API Error (updateServer):", error); throw error; }
 }
 
-// ... Resto de funciones de API del Admin
 export async function getServersByStatus(status) {
     const { data, error } = await supabase.from('servers').select('*').eq('status', status);
-    if (error) throw error;
+    if (error) { console.error("API Error (getServersByStatus):", error); throw error; }
     return data;
 }
 export async function getAllServersForAdmin() {
     const { data, error } = await supabase.from('servers').select('*').neq('status', 'pendiente').order('created_at', { ascending: false });
-    if (error) throw error;
+    if (error) { console.error("API Error (getAllServersForAdmin):", error); throw error; }
     return data;
 }
 export async function deleteServer(serverId) {
     const { error } = await supabase.from('servers').delete().eq('id', serverId);
-    if (error) throw error;
+    if (error) { console.error("API Error (deleteServer):", error); throw error; }
 }
 export async function getAllUsersForAdmin() {
-    const { data, error } = await supabase.from('profiles').select('*').order('role');
-    if (error) throw error;
+    const { data, error } = await supabase.from('profiles').select('*').order('created_at');
+    if (error) { console.error("API Error (getAllUsersForAdmin):", error); throw error; }
     return data;
 }
 export async function updateUserProfile(userId, updateData) {
     const { error } = await supabase.from('profiles').update(updateData).eq('id', userId);
-    if (error) throw error;
+    if (error) { console.error("API Error (updateUserProfile):", error); throw error; }
 }
 export async function getDataForSomAdmin() {
     const [winnerRes, serversRes] = await Promise.all([
         supabase.from('servers').select('id, name, image_url').eq('is_server_of_the_month', true).maybeSingle(),
         supabase.from('servers').select('id, name').eq('status', 'aprobado').order('name', { ascending: true })
     ]);
-    if (winnerRes.error || serversRes.error) throw new Error(winnerRes.error?.message || serversRes.error?.message);
+    if (winnerRes.error || serversRes.error) { console.error("API Error (getDataForSomAdmin):", winnerRes.error || serversRes.error); throw new Error(winnerRes.error?.message || serversRes.error?.message); }
     return { currentWinner: winnerRes.data, allServers: serversRes.data };
 }
 export async function setServerOfTheMonth(newWinnerId) {
     const { error } = await supabase.rpc('set_server_of_the_month', { new_winner_id: newWinnerId });
-    if (error) throw new Error("No se pudo actualizar el Servidor del Mes.");
+    if (error) { console.error("API Error (setServerOfTheMonth):", error); throw new Error("No se pudo actualizar el Servidor del Mes."); }
 }
 
 // --- API de Ranking ---
 
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
-    console.log(`Obteniendo ranking ${rankingType}, página ${page}, tamaño ${pageSize}`);
-    
-    // Determinamos la tabla/vista a consultar según el tipo de ranking
     const source = rankingType === 'monthly' ? 'monthly_server_votes' : 'servers';
+    let query = supabase.from(source).select(`*, average_rating, review_count`).eq('status', 'aprobado');
     
-    let query = supabase
-        .from(source)
-        .select(`
-            id, name, image_url, version, type, configuration, 
-            exp_rate, drop_rate, votes_count
-            ${rankingType === 'monthly' ? ', monthly_votes_count' : ''}
-            , average_rating, review_count
-        `)
-        .eq('status', 'aprobado');
-    
-    // Ordenamos según el tipo de ranking
     if (rankingType === 'monthly') {
         query = query.order('monthly_votes_count', { ascending: false, nullsFirst: false });
     } else {
         query = query.order('votes_count', { ascending: false, nullsFirst: false });
     }
     
-    // Calculamos el rango para la paginación
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
     
-    // Obtenemos los datos paginados
-    const { data, error, count } = await query
-        .range(from, to)
-        .order('is_featured', { ascending: false })
-        .select('*', { count: 'exact' });
+    const { data, error, count } = await query.range(from, to).select('*, servers(*)', { count: 'exact' });
+    if (error) { console.error("API Error (getRankingServers):", error); throw error; }
     
-    if (error) {
-        console.error("Error al obtener ranking:", error);
-        throw error;
-    }
-    
-    return { data, count };
+    // Si la fuente es 'monthly_server_votes', los datos del servidor están anidados.
+    const resultData = rankingType === 'monthly' ? data.map(item => ({ ...item.servers, monthly_votes_count: item.monthly_votes_count })) : data;
+
+    return { data: resultData, count };
 }
