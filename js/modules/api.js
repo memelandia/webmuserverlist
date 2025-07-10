@@ -205,20 +205,12 @@ export async function deleteServer(serverId) {
     if (error) { console.error("API Error (deleteServer):", error); throw error; }
 }
 export async function getAllUsersForAdmin() {
-    // La consulta original intenta ordenar por profiles.created_at que no existe
-    // const { data, error } = await supabase.from('profiles').select('*').order('created_at');
-    
-    // Solución: Obtener los perfiles sin ordenar por created_at
     const { data, error } = await supabase.from('profiles').select('*');
-    
     if (error) { 
         console.error("API Error (getAllUsersForAdmin):", error); 
         throw error; 
     }
-    
-    // Ordenamos los resultados en el cliente por id o username
-    // que son campos que sí existen en la tabla profiles
-    return data.sort((a, b) => a.username?.localeCompare(b.username) || 0);
+    return data.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
 }
 export async function updateUserProfile(userId, updateData) {
     const { error } = await supabase.from('profiles').update(updateData).eq('id', userId);
@@ -238,44 +230,41 @@ export async function setServerOfTheMonth(newWinnerId) {
 }
 
 // --- API de Ranking ---
-
+// SOLUCIÓN AL BUG DE RANKING
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
-    let query;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
-    
+
+    let query;
     if (rankingType === 'monthly') {
-        // Para el ranking mensual, hacemos un join manual entre la vista y la tabla servers
-        query = supabase
-            .from('monthly_server_votes')
-            .select(`
-                monthly_votes_count,
-                servers:server_id (
-                    id, name, image_url, banner_url, version, type, 
-                    configuration, exp_rate, drop_rate, average_rating, review_count
-                )
-            `)
+        // Para el ranking mensual, consultamos la VISTA y anidamos la selección de la tabla 'servers'.
+        // Esto asume que tienes una columna 'server_id' en tu vista 'monthly_server_votes'
+        // que es una clave foránea a 'servers.id'.
+        query = supabase.from('monthly_server_votes')
+            .select('monthly_votes_count, servers(*, average_rating, review_count)')
+            .eq('servers.status', 'aprobado')
             .order('monthly_votes_count', { ascending: false, nullsFirst: false })
             .range(from, to);
     } else {
-        // Para el ranking general, usamos la consulta original
-        query = supabase
-            .from('servers')
-            .select(`*, average_rating, review_count`)
+        // Para el ranking general, la consulta es directamente a la tabla 'servers'.
+        query = supabase.from('servers')
+            .select('*, average_rating, review_count')
             .eq('status', 'aprobado')
             .order('votes_count', { ascending: false, nullsFirst: false })
             .range(from, to);
     }
+
+    const { data, error, count } = await query.select('*, servers(*)', { count: 'exact' });
+
+    if (error) { 
+        console.error("API Error (getRankingServers):", error); 
+        throw error; 
+    }
     
-    const { data, error, count } = await query.select('*', { count: 'exact' });
-    if (error) { console.error("API Error (getRankingServers):", error); throw error; }
-    
-    // Procesamos los datos según el tipo de ranking
+    // Si la fuente es 'monthly_server_votes', los datos del servidor están anidados.
+    // Los desanidamos para tener una estructura de datos consistente.
     const resultData = rankingType === 'monthly' 
-        ? data.map(item => ({ 
-            ...item.servers, 
-            monthly_votes_count: item.monthly_votes_count 
-        }))
+        ? data.map(item => ({ ...item.servers, monthly_votes_count: item.monthly_votes_count })) 
         : data;
 
     return { data: resultData, count };

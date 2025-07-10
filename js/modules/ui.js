@@ -234,6 +234,18 @@ export function renderServerPage(container,server){const e=server.events&&server
 export function renderReviews(container,reviews){if(!reviews||0===reviews.length)return void(container.innerHTML="<p>Este servidor aún no tiene reseñas. ¡Sé el primero!</p>");container.innerHTML=reviews.map(review=>{const e=review.profiles||{username:"Anónimo",avatar_url:""},t=renderStars(review.rating),n=getOptimizedImageUrl("avatars",e.avatar_url,{width:80,height:80},"img/avatar_default.png");return` <div class="review-card"> <div class="review-header"> <img src="${n}" alt="avatar" class="review-avatar" width="40" height="40" loading="lazy"> <div class="review-user-info"> <strong>${e.username}</strong> <span class="review-date">${new Date(review.created_at).toLocaleDateString("es-ES")}</span> </div> <div class="review-stars">${t}</div> </div> ${review.comment?`<p class="review-comment">“${review.comment}”</p>`:""} </div>`}).join("")}
 
 // --- Componentes de la Página de Perfil (AVANZADO Y COMPLETO) ---
+
+export function renderProfileLoginPrompt(container) {
+    if (!container) return;
+    container.innerHTML = `
+        <div class="page-header"><h1><i class="fa-solid fa-lock"></i> Perfil de Usuario</h1></div>
+        <div class="widget" style="text-align: center;">
+            <h2>Acceso Restringido</h2>
+            <p>Debes <a href="#" id="login-link">iniciar sesión</a> para ver tu perfil.</p>
+        </div>
+    `;
+}
+
 export function renderUserProfile(container, data) {
     const { session, profile, servers, reviews } = data;
     const avatar = getOptimizedImageUrl('avatars', profile.avatar_url, { width: 300, height: 300, resize: "cover" }, "img/avatar_default.png");
@@ -364,7 +376,9 @@ export function initOwnerCharts(stats) {
     if (!interactionsCtx || !votesCtx) return;
     const labels = stats.map(s => s.name.substring(0, 20));
     
-    new Chart(interactionsCtx, {type: "bar", data: {labels, datasets: [{label: "Vistas", data: stats.map(s => s.view_count), backgroundColor: "rgba(255, 51, 51, 0.5)"}, {label: "Clics Web", data: stats.map(s => s.website_click_count), backgroundColor: "rgba(51, 153, 255, 0.5)"}, {label: "Clics Discord", data: stats.map(s => s.discord_click_count), backgroundColor: "rgba(114, 137, 218, 0.5)"}]}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, ticks: {color: "var(--text-secondary)"}}, x: {ticks: {color: "var(--text-secondary)"}}}, plugins: {legend: {labels: {color: "var(--text-primary)"}}}}});
+    Chart.defaults.color = 'var(--text-secondary)';
+
+    new Chart(interactionsCtx, {type: "bar", data: {labels, datasets: [{label: "Vistas", data: stats.map(s => s.view_count), backgroundColor: "rgba(255, 51, 51, 0.5)", borderColor: "rgba(255, 51, 51, 1)", borderWidth: 1}, {label: "Clics Web", data: stats.map(s => s.website_click_count), backgroundColor: "rgba(51, 153, 255, 0.5)", borderColor: "rgba(51, 153, 255, 1)", borderWidth: 1}, {label: "Clics Discord", data: stats.map(s => s.discord_click_count), backgroundColor: "rgba(114, 137, 218, 0.5)", borderColor: "rgba(114, 137, 218, 1)", borderWidth: 1}]}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)'}}, x: {grid: { color: 'rgba(255, 255, 255, 0.1)'}}}, plugins: {legend: {labels: {color: "var(--text-primary)"}}}}});
     new Chart(votesCtx, {type: "doughnut", data: {labels, datasets: [{label: "Votos", data: stats.map(s => s.votes_count), backgroundColor: ["#ff3333", "#b42424", "#8b1d1d", "#e62e2e", "#621616", "#410e0e"], borderColor: "var(--bg-light)", borderWidth: 2}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "top", labels: {color: "var(--text-primary)"}}}}});
 }
 

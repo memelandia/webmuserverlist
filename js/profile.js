@@ -26,7 +26,7 @@ export async function initProfilePage() {
             case 'owner':
                 await loadOwnerDashboard(profileContent, profile, session);
                 break;
-            case 'admin':
+            case 'admin': // Admin ve el perfil de player por ahora, su panel es aparte.
             case 'player':
             default:
                 await loadUserProfile(profileContent, profile, session);
@@ -45,6 +45,7 @@ export async function initProfilePage() {
 // Carga el perfil estándar para 'player' o 'admin'
 async function loadUserProfile(container, profile, session) {
     ui.renderLoading(container, "Cargando tu información...");
+    // Usamos Promise.all para cargar servidores y reseñas en paralelo
     const [servers, reviews] = await Promise.all([
         api.getServersByUserId(session.user.id),
         api.getReviewsByUserId(session.user.id)
@@ -55,7 +56,8 @@ async function loadUserProfile(container, profile, session) {
 
 // Carga el dashboard para un dueño de servidor ('owner')
 async function loadOwnerDashboard(container, profile, session) {
-    ui.renderLoading(container, "Cargando tu dashboard...");
+    ui.renderLoading(container, "Cargando tu dashboard de creador...");
+    // Cargamos todos los datos necesarios para el dashboard en paralelo
     const [servers, reviews, dashboardStats] = await Promise.all([
         api.getServersByUserId(session.user.id),
         api.getReviewsByUserId(session.user.id),
@@ -64,6 +66,7 @@ async function loadOwnerDashboard(container, profile, session) {
 
     ui.renderOwnerDashboard(container, { session, profile, servers, reviews, dashboardStats });
 
+    // Inicializamos los gráficos solo si hay datos y la librería Chart.js está disponible
     if (typeof Chart !== 'undefined' && dashboardStats && dashboardStats.length > 0) {
         ui.initOwnerCharts(dashboardStats);
     }
@@ -86,7 +89,7 @@ function initAvatarUploader(userId, profile) {
         if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
              feedbackEl.textContent = 'Archivo muy grande (máx 2MB).';
              feedbackEl.style.color = 'var(--primary-color)';
-             uploadInput.value = '';
+             uploadInput.value = ''; // Limpiar el input
              return;
         }
 
@@ -94,16 +97,17 @@ function initAvatarUploader(userId, profile) {
         feedbackEl.style.color = 'var(--text-secondary)';
 
         try {
-            // Organizar avatares por usuario para mejor seguridad
+            // Organizar avatares por usuario para mejor seguridad y organización
             const filePath = `${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
             
             // Borrar avatar antiguo para no acumular basura en el Storage.
             if (profile.avatar_url) {
                 try {
+                    // La ruta guardada es solo el path, no el nombre del bucket
                     await window.supabaseClient.storage.from('avatars').remove([profile.avatar_url]);
                 } catch (deleteError) {
                     console.warn('No se pudo eliminar el avatar anterior:', deleteError);
-                    // Continuamos con la subida aunque falle el borrado
+                    // No es un error crítico, continuamos con la subida
                 }
             }
             
@@ -112,17 +116,18 @@ function initAvatarUploader(userId, profile) {
                 .from('avatars')
                 .upload(filePath, file, { 
                     cacheControl: '3600', 
-                    upsert: false 
+                    upsert: false // No sobreescribir, generamos nombres únicos
                 });
                 
             if (error) throw error;
             
-            // Actualizar perfil con la nueva URL
+            // Actualizar el perfil del usuario con la nueva URL del avatar
             await api.updateUserAvatar(userId, filePath);
             
             feedbackEl.textContent = '¡Avatar actualizado!';
             feedbackEl.style.color = 'var(--success-color)';
             
+            // Recargar la página para ver el cambio reflejado en todas partes
             setTimeout(() => window.location.reload(), 1500);
 
         } catch (error) {
