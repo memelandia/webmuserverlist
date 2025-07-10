@@ -240,23 +240,43 @@ export async function setServerOfTheMonth(newWinnerId) {
 // --- API de Ranking ---
 
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
-    const source = rankingType === 'monthly' ? 'monthly_server_votes' : 'servers';
-    let query = supabase.from(source).select(`*, average_rating, review_count`).eq('status', 'aprobado');
-    
-    if (rankingType === 'monthly') {
-        query = query.order('monthly_votes_count', { ascending: false, nullsFirst: false });
-    } else {
-        query = query.order('votes_count', { ascending: false, nullsFirst: false });
-    }
-    
+    let query;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
     
-    const { data, error, count } = await query.range(from, to).select('*, servers(*)', { count: 'exact' });
+    if (rankingType === 'monthly') {
+        // Para el ranking mensual, hacemos un join manual entre la vista y la tabla servers
+        query = supabase
+            .from('monthly_server_votes')
+            .select(`
+                monthly_votes_count,
+                servers:server_id (
+                    id, name, image_url, banner_url, version, type, 
+                    configuration, exp_rate, drop_rate, average_rating, review_count
+                )
+            `)
+            .order('monthly_votes_count', { ascending: false, nullsFirst: false })
+            .range(from, to);
+    } else {
+        // Para el ranking general, usamos la consulta original
+        query = supabase
+            .from('servers')
+            .select(`*, average_rating, review_count`)
+            .eq('status', 'aprobado')
+            .order('votes_count', { ascending: false, nullsFirst: false })
+            .range(from, to);
+    }
+    
+    const { data, error, count } = await query.select('*', { count: 'exact' });
     if (error) { console.error("API Error (getRankingServers):", error); throw error; }
     
-    // Si la fuente es 'monthly_server_votes', los datos del servidor están anidados.
-    const resultData = rankingType === 'monthly' ? data.map(item => ({ ...item.servers, monthly_votes_count: item.monthly_votes_count })) : data;
+    // Procesamos los datos según el tipo de ranking
+    const resultData = rankingType === 'monthly' 
+        ? data.map(item => ({ 
+            ...item.servers, 
+            monthly_votes_count: item.monthly_votes_count 
+        }))
+        : data;
 
     return { data: resultData, count };
 }
