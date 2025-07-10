@@ -140,15 +140,38 @@ export async function updateUserAvatar(userId, avatarPath) {
 
 export async function uploadFile(file, bucket) {
     if (!file) return null;
-    const { data: buckets, error: bucketsError } = await window.supabaseClient.storage.listBuckets();
-    if (bucketsError) throw new Error(`Error al verificar buckets: ${bucketsError.message}`);
-    const bucketExists = buckets.some(b => b.name === bucket);
-    if (!bucketExists) throw new Error(`El bucket "${bucket}" no existe en Supabase Storage.`);
+    
+    // Verificar tamaño del archivo primero para fallar rápido
+    if (file.size > 2 * 1024 * 1024) { 
+        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`); 
+    }
+    
+    // Generar nombre de archivo seguro
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
-    if (file.size > 2 * 1024 * 1024) { throw new Error(`El archivo excede el límite de 2MB.`); }
-    const { data, error } = await window.supabaseClient.storage.from(bucket).upload(fileName, file, { cacheControl: '3600', upsert: false });
-    if (error) throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
-    return data.path;
+    
+    try {
+        // Subir directamente sin verificar buckets (asumiendo que existen)
+        const { data, error } = await window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, { 
+                cacheControl: '3600', 
+                upsert: false 
+            });
+            
+        if (error) {
+            console.error("Error de Supabase al subir archivo:", error);
+            throw new Error(`Fallo al subir el archivo: ${error.message}`);
+        }
+        
+        if (!data || !data.path) {
+            throw new Error("La subida fue exitosa pero no se recibió la ruta del archivo");
+        }
+        
+        return data.path;
+    } catch (error) {
+        console.error("Error en uploadFile:", error);
+        throw error; // Re-lanzar para manejo superior
+    }
 }
 
 export async function addServer(serverData) {

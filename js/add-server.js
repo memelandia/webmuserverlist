@@ -35,12 +35,11 @@ export async function initAddServerPage() {
 
 // Esta es la función que se ejecuta al enviar el formulario
 async function handleFormSubmit(e) {
-    e.preventDefault(); // Evita que la página se recargue
+    e.preventDefault();
     const form = e.target;
     const submitButton = form.querySelector('button[type="submit"]');
     const feedbackEl = form.querySelector('#form-feedback');
     
-    // Deshabilitar botón y limpiar feedback anterior
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
     feedbackEl.textContent = '';
@@ -64,95 +63,67 @@ async function handleFormSubmit(e) {
             events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value)
         };
         
-        // 2. Recoger los archivos seleccionados usando su ID
+        // 2. Recoger los archivos seleccionados
         const logoFileInput = document.getElementById('logo-file');
         const bannerFileInput = document.getElementById('banner-file');
         const galleryFilesInput = document.getElementById('gallery-files');
         
-        // Verificar que los elementos existen antes de acceder a sus propiedades
         if (!logoFileInput || !bannerFileInput || !galleryFilesInput) {
             throw new Error("No se pudieron encontrar los campos de archivo en el formulario");
         }
         
-        // 3. Subir los archivos a Supabase Storage (si existen) y añadir sus rutas a serverData
-        // Subir logo si existe
-        if (logoFileInput.files && logoFileInput.files.length > 0) {
-            const logoFile = logoFileInput.files[0];
-            feedbackEl.textContent = 'Subiendo logo...';
-            feedbackEl.className = 'feedback-message info active';
+        // 3. Subir archivos uno por uno con manejo de errores mejorado
+        try {
+            // Logo
+            if (logoFileInput.files && logoFileInput.files.length > 0) {
+                feedbackEl.textContent = 'Subiendo logo...';
+                feedbackEl.className = 'feedback-message info active';
+                serverData.image_url = await api.uploadFile(logoFileInput.files[0], 'server-images');
+            }
             
-            try {
-                const logoPath = await api.uploadFile(logoFile, 'server-images');
-                if (logoPath) {
-                    serverData.image_url = logoPath;
-                    console.log("Logo subido exitosamente:", logoPath);
+            // Banner
+            if (bannerFileInput.files && bannerFileInput.files.length > 0) {
+                feedbackEl.textContent = 'Subiendo banner...';
+                feedbackEl.className = 'feedback-message info active';
+                serverData.banner_url = await api.uploadFile(bannerFileInput.files[0], 'server-banners');
+            }
+            
+            // Galería
+            if (galleryFilesInput.files && galleryFilesInput.files.length > 0) {
+                if (galleryFilesInput.files.length > 6) {
+                    throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
                 }
-            } catch (uploadError) {
-                console.error("Error al subir el logo:", uploadError);
-                throw new Error(`Error al subir el logo: ${uploadError.message}`);
-            }
-        }
-        
-        // Subir banner si existe
-        if (bannerFileInput.files && bannerFileInput.files.length > 0) {
-            const bannerFile = bannerFileInput.files[0];
-            feedbackEl.textContent = 'Subiendo banner...';
-            feedbackEl.className = 'feedback-message info active';
-            
-            try {
-                const bannerPath = await api.uploadFile(bannerFile, 'server-banners');
-                if (bannerPath) {
-                    serverData.banner_url = bannerPath;
-                    console.log("Banner subido exitosamente:", bannerPath);
-                }
-            } catch (uploadError) {
-                console.error("Error al subir el banner:", uploadError);
-                throw new Error(`Error al subir el banner: ${uploadError.message}`);
-            }
-        }
-        
-        // Subir imágenes de galería si existen
-        if (galleryFilesInput.files && galleryFilesInput.files.length > 0) {
-            const galleryFiles = galleryFilesInput.files;
-            
-            if (galleryFiles.length > 6) {
-                throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
-            }
-            
-            feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes a la galería...`;
-            feedbackEl.className = 'feedback-message info active';
-            
-            try {
+                
+                feedbackEl.textContent = `Subiendo ${galleryFilesInput.files.length} imágenes a la galería...`;
+                feedbackEl.className = 'feedback-message info active';
+                
                 const galleryPaths = [];
-                for (let i = 0; i < galleryFiles.length; i++) {
-                    const file = galleryFiles[i];
-                    const path = await api.uploadFile(file, 'server-gallery');
-                    if (path) {
-                        galleryPaths.push(path);
-                        console.log(`Imagen ${i+1} subida exitosamente:`, path);
-                    }
+                for (let i = 0; i < galleryFilesInput.files.length; i++) {
+                    const path = await api.uploadFile(galleryFilesInput.files[i], 'server-gallery');
+                    if (path) galleryPaths.push(path);
                 }
                 
                 if (galleryPaths.length > 0) {
                     serverData.gallery_urls = galleryPaths;
                 }
-            } catch (uploadError) {
-                console.error("Error al subir imágenes de galería:", uploadError);
-                throw new Error(`Error al subir imágenes de galería: ${uploadError.message}`);
             }
+            
+            // 4. Guardar datos en la base de datos
+            feedbackEl.textContent = 'Guardando datos del servidor...';
+            await api.addServer(serverData);
+            
+            // 5. Mostrar éxito y redirigir
+            feedbackEl.textContent = '¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo...';
+            feedbackEl.className = 'feedback-message success active';
+            form.reset();
+            
+            setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
+            
+        } catch (uploadError) {
+            console.error("Error durante la subida de archivos:", uploadError);
+            throw uploadError; // Re-lanzar para el manejo general
         }
         
-        // 4. Guardar toda la información del servidor en la base de datos
-        feedbackEl.textContent = 'Guardando datos del servidor...';
-        await api.addServer(serverData);
-        
-        // 5. Mostrar mensaje de éxito y redirigir
-        feedbackEl.textContent = '¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo...';
-        feedbackEl.className = 'feedback-message success active';
-        form.reset();
-        
-        setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
-
     } catch (error) {
         console.error('Error al enviar el formulario:', error);
         feedbackEl.textContent = `Error: ${error.message}`;
