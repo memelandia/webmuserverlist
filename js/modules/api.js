@@ -1,4 +1,4 @@
-// js/modules/api.js (v18 - Final con funciones de perfil y dashboard)
+// js/modules/api.js (v19 - Con Ranking Definitivo)
 
 const supabase = window.supabaseClient;
 
@@ -140,30 +140,13 @@ export async function updateUserAvatar(userId, avatarPath) {
 
 export async function uploadFile(file, bucket) {
     if (!file) return null;
-    
-    // Validar que el bucket existe
     const { data: buckets, error: bucketsError } = await window.supabaseClient.storage.listBuckets();
     if (bucketsError) throw new Error(`Error al verificar buckets: ${bucketsError.message}`);
-    
     const bucketExists = buckets.some(b => b.name === bucket);
     if (!bucketExists) throw new Error(`El bucket "${bucket}" no existe en Supabase Storage.`);
-    
-    // Generar nombre de archivo seguro
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
-    
-    // Validar tamaño
-    if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
-        throw new Error(`El archivo excede el límite de 2MB.`);
-    }
-    
-    // Subir archivo
-    const { data, error } = await window.supabaseClient.storage
-        .from(bucket)
-        .upload(fileName, file, { 
-            cacheControl: '3600', 
-            upsert: false 
-        });
-        
+    if (file.size > 2 * 1024 * 1024) { throw new Error(`El archivo excede el límite de 2MB.`); }
+    const { data, error } = await window.supabaseClient.storage.from(bucket).upload(fileName, file, { cacheControl: '3600', upsert: false });
     if (error) throw new Error(`Fallo al subir el archivo al Storage: ${error.message}`);
     return data.path;
 }
@@ -206,10 +189,7 @@ export async function deleteServer(serverId) {
 }
 export async function getAllUsersForAdmin() {
     const { data, error } = await supabase.from('profiles').select('*');
-    if (error) { 
-        console.error("API Error (getAllUsersForAdmin):", error); 
-        throw error; 
-    }
+    if (error) { console.error("API Error (getAllUsersForAdmin):", error); throw error; }
     return data.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
 }
 export async function updateUserProfile(userId, updateData) {
@@ -230,42 +210,78 @@ export async function setServerOfTheMonth(newWinnerId) {
 }
 
 // --- API de Ranking ---
-// SOLUCIÓN AL BUG DE RANKING
+// SOLUCIÓN DEFINITIVA Y ROBUSTA
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query;
     if (rankingType === 'monthly') {
-        // Para el ranking mensual, consultamos la VISTA y anidamos la selección de la tabla 'servers'.
-        // Esto asume que tienes una columna 'server_id' en tu vista 'monthly_server_votes'
-        // que es una clave foránea a 'servers.id'.
-        query = supabase.from('monthly_server_votes')
-            .select('monthly_votes_count, servers(*, average_rating, review_count)')
-            .eq('servers.status', 'aprobado')
-            .order('monthly_votes_count', { ascending: false, nullsFirst: false })
-            .range(from, to);
+        try {
+            // Primero, hagamos una consulta para ver la estructura de la vista
+            const { data: viewStructure, error: structureError } = await supabase
+                .from('monthly_server_votes')
+                .select('*')
+                .limit(1);
+                
+            if (structureError) throw structureError;
+            
+            // Determinamos el nombre de la columna que contiene el ID del servidor
+            // Asumimos que puede ser 'id', 'server_id' o 'serverId'
+            const serverIdColumn = Object.keys(viewStructure[0] || {}).find(
+                key => key === 'id' || key === 'server_id' || key === 'serverId'
+            ) || 'id';
+            
+            // Ahora hacemos la consulta real con el nombre correcto de la columna
+            const { data: monthlyData, error: monthlyError, count } = await supabase
+                .from('monthly_server_votes')
+                .select(`*, ${serverIdColumn}`, { count: 'exact' })
+                .order('monthly_votes_count', { ascending: false })
+                .range(from, to);
+                
+            if (monthlyError) throw monthlyError;
+            
+            if (!monthlyData || monthlyData.length === 0) {
+                return { data: [], count: 0 };
+            }
+            
+            // Obtenemos los servidores correspondientes a esos IDs
+            const serverIds = monthlyData.map(item => item[serverIdColumn]);
+            const { data: serversData, error: serversError } = await supabase
+                .from('servers')
+                .select('*, average_rating, review_count')
+                .eq('status', 'aprobado')
+                .in('id', serverIds);
+                
+            if (serversError) throw serversError;
+            
+            // Combinamos los datos
+            const resultData = monthlyData.map(monthlyItem => {
+                const server = serversData.find(s => s.id === monthlyItem[serverIdColumn]);
+                return server ? { 
+                    ...server, 
+                    monthly_votes_count: monthlyItem.monthly_votes_count 
+                } : null;
+            }).filter(Boolean);
+            
+            return { data: resultData, count };
+        } catch (error) {
+            console.error("API Error (getRankingServers - monthly):", error);
+            throw error;
+        }
     } else {
-        // Para el ranking general, la consulta es directamente a la tabla 'servers'.
-        query = supabase.from('servers')
-            .select('*, average_rating, review_count')
+        // La consulta al ranking general se mantiene igual
+        const { data, error, count } = await supabase
+            .from('servers')
+            .select('*, average_rating, review_count', { count: 'exact' })
             .eq('status', 'aprobado')
             .order('votes_count', { ascending: false, nullsFirst: false })
             .range(from, to);
+
+        if (error) {
+            console.error("API Error (getRankingServers - general):", error);
+            throw error;
+        }
+        
+        return { data, count };
     }
-
-    const { data, error, count } = await query.select('*, servers(*)', { count: 'exact' });
-
-    if (error) { 
-        console.error("API Error (getRankingServers):", error); 
-        throw error; 
-    }
-    
-    // Si la fuente es 'monthly_server_votes', los datos del servidor están anidados.
-    // Los desanidamos para tener una estructura de datos consistente.
-    const resultData = rankingType === 'monthly' 
-        ? data.map(item => ({ ...item.servers, monthly_votes_count: item.monthly_votes_count })) 
-        : data;
-
-    return { data: resultData, count };
 }
