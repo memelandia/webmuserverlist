@@ -14,21 +14,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .ranking-filter-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            justify-content: center;
-        }
-    </style>
 </head>
 <body id="page-ranking">    
     <header class="main-header">
         <nav class="main-nav container">
             <a href="index.html" class="logo-container">
-            <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
-            <span class="logo-text">MuServer<span>List</span></span>
+                <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                <span class="logo-text">MuServer<span>List</span></span>
+            </a>
             <ul class="nav-menu">
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="explorar.html">Explorar</a></li>
@@ -81,21 +74,50 @@
         <div class="pagination-container" id="pagination-controls"></div>
     </main>
 
-    <div id="auth-modal-overlay" class="modal-overlay">
-        <!-- Contenido del modal ... -->
-    </div>
+    <div id="auth-modal-placeholder"></div>
     
     <footer class="main-footer">
-        <!-- Contenido del footer ... -->
+        <div class="footer-content container">
+            <div class="footer-column">
+                <a href="index.html" class="logo-container">
+                    <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                    <span class="logo-text">MuServer<span>List</span></span>
+                </a>
+                <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
+            </div>
+            <div class="footer-column">
+                <h4>Navegación</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="explorar.html">Explorar</a></li>
+                    <li><a href="ranking.html">Ranking</a></li>
+                    <li><a href="calendario.html">Calendario</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Para Dueños</h4>
+                <ul class="footer-links">
+                    <li><a href="agregar.html">Publica tu Servidor</a></li>
+                    <li><a href="#">Términos de Servicio</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Síguenos</h4>
+                <div class="footer-social">
+                    <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 MuServerList. Todos los derechos reservados.</p>
+        </div>
     </footer>
 
-   <!-- 1. Carga la librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-
-    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
     <script type="module" src="js/main-app.js"></script>
 </body>
 </html>

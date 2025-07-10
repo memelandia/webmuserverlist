@@ -1,3 +1,4 @@
+--- START OF FILE index.html ---
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,36 +19,25 @@
 </head>
 <body id="page-home">    
     <header class="main-header">
-        <!-- NAVEGACIÓN CORREGIDA -->
         <nav class="main-nav container">
-            <!-- 1. Contenedor del Logo (a la izquierda) -->
             <a href="index.html" class="logo-container">
                 <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
                 <span class="logo-text">MuServer<span>List</span></span>
             </a>
-
-            <!-- 2. Menú de Navegación (centrado) -->
             <ul class="nav-menu">
                 <li><a href="index.html" class="active">Inicio</a></li>
                 <li><a href="explorar.html">Explorar</a></li>
                 <li><a href="ranking.html">Ranking</a></li>
                 <li><a href="calendario.html">Calendario</a></li>
             </ul>
-
-            <!-- 3. Acciones de Usuario (a la derecha) -->
-            <div id="auth-section" class="nav-actions">
-                <!-- Contenido dinámico desde supabase-init.js -->
-            </div>
-            
-            <!-- 4. Botón Móvil -->
+            <div id="auth-section" class="nav-actions"></div>
             <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
         </nav>
     </header>
 
     <main>
-        <!-- Hero Section -->
         <section class="hero-section">
-            <div class="hero-particles" id="particles-js"></div>
+            <div id="particles-js" class="hero-particles"></div>
             <div class="hero-content container">
                 <h1>MuServerList - Comunidad Mu Online</h1>
                 <p class="subtitle">La lista definitiva de servidores de Mu Online. Vota, explora y únete a nuevas comunidades.</p>
@@ -72,7 +62,6 @@
             </div>
         </section>
 
-        <!-- Carrusel de Servidores Destacados -->
         <section class="featured-carousel-section">
             <div class="container">
                 <h2 class="section-title"><i class="fa-solid fa-crown"></i> Servidores Destacados</h2>
@@ -86,7 +75,6 @@
             </div>
         </section>
         
-        <!-- ¡NUEVO! Sección Servidor del Mes -->
         <section class="server-of-the-month-section">
             <div class="container">
                  <div id="server-of-the-month-widget">
@@ -95,11 +83,10 @@
             </div>
         </section>
 
-        <!-- Sección de Contenido Principal (Widgets) -->
         <section class="home-layout-section container">
             <div class="ranking-widget widget">
                 <h3 class="widget-title"><i class="fa-solid fa-trophy"></i> Top 5 Ranking</h3>
-                <div class="ranking-list" id="ranking-widget-list"> <!-- Corregido: Usar DIV en vez de OL -->
+                <div class="ranking-list" id="ranking-widget-list">
                     <div class="loading-text">Cargando ranking...</div>
                 </div>
                 <a href="ranking.html" class="view-all-link">Ver Ranking Completo <i class="fa-solid fa-arrow-right"></i></a>
@@ -113,12 +100,9 @@
             </div>
         </section>
 
-        <!-- Sección de Llamada a la Acción (CTA) -->
         <section class="cta-section-v2">
             <div class="container cta-content">
-                <div class="cta-icon">
-                    <i class="fa-solid fa-rocket"></i>
-                </div>
+                <div class="cta-icon"><i class="fa-solid fa-rocket"></i></div>
                 <div class="cta-text">
                     <h2>¿Administras un Servidor de Mu Online?</h2>
                     <p>Publica tu servidor en nuestra lista de forma gratuita y llega a miles de jugadores potenciales.</p>
@@ -130,84 +114,54 @@
         </section>
     </main>
     
-    <!-- Modal de Autenticación -->
-    <div id="auth-modal-overlay" class="modal-overlay">
-        <div id="auth-modal" class="modal-container">
-            <button id="close-auth-modal" class="close-modal">×</button>
-            <div id="login-container">
-                <h2>Iniciar Sesión</h2>
-                <form id="login-form">
-                    <div class="form-group"><label for="login-email">Email o Nombre de Usuario</label><input type="text" id="login-email" required></div>
-                    <div class="form-group"><label for="login-password">Contraseña</label><input type="password" id="login-password" required></div>
-                    <div id="login-feedback" class="feedback-message"></div>
-                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
-                </form>
-                <p class="auth-switch">¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
-            </div>
-            <div id="register-container" class="hidden">
-                 <h2>Crear Cuenta</h2>
-                <form id="register-form">
-                    <div class="form-group"><label for="register-username">Nombre de Usuario</label><input type="text" id="register-username" required></div>
-                    <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" required></div>
-                    <div class="form-group"><label for="register-password">Contraseña (mín. 6 caracteres)</label><input type="password" id="register-password" required minlength="6"></div>
-                    <div class="form-group"><label for="register-confirm-password">Confirmar Contraseña</label><input type="password" id="register-confirm-password" required minlength="6"></div>
-                    <div id="register-feedback" class="feedback-message"></div>
-                    <button type="submit" class="btn btn-primary">Registrarme</button>
-                </form>
-                <p class="auth-switch">¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
-            </div>
-        </div>
-    </div>
+    <!-- El modal se cargará aquí por JS -->
+    <div id="auth-modal-placeholder"></div>
 
-<footer class="main-footer">
-    <div class="footer-content container">
-        <div class="footer-column">
-            <!-- FOOTER CORREGIDO -->
-            <a href="index.html" class="logo-container">
-                <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
-                <span class="logo-text">MuServer<span>List</span></span>
-            </a>
-            <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
-        </div>
-        <div class="footer-column">
-            <h4>Navegación</h4>
-            <ul class="footer-links">
-                <li><a href="index.html">Inicio</a></li>
-                <li><a href="explorar.html">Explorar</a></li>
-                <li><a href="ranking.html">Ranking</a></li>
-                <li><a href="calendario.html">Calendario</a></li>
-            </ul>
-        </div>
-        <div class="footer-column">
-            <h4>Para Dueños</h4>
-            <ul class="footer-links">
-                <li><a href="agregar.html">Publica tu Servidor</a></li>
-                <li><a href="#">Términos de Servicio</a></li>
-                <li><a href="#">Política de Privacidad</a></li>
-            </ul>
-        </div>
-        <div class="footer-column">
-            <h4>Síguenos</h4>
-            <div class="footer-social">
-                <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
-                <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <footer class="main-footer">
+        <div class="footer-content container">
+            <div class="footer-column">
+                <a href="index.html" class="logo-container">
+                    <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                    <span class="logo-text">MuServer<span>List</span></span>
+                </a>
+                <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
+            </div>
+            <div class="footer-column">
+                <h4>Navegación</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Inicio</a></li>
+                    <li><a href="explorar.html">Explorar</a></li>
+                    <li><a href="ranking.html">Ranking</a></li>
+                    <li><a href="calendario.html">Calendario</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Para Dueños</h4>
+                <ul class="footer-links">
+                    <li><a href="agregar.html">Publica tu Servidor</a></li>
+                    <li><a href="#">Términos de Servicio</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Síguenos</h4>
+                <div class="footer-social">
+                    <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="footer-bottom">
-        <p>© 2024 MuServerList. Todos los derechos reservados.</p>
-    </div>
-</footer>
+        <div class="footer-bottom">
+            <p>© 2024 MuServerList. Todos los derechos reservados.</p>
+        </div>
+    </footer>
 
-   <!-- 1. Carga la librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-
-    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
     <script type="module" src="js/main-app.js"></script>
+    <!-- Librería de Partículas, necesaria en index.html -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 
 </body>
 </html>

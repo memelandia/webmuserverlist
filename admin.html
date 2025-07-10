@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* Estilos específicos del admin panel para componentes dinámicos */
         .user-role-select { background-color: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); padding: 5px; border-radius: 4px; }
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -20,44 +19,20 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary-color); }
         input:checked + .slider:before { transform: translateX(26px); }
-
-        /* Estilos para la nueva sección del Servidor del Mes */
-        #som-current-winner {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            padding: 1.5rem;
-            background-color: var(--bg-dark);
-            border-radius: var(--border-radius);
-            margin-bottom: 2rem;
-        }
-        #som-current-winner img {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-        #som-current-winner h4 {
-            font-size: 1.5rem;
-            margin: 0;
-            color: var(--primary-color);
-        }
-        #som-current-winner p {
-            margin: 0;
-            color: var(--text-secondary);
-        }
-        #som-selection-form label {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: block;
-        }
+        #som-current-winner { display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem; background-color: var(--bg-dark); border-radius: var(--border-radius); margin-bottom: 2rem; }
+        #som-current-winner img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; }
+        #som-current-winner h4 { font-size: 1.5rem; margin: 0; color: var(--primary-color); }
+        #som-current-winner p { margin: 0; color: var(--text-secondary); }
+        #som-selection-form label { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; display: block; }
     </style>
 </head>
 <body id="page-admin">
     <header class="main-header">
         <nav class="main-nav container">
-            <a href="index.html" class="logo">Mu<span>Admin</span></a>
+            <a href="index.html" class="logo-container">
+                 <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                 <span class="logo-text">Mu<span>Admin</span></span>
+            </a>
             <div class="nav-actions" id="auth-section"></div>
             <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
         </nav>
@@ -68,7 +43,6 @@
             <h1><i class="fa-solid fa-user-shield"></i> Panel de Administración</h1>
         </div>
         <div id="admin-panel" style="display: none;">
-            <!-- PESTAÑAS: Añadida la nueva pestaña 'server-of-the-month' -->
             <div class="admin-tabs">
                 <div class="admin-tab active" data-tab="pending-servers">Servidores Pendientes</div>
                 <div class="admin-tab" data-tab="all-servers">Gestionar Servidores</div>
@@ -86,13 +60,10 @@
         </div>
     </main>
 
-   <!-- 1. Carga la librería de Supabase -->
+    <div id="auth-modal-placeholder"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-
-    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
     <script type="module" src="js/main-app.js"></script>
 </body>
 </html>

@@ -1,0 +1,35 @@
+<div id="auth-modal-overlay" class="modal-overlay">
+    <div id="auth-modal" class="modal-container">
+        <button id="close-auth-modal" class="close-modal">×</button>
+        <div id="login-container">
+            <h2>Iniciar Sesión</h2>
+            <form id="login-form">
+                <div class="form-group"><label for="login-email">Email o Nombre de Usuario</label><input type="text" id="login-email" required></div>
+                <div class="form-group"><label for="login-password">Contraseña</label><input type="password" id="login-password" required></div>
+                <div id="login-feedback" class="feedback-message"></div>
+                <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+            </form>
+            <p class="auth-switch">¿No tienes cuenta? <a href="#" id="show-register">Regístrate</a></p>
+        </div>
+        <div id="register-container" class="hidden">
+            <h2>Crear Cuenta</h2>
+            <form id="register-form">
+                <div class="form-group"><label for="register-username">Nombre de Usuario</label><input type="text" id="register-username" required></div>
+                <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" required></div>
+                <div class="form-group"><label for="register-password">Contraseña (mín. 6 caracteres)</label><input type="password" id="register-password" required minlength="6"></div>
+                <div class="form-group"><label for="register-confirm-password">Confirmar Contraseña</label><input type="password" id="register-confirm-password" required minlength="6"></div>
+                <!-- NUEVO: Selección de Rol -->
+                <div class="form-group role-selection">
+                    <label>¿Qué describes mejor tu rol?</label>
+                    <div class="role-options">
+                        <label><input type="radio" name="role" value="player" checked> <span><i class="fa-solid fa-user-ninja"></i> Busco un Servidor</span></label>
+                        <label><input type="radio" name="role" value="owner"> <span><i class="fa-solid fa-crown"></i> Tengo un Servidor</span></label>
+                    </div>
+                </div>
+                <div id="register-feedback" class="feedback-message"></div>
+                <button type="submit" class="btn btn-primary">Registrarme</button>
+            </form>
+            <p class="auth-switch">¿Ya tienes cuenta? <a href="#" id="show-login">Inicia sesión</a></p>
+        </div>
+    </div>
+</div>

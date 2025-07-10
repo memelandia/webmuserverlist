@@ -1,3 +1,4 @@
+--- START OF FILE editar-servidor.html ---
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -19,8 +20,9 @@
     <header class="main-header">
         <nav class="main-nav container">
             <a href="index.html" class="logo-container">
-            <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
-            <span class="logo-text">MuServer<span>List</span></span>
+                <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                <span class="logo-text">MuServer<span>List</span></span>
+            </a>
             <ul class="nav-menu">
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="explorar.html">Explorar</a></li>
@@ -122,10 +124,8 @@
                     <small>Subir nuevas imágenes reemplazará la galería existente.</small>
                 </div>
 
-
                 <h4><i class="fa-solid fa-calendar-check"></i> Eventos Principales</h4>
                 <div class="checklist-grid">
-                    <!-- Checkboxes de eventos -->
                     <div><input type="checkbox" id="evt-bc" name="events" value="Blood Castle"><label for="evt-bc">Blood Castle</label></div>
                     <div><input type="checkbox" id="evt-ds" name="events" value="Devil Square"><label for="evt-ds">Devil Square</label></div>
                     <div><input type="checkbox" id="evt-cc" name="events" value="Chaos Castle"><label for="evt-cc">Chaos Castle</label></div>
@@ -169,7 +169,10 @@
     <footer class="main-footer">
     <div class="footer-content container">
         <div class="footer-column">
-            <a href="index.html" class="logo">MuServer<span>List</span></a>
+            <a href="index.html" class="logo-container">
+                <img src="img/logo.png" alt="MuServerList Logo" class="logo-img">
+                <span class="logo-text">MuServer<span>List</span></span>
+            </a>
             <p class="footer-description">La comunidad #1 para encontrar y votar por los mejores servidores de Mu Online.</p>
         </div>
         <div class="footer-column">
@@ -199,17 +202,14 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; 2024 MuServerList. Todos los derechos reservados.</p>
+        <p>© 2024 MuServerList. Todos los derechos reservados.</p>
     </div>
     </footer>
+    
+    <div id="auth-modal-placeholder"></div>
 
-   <!-- 1. Carga la librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 2. Inicializa el cliente de Supabase (es el único script normal) -->
     <script src="js/supabase-init.js"></script>
-
-    <!-- 3. Carga el script principal de tu aplicación COMO MÓDULO -->
     <script type="module" src="js/main-app.js"></script>
 </body>
 </html>
