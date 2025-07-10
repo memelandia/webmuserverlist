@@ -1,7 +1,10 @@
-// js/admin.js (v13 - Controlador del Panel de Admin)
+// js/admin.js (v14 - COMPLETO con corrección de bugs)
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
+
+let currentTab = 'pending-servers';
+let abortController = new AbortController(); // Para cancelar peticiones en curso
 
 // La función principal que se llamará desde main-app.js
 export async function initAdminPage() {
@@ -10,8 +13,13 @@ export async function initAdminPage() {
     const adminPanel = document.getElementById('admin-panel');
     const authRequired = document.getElementById('admin-auth-required');
     const contentContainer = document.getElementById('admin-content');
-    const tabs = document.querySelectorAll('.admin-tab');
+    const tabsContainer = document.querySelector('.admin-tabs');
 
+    if (!adminPanel || !authRequired || !contentContainer || !tabsContainer) {
+        console.error("No se encontraron elementos esenciales del panel de admin.");
+        return;
+    }
+    
     // 1. Verificación de permisos
     try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -20,7 +28,6 @@ export async function initAdminPage() {
         const profile = await api.getUserProfile(session.user.id);
         if (profile.role !== 'admin') throw new Error("Debes ser administrador para ver esta página.");
 
-        // Si todo está bien, mostramos el panel
         adminPanel.style.display = 'block';
         authRequired.style.display = 'none';
 
@@ -32,98 +39,91 @@ export async function initAdminPage() {
         return; // Detenemos la ejecución si no hay permisos
     }
 
-    // 2. Lógica de Pestañas (Tabs)
-    let currentTab = 'pending-servers';
+    // 2. Lógica de Pestañas (Tabs) usando delegación de eventos
+    tabsContainer.addEventListener('click', (e) => {
+        const tab = e.target.closest('.admin-tab');
+        if (!tab || tab.classList.contains('active')) return;
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            currentTab = tab.dataset.tab;
-            renderAdminContent(contentContainer, currentTab);
-        });
+        // Abortar la petición de la pestaña anterior si estaba en curso
+        abortController.abort();
+        abortController = new AbortController(); // Crear un nuevo controller para la nueva petición
+
+        tabsContainer.querySelector('.active')?.classList.remove('active');
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        renderAdminContent(contentContainer, currentTab);
     });
 
-    // 3. Renderizado de Contenido y asignación de eventos
-    // Se usa delegación de eventos en el contenedor para manejar clics y cambios
-    contentContainer.addEventListener('click', async (e) => {
-        const target = e.target;
-        
-        // Botones de acción de servidores
-        const approveBtn = target.closest('.approve-btn');
-        const denyBtn = target.closest('.deny-btn');
-
-        if (approveBtn) {
-            await api.updateServer(approveBtn.dataset.id, { status: 'aprobado' });
-            renderAdminContent(contentContainer, currentTab); 
-        }
-
-        if (denyBtn) {
-            if (confirm('¿Seguro que quieres eliminar/rechazar este servidor? Esta acción no se puede deshacer.')) {
-                await api.deleteServer(denyBtn.dataset.id);
-                renderAdminContent(contentContainer, currentTab); 
-            }
-        }
-    });
+    // 3. Manejadores de eventos centralizados en el contenedor de contenido
+    contentContainer.addEventListener('click', (e) => handleContentClick(e, contentContainer));
+    contentContainer.addEventListener('change', (e) => handleContentChange(e, contentContainer));
+    contentContainer.addEventListener('submit', (e) => handleContentSubmit(e, contentContainer));
     
-    contentContainer.addEventListener('change', async (e) => {
-        const target = e.target;
-
-        // Toggle de servidor destacado
-        if (target.matches('.featured-toggle')) {
-            await api.updateServer(target.dataset.id, { is_featured: target.checked });
-        }
-
-        // Cambio de rol de usuario
-        if (target.matches('.user-role-select')) {
-             await api.updateUserProfile(target.dataset.id, { role: target.value });
-             alert(`Rol de usuario actualizado a ${target.value}.`);
-             renderAdminContent(contentContainer, currentTab);
-        }
-    });
-
     // Carga inicial
     renderAdminContent(contentContainer, currentTab);
 }
 
-// Función que decide qué contenido mostrar según la pestaña activa
-async function renderAdminContent(container, tabName) {
-    ui.renderLoading(container, "Cargando contenido del panel...");
+// --- Manejadores de Eventos Delegados ---
 
-    try {
-        switch (tabName) {
-            case 'pending-servers':
-                const pendingServers = await api.getServersByStatus('pendiente');
-                ui.renderAdminPendingServers(container, pendingServers);
-                break;
-            case 'all-servers':
-                const allOtherServers = await api.getAllServersForAdmin();
-                ui.renderAdminAllServers(container, allOtherServers);
-                break;
-            case 'users':
-                const allUsers = await api.getAllUsersForAdmin();
-                ui.renderAdminUsers(container, allUsers);
-                break;
-            case 'server-of-the-month':
-                const { currentWinner, allServers } = await api.getDataForSomAdmin();
-                ui.renderAdminSoM(container, { currentWinner, allServers });
+async function handleContentClick(e, container) {
+    const target = e.target;
+    const approveBtn = target.closest('.approve-btn');
+    const denyBtn = target.closest('.deny-btn');
 
-                // Añadimos el listener específico para el form de SoM después de renderizarlo
-                const somForm = document.getElementById('som-selection-form');
-                if(somForm) somForm.addEventListener('submit', handleSoMSubmit);
-                break;
+    if (approveBtn) {
+        approveBtn.disabled = true;
+        approveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        await api.updateServer(approveBtn.dataset.id, { status: 'aprobado' });
+        renderAdminContent(container, currentTab); 
+    }
+
+    if (denyBtn) {
+        if (confirm('¿Seguro que quieres eliminar/rechazar este servidor? Esta acción no se puede deshacer.')) {
+            denyBtn.disabled = true;
+            denyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            await api.deleteServer(denyBtn.dataset.id);
+            renderAdminContent(container, currentTab); 
         }
-    } catch(error) {
-        console.error("Error en panel de admin:", error);
-        ui.renderError(container, error.message);
     }
 }
 
-async function handleSoMSubmit(e) {
+async function handleContentChange(e, container) {
+    const target = e.target;
+
+    if (target.matches('.featured-toggle')) {
+        await api.updateServer(target.dataset.id, { is_featured: target.checked });
+        // No es necesario recargar, el toggle es feedback suficiente
+    }
+
+    if (target.matches('.user-role-select')) {
+         const newRole = target.value;
+         const userId = target.dataset.id;
+         const username = target.closest('.detail-card').querySelector('h4').textContent.trim();
+         
+         if (confirm(`¿Seguro que quieres cambiar el rol de "${username}" a "${newRole}"?`)) {
+             try {
+                await api.updateUserProfile(userId, { role: newRole });
+                alert(`Rol de usuario actualizado a ${newRole}.`);
+                renderAdminContent(container, currentTab);
+             } catch(error) {
+                console.error("Error al actualizar rol:", error);
+                alert("Hubo un error al actualizar el rol.");
+                target.value = target.dataset.initialRole; // Revertir visualmente
+             }
+         } else {
+            target.value = target.dataset.initialRole; // Revertir si se cancela
+         }
+    }
+}
+
+async function handleContentSubmit(e, container) {
+    if (e.target.id !== 'som-selection-form') return;
     e.preventDefault();
-    const selectedServerId = document.getElementById('som-select').value;
-    const feedbackEl = document.getElementById('som-feedback');
-    const button = e.target.querySelector('button');
+    
+    const form = e.target;
+    const selectedServerId = form.querySelector('#som-select').value;
+    const feedbackEl = form.querySelector('#som-feedback');
+    const button = form.querySelector('button[type="submit"]');
 
     if (!selectedServerId) {
         ui.setFormFeedback(feedbackEl, 'Por favor, selecciona un servidor.', 'error');
@@ -137,15 +137,48 @@ async function handleSoMSubmit(e) {
         await api.setServerOfTheMonth(selectedServerId);
         ui.setFormFeedback(feedbackEl, '¡Servidor del Mes actualizado con éxito!', 'success');
         
-        // Recargar la pestaña actual después de 2 segundos
-        setTimeout(() => {
-            const container = document.getElementById('admin-content');
-            renderAdminContent(container, 'server-of-the-month');
-        }, 2000);
+        setTimeout(() => renderAdminContent(container, currentTab), 2000);
 
     } catch (error) {
         ui.setFormFeedback(feedbackEl, `Error: ${error.message}`, 'error');
         button.disabled = false;
         button.innerHTML = 'Establecer como Ganador';
+    }
+}
+
+// --- Función Principal de Renderizado de Contenido ---
+async function renderAdminContent(container, tabName) {
+    ui.renderLoading(container, `Cargando ${tabName.replace(/-/g, ' ')}...`);
+
+    try {
+        let content;
+        switch (tabName) {
+            case 'pending-servers':
+                const pendingServers = await api.getServersByStatus('pendiente');
+                content = ui.renderAdminPendingServers(pendingServers);
+                break;
+            case 'all-servers':
+                const allOtherServers = await api.getAllServersForAdmin();
+                content = ui.renderAdminAllServers(allOtherServers);
+                break;
+            case 'users':
+                const allUsers = await api.getAllUsersForAdmin();
+                content = ui.renderAdminUsers(allUsers);
+                break;
+            case 'server-of-the-month':
+                const { currentWinner, allServers } = await api.getDataForSomAdmin();
+                content = ui.renderAdminSoM({ currentWinner, allServers });
+                break;
+            default:
+                content = `<p class="error-text">Pestaña no encontrada: ${tabName}</p>`;
+        }
+        if (container.isConnected) { // Comprobar si el contenedor sigue en el DOM
+            container.innerHTML = content;
+        }
+    } catch(error) {
+        if (error.name !== 'AbortError') { // Ignorar errores de aborto
+            console.error("Error al renderizar contenido de admin:", error);
+            if(container.isConnected) ui.renderError(container, `Error al cargar: ${error.message}`);
+        }
     }
 }
