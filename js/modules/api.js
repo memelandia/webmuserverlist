@@ -205,9 +205,20 @@ export async function deleteServer(serverId) {
     if (error) { console.error("API Error (deleteServer):", error); throw error; }
 }
 export async function getAllUsersForAdmin() {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at');
-    if (error) { console.error("API Error (getAllUsersForAdmin):", error); throw error; }
-    return data;
+    // La consulta original intenta ordenar por profiles.created_at que no existe
+    // const { data, error } = await supabase.from('profiles').select('*').order('created_at');
+    
+    // Solución: Obtener los perfiles sin ordenar por created_at
+    const { data, error } = await supabase.from('profiles').select('*');
+    
+    if (error) { 
+        console.error("API Error (getAllUsersForAdmin):", error); 
+        throw error; 
+    }
+    
+    // Ordenamos los resultados en el cliente por id o username
+    // que son campos que sí existen en la tabla profiles
+    return data.sort((a, b) => a.username?.localeCompare(b.username) || 0);
 }
 export async function updateUserProfile(userId, updateData) {
     const { error } = await supabase.from('profiles').update(updateData).eq('id', userId);
