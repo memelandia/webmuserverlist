@@ -26,11 +26,15 @@ async function loadServerDetails() {
 
     try {
         const server = await api.getServerById(serverId);
-        document.title = `${server.name} - MuServerList`;
         
+        // CORRECCIÓN: Comprobar si el servidor es nulo (no encontrado)
+        if (!server) {
+            throw new Error("Servidor no encontrado o no disponible.");
+        }
+        
+        document.title = `${server.name} - MuServerList`;
         ui.renderServerPage(mainContainer, server);
         
-        // Inicializar GLightbox para la galería
         if (lightbox) lightbox.destroy();
         if (typeof GLightbox !== 'undefined') {
             lightbox = GLightbox({ selector: '.gallery-item' });
@@ -43,9 +47,10 @@ async function loadServerDetails() {
     } catch (error) {
         console.error("Error cargando detalles del servidor:", error);
         document.title = 'Servidor no encontrado - MuServerList';
-        ui.renderError(mainContainer, '<div class="page-header"><h1>Servidor no encontrado</h1><p>El servidor que buscas no existe o no está disponible.</p></div>');
+        ui.renderError(mainContainer, `<div class="page-header"><h1>Servidor no encontrado</h1><p>${error.message}</p></div>`);
     }
 }
+
 
 async function loadReviews(serverId) {
     const reviewsContainer = document.getElementById('reviews-list');
@@ -74,7 +79,7 @@ async function setupReviewForm(serverId) {
                 .select('id')
                 .eq('server_id', serverId)
                 .eq('user_id', session.user.id)
-                .maybeSingle(); // Usar maybeSingle para evitar error si no hay reseña
+                .maybeSingle(); 
 
             if (error) throw error;
             
@@ -120,7 +125,7 @@ async function setupReviewForm(serverId) {
                 form.classList.add('hidden');
                 loginPrompt.innerHTML = '<p>¡Gracias por tu reseña!</p>';
                 loginPrompt.classList.remove('hidden');
-                loadReviews(serverId); // Recargar las reseñas
+                loadReviews(serverId);
             }, 2000);
             
         } catch (error) {
