@@ -362,21 +362,67 @@ export function renderCalendarPage(container, servers) {
 
 // --- Funciones Auxiliares para Roles ---
 function getRoleIcon(role) {
+    // Normalizar el rol de manera más robusta
+    let normalizedRole = 'player'; // valor por defecto
+
+    if (role) {
+        // Convertir a string, limpiar espacios, convertir a minúsculas
+        normalizedRole = role.toString().toLowerCase().trim();
+
+        // Manejar posibles variaciones en los nombres de roles
+        if (normalizedRole === 'propietario' || normalizedRole === 'dueño') {
+            normalizedRole = 'owner';
+        } else if (normalizedRole === 'administrador') {
+            normalizedRole = 'admin';
+        } else if (normalizedRole === 'jugador' || normalizedRole === 'usuario') {
+            normalizedRole = 'player';
+        }
+    }
+
+    console.log('🔍 getRoleIcon - Rol recibido:', role, '| Normalizado:', normalizedRole);
+
     const icons = {
         'player': '<i class="fa-solid fa-user"></i>',
         'owner': '<i class="fa-solid fa-crown"></i>',
         'admin': '<i class="fa-solid fa-shield-halved"></i>'
     };
-    return icons[role] || '<i class="fa-solid fa-user"></i>';
+
+    const icon = icons[normalizedRole] || '<i class="fa-solid fa-user"></i>';
+    console.log('🔍 getRoleIcon - Icono seleccionado:', icon);
+
+    return icon;
 }
 
 function getRoleDisplayName(role) {
+    // Normalizar el rol de manera más robusta
+    let normalizedRole = 'player'; // valor por defecto
+
+    if (role) {
+        // Convertir a string, limpiar espacios, convertir a minúsculas
+        normalizedRole = role.toString().toLowerCase().trim();
+
+        // Manejar posibles variaciones en los nombres de roles
+        if (normalizedRole === 'propietario' || normalizedRole === 'dueño') {
+            normalizedRole = 'owner';
+        } else if (normalizedRole === 'administrador') {
+            normalizedRole = 'admin';
+        } else if (normalizedRole === 'jugador' || normalizedRole === 'usuario') {
+            normalizedRole = 'player';
+        }
+    }
+
+    console.log('🔍 getRoleDisplayName - Rol recibido:', role, '| Normalizado:', normalizedRole);
+
     const names = {
         'player': 'Jugador',
         'owner': 'Propietario',
         'admin': 'Administrador'
     };
-    return names[role] || 'Jugador';
+
+    const displayName = names[normalizedRole] || 'Jugador';
+    console.log('🔍 getRoleDisplayName - Nombre seleccionado:', displayName);
+
+    return displayName;
 }
 
 // --- Componentes de la Página de Servidor ---
@@ -488,6 +534,11 @@ export function renderProfileLoginPrompt(container) {
 
 export function renderUserProfile(container, data) {
     const { session, profile, servers, reviews } = data;
+
+    // Logging para diagnosticar el problema del rol
+    console.log('🔍 renderUserProfile - Profile completo:', profile);
+    console.log('🔍 renderUserProfile - Rol del usuario:', profile.role, '| Tipo:', typeof profile.role);
+
     const avatar = getOptimizedImageUrl('avatars', profile.avatar_url, { width: 300, height: 300, resize: "cover" }, "img/avatar_default.png");
     
     const serversHtml = servers && servers.length > 0
@@ -521,17 +572,49 @@ export function renderUserProfile(container, data) {
         <div class="page-header"><h1><i class="fa-solid fa-user-circle"></i> Mi Perfil</h1></div>
         <div class="profile-grid">
             <aside class="profile-sidebar">
-                <div class="widget" style="text-align:center;">
+                 <div class="widget profile-info-widget">
                     <div class="profile-avatar-container">
                         <img src="${avatar}" alt="Avatar de ${profile.username}" id="profile-avatar-img" class="profile-avatar-img">
                         <label for="avatar-upload-input" id="avatar-upload-label" title="Cambiar avatar"><i class="fa-solid fa-camera"></i></label>
                         <input type="file" id="avatar-upload-input" accept="image/png, image/jpeg, image/gif">
                     </div>
                     <div id="avatar-feedback"></div>
-                    <h2>${profile.username || "Usuario"}</h2>
-                    <p class="text-secondary" style="word-wrap:break-word;">${session.user.email}</p>
-                    <p class="text-secondary">Rol: <span style="text-transform: capitalize;">${profile.role}</span></p>
-                    <small class="text-secondary">Miembro desde: ${new Date(session.user.created_at).toLocaleDateString("es-ES")}</small>
+
+                    <div class="profile-user-info">
+                        <h2 class="profile-username">${profile.username || "Usuario"}</h2>
+
+                        <div class="profile-detail-item">
+                            <div class="profile-detail-icon">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <div class="profile-detail-content">
+                                <span class="profile-detail-label">Correo Electrónico</span>
+                                <span class="profile-detail-value">${session.user.email}</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-detail-item">
+                            <div class="profile-detail-icon profile-role-icon role-${profile.role}">
+                                ${getRoleIcon(profile.role)}
+                            </div>
+                            <div class="profile-detail-content">
+                                <span class="profile-detail-label">Rol de Usuario</span>
+                                <span class="profile-detail-value">
+                                    <span class="role-badge role-${profile.role}">${getRoleDisplayName(profile.role)}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="profile-detail-item">
+                            <div class="profile-detail-icon">
+                                <i class="fa-solid fa-calendar-alt"></i>
+                            </div>
+                            <div class="profile-detail-content">
+                                <span class="profile-detail-label">Miembro Desde</span>
+                                <span class="profile-detail-value">${new Date(session.user.created_at).toLocaleDateString("es-ES")}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </aside>
             <main class="profile-main-content">
@@ -548,6 +631,11 @@ export function renderUserProfile(container, data) {
 }
 export function renderOwnerDashboard(container, data) {
     const { session, profile, servers, dashboardStats } = data;
+
+    // Logging para diagnosticar el problema del rol
+    console.log('🔍 renderOwnerDashboard - Profile completo:', profile);
+    console.log('🔍 renderOwnerDashboard - Rol del usuario:', profile.role, '| Tipo:', typeof profile.role);
+
     const avatar = getOptimizedImageUrl("avatars", profile.avatar_url, { width: 300, height: 300, resize: "cover" }, "img/avatar_default.png");
 
     const totals = (dashboardStats || []).reduce((acc, srv) => {
