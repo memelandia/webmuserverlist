@@ -628,13 +628,122 @@ export function initOwnerCharts(stats) {
 
     Chart.defaults.color = 'var(--text-secondary)';
 
-    new Chart(interactionsCtx, {type: "bar", data: {labels, datasets: [{label: "Vistas", data: stats.map(s => s.view_count || 0), backgroundColor: "rgba(255, 51, 51, 0.5)", borderColor: "rgba(255, 51, 51, 1)", borderWidth: 1}, {label: "Clics Web", data: stats.map(s => s.website_click_count || 0), backgroundColor: "rgba(51, 153, 255, 0.5)", borderColor: "rgba(51, 153, 255, 1)", borderWidth: 1}, {label: "Clics Discord", data: stats.map(s => s.discord_click_count || 0), backgroundColor: "rgba(114, 137, 218, 0.5)", borderColor: "rgba(114, 137, 218, 1)", borderWidth: 1}]}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)'}}, x: {grid: { color: 'rgba(255, 255, 255, 0.1)'}}}, plugins: {legend: {labels: {color: "var(--text-primary)"}}}}});
+    // Gráfico de Interacciones con leyenda mejorada
+    new Chart(interactionsCtx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Vistas",
+                    data: stats.map(s => s.view_count || 0),
+                    backgroundColor: "rgba(255, 51, 51, 0.7)",
+                    borderColor: "rgba(255, 51, 51, 1)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Clics Web",
+                    data: stats.map(s => s.website_click_count || 0),
+                    backgroundColor: "rgba(51, 153, 255, 0.7)",
+                    borderColor: "rgba(51, 153, 255, 1)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Clics Discord",
+                    data: stats.map(s => s.discord_click_count || 0),
+                    backgroundColor: "rgba(114, 137, 218, 0.7)",
+                    borderColor: "rgba(114, 137, 218, 1)",
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)'}
+                },
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)'}
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: "var(--text-primary)",
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        },
+                        generateLabels: function(chart) {
+                            const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                            const labels = original.call(this, chart);
+
+                            labels.forEach(function(label) {
+                                label.pointStyle = 'circle';
+                                label.pointRadius = 6;
+                            });
+
+                            return labels;
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     // Paleta de colores variada para el gráfico de votos
     const colorPalette = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9", "#F8C471", "#82E0AA", "#F1948A", "#85C1E9", "#D7BDE2"];
     const backgroundColors = stats.map((_, index) => colorPalette[index % colorPalette.length]);
 
-    new Chart(votesCtx, {type: "doughnut", data: {labels, datasets: [{label: "Votos", data: stats.map(s => s.votes_count || 0), backgroundColor: backgroundColors, borderColor: "var(--bg-light)", borderWidth: 2}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "top", labels: {color: "var(--text-primary)"}}}}});
+    // Gráfico de Votos con leyenda oculta (se muestra información en tooltips)
+    new Chart(votesCtx, {
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [{
+                label: "Votos",
+                data: stats.map(s => s.votes_count || 0),
+                backgroundColor: backgroundColors,
+                borderColor: "var(--bg-dark)",
+                borderWidth: 3,
+                hoverBorderWidth: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    display: false // Ocultar leyenda para un look más limpio
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${context.parsed} votos (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 
