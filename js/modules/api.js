@@ -193,6 +193,58 @@ export async function updateUserAvatar(userId, avatarPath) {
     if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
+// Función alternativa de upload con enfoque diferente
+export async function uploadFileAlternative(file, bucket) {
+    console.log(`uploadFileAlternative: Iniciando con ${file?.name} al bucket ${bucket}`);
+
+    if (!file) {
+        console.log("uploadFileAlternative: No se proporcionó archivo, retornando null");
+        return null;
+    }
+
+    try {
+        // Verificar autenticación primero
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        if (sessionError || !session) {
+            throw new Error("No estás autenticado");
+        }
+
+        // Generar nombre único
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
+
+        console.log(`uploadFileAlternative: Nombre generado: ${fileName}`);
+
+        // Intentar subida directa sin Promise.race
+        console.log(`uploadFileAlternative: Iniciando subida directa...`);
+        const { data, error } = await window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        console.log(`uploadFileAlternative: Resultado de subida:`, { data, error });
+
+        if (error) {
+            throw new Error(`Error de Supabase: ${error.message}`);
+        }
+
+        if (!data?.path) {
+            throw new Error("No se obtuvo path del archivo subido");
+        }
+
+        console.log(`uploadFileAlternative: Éxito - ${data.path}`);
+        return data.path;
+
+    } catch (error) {
+        console.error(`uploadFileAlternative: Error:`, error);
+        throw error;
+    }
+}
+
 export async function uploadFile(file, bucket) {
     // Validación inicial
     if (!file) {
@@ -236,6 +288,8 @@ export async function uploadFile(file, bucket) {
         console.log(`uploadFile: Usuario autenticado: ${session.user.email}`);
 
         // Crear una promesa con timeout para evitar cuelgues
+        console.log(`uploadFile: Iniciando upload a bucket ${bucket} con archivo ${fileName}`);
+
         const uploadPromise = window.supabaseClient.storage
             .from(bucket)
             .upload(fileName, file, {
@@ -244,10 +298,15 @@ export async function uploadFile(file, bucket) {
             });
 
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("Timeout: La subida tardó más de 30 segundos")), 30000);
+            setTimeout(() => {
+                console.log(`uploadFile: TIMEOUT después de 30 segundos para ${fileName}`);
+                reject(new Error("Timeout: La subida tardó más de 30 segundos"));
+            }, 30000);
         });
 
+        console.log(`uploadFile: Esperando resultado de Promise.race para ${fileName}`);
         const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+        console.log(`uploadFile: Promise.race completado para ${fileName}`, { data, error });
 
         if (error) {
             console.error("Error de Supabase al subir archivo:", error);

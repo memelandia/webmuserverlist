@@ -159,44 +159,56 @@
             }
         };
         
-        // 3. Verificar buckets
+        // 3. Verificar buckets (método alternativo)
         window.checkBuckets = async function() {
             addLog('Verificando buckets de storage...', 'info');
-            
+
             const requiredBuckets = ['server-images', 'server-banners', 'server-gallery', 'avatars'];
             const bucketStatus = [];
-            
+
+            // Método alternativo: intentar acceder a cada bucket directamente
+            for (const bucket of requiredBuckets) {
+                try {
+                    // Intentar listar archivos del bucket para verificar que existe
+                    const { data, error } = await window.supabaseClient.storage
+                        .from(bucket)
+                        .list('', { limit: 1 });
+
+                    if (error) {
+                        if (error.message.includes('not found') || error.message.includes('does not exist')) {
+                            bucketStatus.push(`❌ ${bucket} (no existe)`);
+                            addLog(`Bucket ${bucket}: No existe`, 'error');
+                        } else {
+                            bucketStatus.push(`✅ ${bucket} (existe, error de permisos: ${error.message})`);
+                            addLog(`Bucket ${bucket}: Existe pero hay error de permisos`, 'warning');
+                        }
+                    } else {
+                        bucketStatus.push(`✅ ${bucket} (existe y funciona)`);
+                        addLog(`Bucket ${bucket}: Existe y funciona correctamente`, 'success');
+                    }
+                } catch (error) {
+                    bucketStatus.push(`❌ ${bucket} (error: ${error.message})`);
+                    addLog(`Bucket ${bucket}: Error - ${error.message}`, 'error');
+                }
+            }
+
+            // Intentar también el método oficial como respaldo
             try {
                 const { data: buckets, error } = await window.supabaseClient.storage.listBuckets();
-                
-                if (error) {
-                    diagnosticResults.buckets = { success: false, error: error.message };
-                    showStatus('buckets-status', `❌ Error al listar buckets: ${error.message}`, 'error');
-                    addLog(`Error al listar buckets: ${error.message}`, 'error');
-                    return;
+                if (!error && buckets) {
+                    addLog(`Método listBuckets() encontró ${buckets.length} buckets`, 'info');
+                    buckets.forEach(b => addLog(`- Bucket oficial: ${b.id} (público: ${b.public})`, 'info'));
+                } else {
+                    addLog(`Método listBuckets() falló: ${error?.message || 'Sin error específico'}`, 'warning');
                 }
-                
-                for (const required of requiredBuckets) {
-                    const exists = buckets.find(b => b.id === required);
-                    if (exists) {
-                        bucketStatus.push(`✅ ${required} (público: ${exists.public ? 'Sí' : 'No'})`);
-                        addLog(`Bucket ${required}: Existe`, 'success');
-                    } else {
-                        bucketStatus.push(`❌ ${required} (no existe)`);
-                        addLog(`Bucket ${required}: No existe`, 'error');
-                    }
-                }
-                
-                const allExist = requiredBuckets.every(req => buckets.find(b => b.id === req));
-                diagnosticResults.buckets = { success: allExist, buckets: buckets };
-                
-                showStatus('buckets-status', bucketStatus.join('<br>'), allExist ? 'success' : 'warning');
-                
-            } catch (error) {
-                diagnosticResults.buckets = { success: false, error: error.message };
-                showStatus('buckets-status', `❌ Error inesperado: ${error.message}`, 'error');
-                addLog(`Error inesperado en buckets: ${error.message}`, 'error');
+            } catch (e) {
+                addLog(`Método listBuckets() excepción: ${e.message}`, 'warning');
             }
+
+            const workingBuckets = bucketStatus.filter(s => s.includes('✅')).length;
+            diagnosticResults.buckets = { success: workingBuckets === requiredBuckets.length };
+
+            showStatus('buckets-status', bucketStatus.join('<br>'), workingBuckets === requiredBuckets.length ? 'success' : 'warning');
         };
         
         // 4. Verificar permisos de storage

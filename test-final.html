@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Final - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 15px; margin: 15px 0; border-radius: 5px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 12px 24px; margin: 10px 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        input[type="file"] { margin: 10px 0; padding: 10px; border: 2px dashed #ddd; border-radius: 5px; width: 100%; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        h1 { color: #333; text-align: center; }
+        h3 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Final de Subida</h1>
+        <p style="text-align: center; color: #666;">Prueba final para confirmar que la subida de archivos funciona correctamente</p>
+        
+        <div class="test-section">
+            <h3>1. Verificación de Estado</h3>
+            <button onclick="checkStatus()">🔍 Verificar Todo</button>
+            <div id="status-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Test de Subida Simple</h3>
+            <input type="file" id="simple-file" accept="image/*">
+            <button onclick="testSimpleUpload()">📤 Subir Archivo</button>
+            <div id="upload-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Simulación de Add-Server</h3>
+            <p>Este test simula exactamente lo que hace agregar.html:</p>
+            <input type="file" id="logo-test" accept="image/*" placeholder="Logo">
+            <input type="file" id="banner-test" accept="image/*" placeholder="Banner">
+            <button onclick="testAddServerFlow()">🚀 Simular Add-Server</button>
+            <div id="addserver-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Ir a Página Real</h3>
+            <p>Si todos los tests pasan, puedes ir a la página real:</p>
+            <button onclick="window.location.href='agregar.html'">➡️ Ir a Agregar Servidor</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        function showResult(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // 1. Verificar estado general
+        window.checkStatus = async function() {
+            showResult('status-result', '🔄 Verificando...', 'info');
+            
+            try {
+                // Verificar autenticación
+                const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+                if (error || !session) {
+                    showResult('status-result', '❌ No estás autenticado. <a href="index.html">Ir a iniciar sesión</a>', 'error');
+                    return;
+                }
+                
+                // Verificar buckets
+                const buckets = ['server-images', 'server-banners', 'server-gallery'];
+                let allOk = true;
+                
+                for (const bucket of buckets) {
+                    try {
+                        await window.supabaseClient.storage.from(bucket).list('', { limit: 1 });
+                    } catch (e) {
+                        allOk = false;
+                        break;
+                    }
+                }
+                
+                if (allOk) {
+                    showResult('status-result', `✅ Todo OK - Usuario: ${session.user.email}`, 'success');
+                } else {
+                    showResult('status-result', '⚠️ Hay problemas con los buckets de storage', 'error');
+                }
+                
+            } catch (error) {
+                showResult('status-result', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // 2. Test de subida simple
+        window.testSimpleUpload = async function() {
+            const file = document.getElementById('simple-file').files[0];
+            if (!file) {
+                showResult('upload-result', '❌ Selecciona un archivo primero', 'error');
+                return;
+            }
+            
+            showResult('upload-result', '🔄 Subiendo...', 'info');
+            
+            try {
+                console.log('Test simple: iniciando subida de', file.name);
+                const result = await api.uploadFile(file, 'server-images');
+                console.log('Test simple: resultado', result);
+                
+                showResult('upload-result', `✅ Subida exitosa: ${result}`, 'success');
+                
+                // Limpiar archivo de prueba
+                setTimeout(async () => {
+                    try {
+                        await window.supabaseClient.storage.from('server-images').remove([result]);
+                        console.log('Archivo de prueba eliminado');
+                    } catch (e) {
+                        console.log('No se pudo eliminar archivo de prueba');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Test simple: error', error);
+                showResult('upload-result', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // 3. Simulación completa de add-server
+        window.testAddServerFlow = async function() {
+            const logoFile = document.getElementById('logo-test').files[0];
+            const bannerFile = document.getElementById('banner-test').files[0];
+            
+            if (!logoFile && !bannerFile) {
+                showResult('addserver-result', '❌ Selecciona al menos un archivo', 'error');
+                return;
+            }
+            
+            showResult('addserver-result', '🔄 Simulando proceso completo...', 'info');
+            
+            try {
+                const serverData = {
+                    name: "Test Server",
+                    version: "Season 18",
+                    type: "Medium",
+                    configuration: "Custom",
+                    website_url: "https://test.com",
+                    events: []
+                };
+                
+                console.log('=== SIMULACIÓN ADD-SERVER ===');
+                console.log('Datos base:', serverData);
+                
+                // Subir logo
+                if (logoFile) {
+                    console.log('Subiendo logo...');
+                    showResult('addserver-result', '🔄 Subiendo logo...', 'info');
+                    serverData.image_url = await api.uploadFile(logoFile, 'server-images');
+                    console.log('Logo subido:', serverData.image_url);
+                }
+                
+                // Subir banner
+                if (bannerFile) {
+                    console.log('Subiendo banner...');
+                    showResult('addserver-result', '🔄 Subiendo banner...', 'info');
+                    serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
+                    console.log('Banner subido:', serverData.banner_url);
+                }
+                
+                // Simular guardado en BD
+                console.log('Simulando guardado en BD...');
+                showResult('addserver-result', '🔄 Guardando en base de datos...', 'info');
+                
+                // En lugar de guardar realmente, solo simulamos
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                console.log('Datos finales:', serverData);
+                console.log('=== SIMULACIÓN COMPLETADA ===');
+                
+                showResult('addserver-result', '✅ Simulación exitosa! El proceso funciona correctamente.', 'success');
+                
+                // Limpiar archivos de prueba
+                setTimeout(async () => {
+                    try {
+                        const filesToDelete = [];
+                        if (serverData.image_url) filesToDelete.push(serverData.image_url);
+                        if (serverData.banner_url) filesToDelete.push(serverData.banner_url);
+                        
+                        if (filesToDelete.length > 0) {
+                            await Promise.all([
+                                serverData.image_url ? window.supabaseClient.storage.from('server-images').remove([serverData.image_url]) : null,
+                                serverData.banner_url ? window.supabaseClient.storage.from('server-banners').remove([serverData.banner_url]) : null
+                            ]);
+                            console.log('Archivos de prueba eliminados');
+                        }
+                    } catch (e) {
+                        console.log('No se pudieron eliminar archivos de prueba');
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                console.error('Simulación: error', error);
+                showResult('addserver-result', `❌ Error en simulación: ${error.message}`, 'error');
+            }
+        };
+        
+        // Auto-verificar al cargar
+        setTimeout(checkStatus, 1000);
+    </script>
+</body>
+</html>

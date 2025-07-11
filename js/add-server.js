@@ -56,6 +56,8 @@ async function handleFormSubmit(e) {
     feedbackEl.textContent = '';
     feedbackEl.className = 'feedback-message';
 
+    console.log('=== INICIANDO PROCESO DE ADD-SERVER ===');
+
     try {
         // Validación inicial del formulario
         if (!form.elements.name.value.trim()) {
@@ -94,16 +96,34 @@ async function handleFormSubmit(e) {
             gallery: galleryFiles.length
         });
 
+        if (logoFile) console.log(`Logo: ${logoFile.name} (${logoFile.size} bytes, ${logoFile.type})`);
+        if (bannerFile) console.log(`Banner: ${bannerFile.name} (${bannerFile.size} bytes, ${bannerFile.type})`);
+        if (galleryFiles.length > 0) {
+            for (let i = 0; i < galleryFiles.length; i++) {
+                console.log(`Galería ${i + 1}: ${galleryFiles[i].name} (${galleryFiles[i].size} bytes)`);
+            }
+        }
+
         // Subir logo si se seleccionó
         if (logoFile) {
             try {
                 feedbackEl.textContent = 'Subiendo logo...';
                 feedbackEl.className = 'feedback-message info active';
-                console.log("Iniciando subida de logo...");
+                console.log("=== INICIANDO SUBIDA DE LOGO ===");
+                console.log(`Archivo: ${logoFile.name}, Tamaño: ${logoFile.size}, Tipo: ${logoFile.type}`);
+
+                const startTime = Date.now();
+                console.log(`Timestamp inicio subida logo: ${startTime}`);
 
                 serverData.image_url = await api.uploadFile(logoFile, 'server-images');
+
+                const endTime = Date.now();
+                console.log(`Timestamp fin subida logo: ${endTime} (duración: ${endTime - startTime}ms)`);
                 console.log("Logo subido exitosamente:", serverData.image_url);
+                console.log("=== SUBIDA DE LOGO COMPLETADA ===");
             } catch (logoError) {
+                console.log("=== ERROR EN SUBIDA DE LOGO ===");
+                console.error("Error completo:", logoError);
                 throw new Error(`Error al subir el logo: ${logoError.message}`);
             }
         }
@@ -115,6 +135,7 @@ async function handleFormSubmit(e) {
                 feedbackEl.className = 'feedback-message info active';
                 console.log("Iniciando subida de banner...");
 
+                console.log("Iniciando subida de banner...");
                 serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
                 console.log("Banner subido exitosamente:", serverData.banner_url);
             } catch (bannerError) {
@@ -139,6 +160,7 @@ async function handleFormSubmit(e) {
                     const file = galleryFiles[i];
                     feedbackEl.textContent = `Subiendo imagen ${i + 1} de ${galleryFiles.length}...`;
 
+                    console.log(`Iniciando subida de galería ${i + 1}...`);
                     const path = await api.uploadFile(file, 'server-gallery');
                     if (path) {
                         galleryPaths.push(path);

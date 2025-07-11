@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Add Server - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .feedback { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        .log { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input, select, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Debug: Add Server Process</h1>
+        <p>Esta página simula exactamente el proceso de agregar servidor con logging detallado.</p>
+        
+        <div class="section">
+            <h3>Formulario de Prueba</h3>
+            <form id="debug-form">
+                <div class="form-grid">
+                    <div>
+                        <label>Nombre del Servidor:</label>
+                        <input type="text" id="name" name="name" value="Servidor de Prueba" required>
+                    </div>
+                    <div>
+                        <label>Versión:</label>
+                        <select id="version" name="version">
+                            <option value="Season 18">Season 18</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div>
+                        <label>Tipo:</label>
+                        <select id="type" name="type">
+                            <option value="Medium">Medium</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Configuración:</label>
+                        <select id="configuration" name="configuration">
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <label>Website URL:</label>
+                <input type="url" id="website_url" name="website_url" value="https://ejemplo.com" required>
+                
+                <label>Logo del Servidor:</label>
+                <input type="file" id="logo-file" accept="image/*">
+                
+                <label>Banner del Servidor:</label>
+                <input type="file" id="banner-file" accept="image/*">
+                
+                <label>Galería (múltiple):</label>
+                <input type="file" id="gallery-files" accept="image/*" multiple>
+                
+                <button type="submit" id="submit-btn">🚀 Procesar con Debug</button>
+            </form>
+            
+            <div id="form-feedback" class="feedback" style="display: none;"></div>
+        </div>
+        
+        <div class="section">
+            <h3>Logs Detallados</h3>
+            <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+            <div id="debug-logs" class="log">Iniciando sistema de debug...\n</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        // Sistema de logging mejorado
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('debug-logs');
+            const timestamp = new Date().toISOString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logsContainer.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('form-feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback ${type}`;
+            feedback.style.display = 'block';
+        }
+        
+        // Sobrescribir console para capturar todos los logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('LOG: ' + args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('ERROR: ' + args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('WARN: ' + args.join(' '), 'warning');
+        };
+        
+        // Función de debug que simula exactamente add-server.js
+        async function debugHandleFormSubmit(e) {
+            e.preventDefault();
+            addLog('=== INICIANDO PROCESO DE DEBUG ===', 'info');
+            
+            const form = e.target;
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Función helper para restaurar el estado del botón
+            const resetButton = () => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = '🚀 Procesar con Debug';
+                addLog('Botón restaurado', 'info');
+            };
+            
+            // Función helper para mostrar error
+            const showError = (message) => {
+                addLog(`MOSTRANDO ERROR: ${message}`, 'error');
+                showFeedback(`Error: ${message}`, 'error');
+                resetButton();
+            };
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '🔄 Procesando...';
+            showFeedback('', 'info');
+            addLog('Botón deshabilitado, iniciando proceso', 'info');
+
+            try {
+                // Validación inicial del formulario
+                addLog('Validando formulario...', 'info');
+                if (!form.elements.name.value.trim()) {
+                    throw new Error("El nombre del servidor es obligatorio.");
+                }
+                if (!form.elements.website_url.value.trim()) {
+                    throw new Error("La URL del sitio web es obligatoria.");
+                }
+                addLog('Validación del formulario: OK', 'success');
+                
+                // Construir objeto de datos del servidor
+                addLog('Construyendo objeto serverData...', 'info');
+                const serverData = {
+                    name: form.elements.name.value.trim(),
+                    description: form.elements.description?.value.trim() || null,
+                    version: form.elements.version.value,
+                    type: form.elements.type.value,
+                    configuration: form.elements.configuration.value,
+                    exp_rate: parseInt(form.elements.exp_rate?.value) || null,
+                    drop_rate: parseInt(form.elements.drop_rate?.value) || null,
+                    reset_info: form.elements.reset_info?.value.trim() || null,
+                    website_url: form.elements.website_url.value.trim(),
+                    discord_url: form.elements.discord_url?.value.trim() || null,
+                    opening_date: form.elements.opening_date?.value || null,
+                    events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value)
+                };
+                
+                addLog(`serverData construido: ${JSON.stringify(serverData, null, 2)}`, 'info');
+                
+                // Obtener archivos seleccionados
+                addLog('Obteniendo archivos seleccionados...', 'info');
+                const logoFile = document.getElementById('logo-file').files[0];
+                const bannerFile = document.getElementById('banner-file').files[0];
+                const galleryFiles = document.getElementById('gallery-files').files;
+                
+                addLog(`Archivos encontrados:`, 'info');
+                addLog(`- Logo: ${logoFile ? logoFile.name + ' (' + logoFile.size + ' bytes)' : 'ninguno'}`, 'info');
+                addLog(`- Banner: ${bannerFile ? bannerFile.name + ' (' + bannerFile.size + ' bytes)' : 'ninguno'}`, 'info');
+                addLog(`- Galería: ${galleryFiles.length} archivos`, 'info');
+                
+                // Subir logo si se seleccionó
+                if (logoFile) {
+                    try {
+                        showFeedback('Subiendo logo...', 'info');
+                        addLog('=== INICIANDO SUBIDA DE LOGO ===', 'warning');
+                        addLog(`Archivo: ${logoFile.name}, Tamaño: ${logoFile.size}, Tipo: ${logoFile.type}`, 'info');
+                        
+                        // Agregar timestamp antes de la llamada
+                        const startTime = Date.now();
+                        addLog(`Timestamp inicio subida logo: ${startTime}`, 'info');
+                        
+                        addLog('Llamando a api.uploadFile(logoFile, "server-images")...', 'info');
+                        const logoResult = await api.uploadFile(logoFile, 'server-images');
+                        
+                        const endTime = Date.now();
+                        addLog(`Timestamp fin subida logo: ${endTime} (duración: ${endTime - startTime}ms)`, 'info');
+                        
+                        serverData.image_url = logoResult;
+                        addLog(`Logo subido exitosamente: ${logoResult}`, 'success');
+                        addLog('=== SUBIDA DE LOGO COMPLETADA ===', 'success');
+                    } catch (logoError) {
+                        addLog(`=== ERROR EN SUBIDA DE LOGO ===`, 'error');
+                        addLog(`Error completo: ${JSON.stringify(logoError, null, 2)}`, 'error');
+                        addLog(`Error message: ${logoError.message}`, 'error');
+                        addLog(`Error stack: ${logoError.stack}`, 'error');
+                        throw new Error(`Error al subir el logo: ${logoError.message}`);
+                    }
+                }
+                
+                // Subir banner si se seleccionó
+                if (bannerFile) {
+                    try {
+                        showFeedback('Subiendo banner...', 'info');
+                        addLog('=== INICIANDO SUBIDA DE BANNER ===', 'warning');
+                        
+                        const startTime = Date.now();
+                        addLog(`Timestamp inicio subida banner: ${startTime}`, 'info');
+                        
+                        const bannerResult = await api.uploadFile(bannerFile, 'server-banners');
+                        
+                        const endTime = Date.now();
+                        addLog(`Timestamp fin subida banner: ${endTime} (duración: ${endTime - startTime}ms)`, 'info');
+                        
+                        serverData.banner_url = bannerResult;
+                        addLog(`Banner subido exitosamente: ${bannerResult}`, 'success');
+                        addLog('=== SUBIDA DE BANNER COMPLETADA ===', 'success');
+                    } catch (bannerError) {
+                        addLog(`=== ERROR EN SUBIDA DE BANNER ===`, 'error');
+                        throw new Error(`Error al subir el banner: ${bannerError.message}`);
+                    }
+                }
+                
+                // Subir galería si se seleccionaron imágenes
+                if (galleryFiles.length > 0) {
+                    if (galleryFiles.length > 6) {
+                        throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
+                    }
+                    
+                    try {
+                        addLog('=== INICIANDO SUBIDA DE GALERÍA ===', 'warning');
+                        const galleryPaths = [];
+                        
+                        for (let i = 0; i < galleryFiles.length; i++) {
+                            const file = galleryFiles[i];
+                            showFeedback(`Subiendo imagen ${i + 1} de ${galleryFiles.length}...`, 'info');
+                            addLog(`Subiendo archivo ${i + 1}: ${file.name}`, 'info');
+                            
+                            const startTime = Date.now();
+                            const path = await api.uploadFile(file, 'server-gallery');
+                            const endTime = Date.now();
+                            
+                            addLog(`Archivo ${i + 1} subido en ${endTime - startTime}ms: ${path}`, 'success');
+                            
+                            if (path) {
+                                galleryPaths.push(path);
+                            }
+                        }
+                        
+                        if (galleryPaths.length > 0) {
+                            serverData.gallery_urls = galleryPaths;
+                            addLog(`Galería completa subida: ${galleryPaths.length} archivos`, 'success');
+                        }
+                        addLog('=== SUBIDA DE GALERÍA COMPLETADA ===', 'success');
+                    } catch (galleryError) {
+                        addLog(`=== ERROR EN SUBIDA DE GALERÍA ===`, 'error');
+                        throw new Error(`Error al subir la galería: ${galleryError.message}`);
+                    }
+                }
+                
+                // Guardar datos del servidor en la base de datos
+                showFeedback('Guardando datos del servidor...', 'info');
+                addLog('=== GUARDANDO EN BASE DE DATOS ===', 'warning');
+                addLog(`Datos finales a guardar: ${JSON.stringify(serverData, null, 2)}`, 'info');
+                
+                const saveStartTime = Date.now();
+                await api.addServer(serverData);
+                const saveEndTime = Date.now();
+                
+                addLog(`Servidor guardado en ${saveEndTime - saveStartTime}ms`, 'success');
+                addLog('=== PROCESO COMPLETADO EXITOSAMENTE ===', 'success');
+                
+                // Mostrar éxito
+                showFeedback('¡Éxito! Servidor procesado correctamente.', 'success');
+                form.reset();
+                resetButton();
+                
+            } catch (error) {
+                addLog(`=== ERROR GENERAL DEL PROCESO ===`, 'error');
+                addLog(`Error: ${error.message}`, 'error');
+                addLog(`Stack: ${error.stack}`, 'error');
+                showError(error.message || "Ocurrió un error inesperado.");
+            }
+        }
+        
+        // Limpiar logs
+        window.clearLogs = function() {
+            document.getElementById('debug-logs').innerHTML = 'Logs limpiados...\n';
+        };
+        
+        // Configurar el formulario
+        document.getElementById('debug-form').addEventListener('submit', debugHandleFormSubmit);
+        
+        addLog('Sistema de debug inicializado', 'success');
+        addLog('Selecciona archivos y envía el formulario para ver el proceso detallado', 'info');
+    </script>
+</body>
+</html>
