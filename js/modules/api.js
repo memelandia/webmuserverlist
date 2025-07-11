@@ -782,6 +782,43 @@ export async function setServerOfTheMonth(newWinnerId) {
     if (error) { console.error("API Error (setServerOfTheMonth):", error); throw new Error("No se pudo actualizar el Servidor del Mes."); }
 }
 
+// --- API de Métricas y Contadores ---
+
+export async function incrementServerView(serverId) {
+    try {
+        const { error } = await supabase.rpc('increment_server_view', { server_id_param: parseInt(serverId, 10) });
+        if (error) {
+            console.error("API Error (incrementServerView):", error);
+            // No lanzamos error para que no interrumpa la experiencia del usuario
+        }
+    } catch (error) {
+        console.error("Error incrementando vista de servidor:", error);
+        // Silencioso para no afectar la UX
+    }
+}
+
+export async function incrementWebsiteClick(serverId) {
+    try {
+        const { error } = await supabase.rpc('increment_website_click', { server_id_param: parseInt(serverId, 10) });
+        if (error) {
+            console.error("API Error (incrementWebsiteClick):", error);
+        }
+    } catch (error) {
+        console.error("Error incrementando clic de sitio web:", error);
+    }
+}
+
+export async function incrementDiscordClick(serverId) {
+    try {
+        const { error } = await supabase.rpc('increment_discord_click', { server_id_param: parseInt(serverId, 10) });
+        if (error) {
+            console.error("API Error (incrementDiscordClick):", error);
+        }
+    } catch (error) {
+        console.error("Error incrementando clic de Discord:", error);
+    }
+}
+
 // --- API de Ranking ---
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
     const from = (page - 1) * pageSize;

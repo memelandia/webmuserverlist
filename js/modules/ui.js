@@ -392,6 +392,7 @@ export function renderServerPage(container, server) {
                 <div class="server-header-actions">
                     <button id="vote-btn" class="btn btn-primary btn-lg"><i class="fa-solid fa-heart"></i> Votar</button>
                     <a id="website-link" href="${server.website_url || "#"}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fa-solid fa-globe"></i> Web</a>
+                    ${server.discord_url ? `<a id="discord-link" href="${server.discord_url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary"><i class="fab fa-discord"></i> Discord</a>` : ''}
                 </div>
             </div>
         </header>
@@ -595,7 +596,7 @@ export function renderOwnerDashboard(container, data) {
                     </div>
                 </div>
                 <div class="widget dashboard-charts-widget">
-                    <h3 class="widget-title">Análisis Detallado</h3>
+                    <h3 class="widget-title">Comparativa entre tus Servidores</h3>
                     <div class="owner-charts-grid">
                         <div class="chart-container">
                             <h4 class="chart-title">Interacciones por Servidor</h4>
@@ -624,11 +625,129 @@ export function initOwnerCharts(stats) {
     const votesCtx = document.getElementById("votes-chart")?.getContext("2d");
     if (!interactionsCtx || !votesCtx) return;
     const labels = stats.map(s => s.name.substring(0, 20));
-    
+
     Chart.defaults.color = 'var(--text-secondary)';
 
-    new Chart(interactionsCtx, {type: "bar", data: {labels, datasets: [{label: "Vistas", data: stats.map(s => s.view_count), backgroundColor: "rgba(255, 51, 51, 0.5)", borderColor: "rgba(255, 51, 51, 1)", borderWidth: 1}, {label: "Clics Web", data: stats.map(s => s.website_click_count), backgroundColor: "rgba(51, 153, 255, 0.5)", borderColor: "rgba(51, 153, 255, 1)", borderWidth: 1}, {label: "Clics Discord", data: stats.map(s => s.discord_click_count), backgroundColor: "rgba(114, 137, 218, 0.5)", borderColor: "rgba(114, 137, 218, 1)", borderWidth: 1}]}, options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)'}}, x: {grid: { color: 'rgba(255, 255, 255, 0.1)'}}}, plugins: {legend: {labels: {color: "var(--text-primary)"}}}}});
-    new Chart(votesCtx, {type: "doughnut", data: {labels, datasets: [{label: "Votos", data: stats.map(s => s.votes_count), backgroundColor: ["#ff3333", "#b42424", "#8b1d1d", "#e62e2e", "#621616", "#410e0e"], borderColor: "var(--bg-light)", borderWidth: 2}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "top", labels: {color: "var(--text-primary)"}}}}});
+    // Gráfico de Interacciones con mejor visualización
+    new Chart(interactionsCtx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Vistas",
+                    data: stats.map(s => s.view_count || 0),
+                    backgroundColor: "rgba(255, 51, 51, 0.7)",
+                    borderColor: "rgba(255, 51, 51, 1)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Clics Web",
+                    data: stats.map(s => s.website_click_count || 0),
+                    backgroundColor: "rgba(51, 153, 255, 0.7)",
+                    borderColor: "rgba(51, 153, 255, 1)",
+                    borderWidth: 1
+                },
+                {
+                    label: "Clics Discord",
+                    data: stats.map(s => s.discord_click_count || 0),
+                    backgroundColor: "rgba(114, 137, 218, 0.7)",
+                    borderColor: "rgba(114, 137, 218, 1)",
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)'}
+                },
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)'}
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: "var(--text-primary)",
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        }
+    });
+
+    // Paleta de colores variada para el gráfico de votos
+    const colorPalette = [
+        "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
+        "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
+        "#F8C471", "#82E0AA", "#F1948A", "#85C1E9", "#D7BDE2"
+    ];
+
+    const backgroundColors = stats.map((_, index) => colorPalette[index % colorPalette.length]);
+
+    new Chart(votesCtx, {
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [{
+                label: "Votos",
+                data: stats.map(s => s.votes_count || 0),
+                backgroundColor: backgroundColors,
+                borderColor: "var(--bg-light)",
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "right",
+                    labels: {
+                        color: "var(--text-primary)",
+                        usePointStyle: true,
+                        padding: 15,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    return {
+                                        text: `${label}: ${value} votos`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor,
+                                        lineWidth: data.datasets[0].borderWidth,
+                                        pointStyle: 'circle',
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed} votos`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 

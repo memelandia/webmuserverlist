@@ -34,15 +34,19 @@ async function loadServerDetails() {
         
         document.title = `${server.name} - MuServerList`;
         ui.renderServerPage(mainContainer, server);
-        
+
+        // Incrementar contador de vistas después de renderizar exitosamente
+        api.incrementServerView(server.id);
+
         if (lightbox) lightbox.destroy();
         if (typeof GLightbox !== 'undefined') {
             lightbox = GLightbox({ selector: '.gallery-item' });
         }
-        
+
         loadReviews(server.id);
         setupReviewForm(server.id);
         setupVoteButton(server.id);
+        setupExternalLinksTracking(server.id);
         
     } catch (error) {
         console.error("Error cargando detalles del servidor:", error);
@@ -177,4 +181,25 @@ async function setupVoteButton(serverId) {
             setTimeout(() => { voteFeedback.classList.remove('active'); }, 5000);
         }
     });
+}
+
+async function setupExternalLinksTracking(serverId) {
+    const websiteLink = document.getElementById('website-link');
+    const discordLink = document.getElementById('discord-link');
+
+    if (websiteLink && websiteLink.href !== '#') {
+        websiteLink.addEventListener('click', async (e) => {
+            // Incrementar contador de clics de sitio web
+            api.incrementWebsiteClick(serverId);
+            // No prevenir el comportamiento por defecto para que el enlace funcione normalmente
+        });
+    }
+
+    if (discordLink && discordLink.href !== '#') {
+        discordLink.addEventListener('click', async (e) => {
+            // Incrementar contador de clics de Discord
+            api.incrementDiscordClick(serverId);
+            // No prevenir el comportamiento por defecto para que el enlace funcione normalmente
+        });
+    }
 }
