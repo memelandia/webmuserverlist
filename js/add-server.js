@@ -132,8 +132,7 @@ async function handleFormSubmit(e) {
                 const startTime = Date.now();
                 console.log(`Timestamp inicio subida logo: ${startTime}`);
 
-                // Usar función simple que no verifica sesión (ya sabemos que está autenticado)
-                serverData.image_url = await api.uploadFileSimple(logoFile, 'server-images');
+                serverData.image_url = await api.uploadFile(logoFile, 'server-images');
 
                 const endTime = Date.now();
                 console.log(`Timestamp fin subida logo: ${endTime} (duración: ${endTime - startTime}ms)`);
@@ -154,8 +153,7 @@ async function handleFormSubmit(e) {
                 console.log("Iniciando subida de banner...");
 
                 console.log("Iniciando subida de banner...");
-                // Usar función simple que no verifica sesión
-                serverData.banner_url = await api.uploadFileSimple(bannerFile, 'server-banners');
+                serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
                 console.log("Banner subido exitosamente:", serverData.banner_url);
             } catch (bannerError) {
                 throw new Error(`Error al subir el banner: ${bannerError.message}`);
@@ -180,8 +178,7 @@ async function handleFormSubmit(e) {
                     feedbackEl.textContent = `Subiendo imagen ${i + 1} de ${galleryFiles.length}...`;
 
                     console.log(`Iniciando subida de galería ${i + 1}...`);
-                    // Usar función simple que no verifica sesión
-                    const path = await api.uploadFileSimple(file, 'server-gallery');
+                    const path = await api.uploadFile(file, 'server-gallery');
                     if (path) {
                         galleryPaths.push(path);
                     }
