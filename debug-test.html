@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 5px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        pre { background: #2a2a2a; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Test - MuServerList</h1>
+    
+    <div class="test-section">
+        <h2>1. Supabase Client Test</h2>
+        <div id="supabase-test">Probando...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. API Functions Test</h2>
+        <div id="api-test">Probando...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Basic Database Query Test</h2>
+        <div id="db-test">Probando...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. New RPC Functions Test</h2>
+        <div id="rpc-test">Probando...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Console Logs</h2>
+        <div id="console-logs">
+            <p>Abre la consola del navegador (F12) para ver logs detallados.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        async function runTests() {
+            console.log('🔍 Iniciando tests de diagnóstico...');
+            
+            // Test 1: Supabase Client
+            const supabaseTestEl = document.getElementById('supabase-test');
+            try {
+                if (window.supabaseClient) {
+                    supabaseTestEl.innerHTML = '<span class="success">✅ Supabase client inicializado correctamente</span>';
+                    console.log('✅ Supabase client OK');
+                } else {
+                    supabaseTestEl.innerHTML = '<span class="error">❌ Supabase client no encontrado</span>';
+                    console.error('❌ Supabase client no encontrado');
+                }
+            } catch (error) {
+                supabaseTestEl.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error('❌ Error en test de Supabase:', error);
+            }
+            
+            // Test 2: API Functions
+            const apiTestEl = document.getElementById('api-test');
+            try {
+                if (typeof api.getServers === 'function') {
+                    apiTestEl.innerHTML = '<span class="success">✅ Funciones API importadas correctamente</span>';
+                    console.log('✅ API functions OK');
+                } else {
+                    apiTestEl.innerHTML = '<span class="error">❌ Funciones API no encontradas</span>';
+                    console.error('❌ API functions no encontradas');
+                }
+            } catch (error) {
+                apiTestEl.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error('❌ Error en test de API:', error);
+            }
+            
+            // Test 3: Basic Database Query
+            const dbTestEl = document.getElementById('db-test');
+            try {
+                console.log('🔍 Probando consulta básica a la base de datos...');
+                const servers = await api.getServers();
+                if (servers && Array.isArray(servers)) {
+                    dbTestEl.innerHTML = `<span class="success">✅ Consulta exitosa: ${servers.length} servidores encontrados</span>`;
+                    console.log('✅ Database query OK:', servers.length, 'servidores');
+                } else {
+                    dbTestEl.innerHTML = '<span class="warning">⚠️ Consulta exitosa pero sin datos</span>';
+                    console.warn('⚠️ Database query OK pero sin datos');
+                }
+            } catch (error) {
+                dbTestEl.innerHTML = `<span class="error">❌ Error en consulta: ${error.message}</span>`;
+                console.error('❌ Error en database query:', error);
+            }
+            
+            // Test 4: New RPC Functions
+            const rpcTestEl = document.getElementById('rpc-test');
+            try {
+                console.log('🔍 Probando nuevas funciones RPC...');
+                
+                // Test si las funciones existen
+                if (typeof api.incrementServerView === 'function' && 
+                    typeof api.incrementWebsiteClick === 'function' && 
+                    typeof api.incrementDiscordClick === 'function') {
+                    
+                    rpcTestEl.innerHTML = '<span class="success">✅ Nuevas funciones RPC importadas correctamente</span>';
+                    console.log('✅ RPC functions OK');
+                    
+                    // Test opcional: probar una función RPC (comentado para evitar modificar datos)
+                    // await api.incrementServerView(1);
+                    
+                } else {
+                    rpcTestEl.innerHTML = '<span class="error">❌ Nuevas funciones RPC no encontradas</span>';
+                    console.error('❌ RPC functions no encontradas');
+                }
+            } catch (error) {
+                rpcTestEl.innerHTML = `<span class="error">❌ Error en RPC: ${error.message}</span>`;
+                console.error('❌ Error en RPC test:', error);
+            }
+            
+            console.log('🔍 Tests de diagnóstico completados');
+        }
+        
+        // Ejecutar tests cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runTests, 1000); // Esperar 1 segundo para que Supabase se inicialice
+        });
+    </script>
+</body>
+</html>

@@ -786,10 +786,16 @@ export async function setServerOfTheMonth(newWinnerId) {
 
 export async function incrementServerView(serverId) {
     try {
+        // Verificar si la función RPC existe antes de llamarla
         const { error } = await supabase.rpc('increment_server_view', { server_id_param: parseInt(serverId, 10) });
         if (error) {
+            if (error.message.includes('function') && error.message.includes('does not exist')) {
+                console.warn("⚠️ Función RPC increment_server_view no existe. Ejecuta supabase_rpc_functions.sql en Supabase.");
+                return; // Salir silenciosamente
+            }
             console.error("API Error (incrementServerView):", error);
-            // No lanzamos error para que no interrumpa la experiencia del usuario
+        } else {
+            console.log("✅ Vista incrementada para servidor:", serverId);
         }
     } catch (error) {
         console.error("Error incrementando vista de servidor:", error);
@@ -801,7 +807,13 @@ export async function incrementWebsiteClick(serverId) {
     try {
         const { error } = await supabase.rpc('increment_website_click', { server_id_param: parseInt(serverId, 10) });
         if (error) {
+            if (error.message.includes('function') && error.message.includes('does not exist')) {
+                console.warn("⚠️ Función RPC increment_website_click no existe. Ejecuta supabase_rpc_functions.sql en Supabase.");
+                return;
+            }
             console.error("API Error (incrementWebsiteClick):", error);
+        } else {
+            console.log("✅ Clic web incrementado para servidor:", serverId);
         }
     } catch (error) {
         console.error("Error incrementando clic de sitio web:", error);
@@ -812,7 +824,13 @@ export async function incrementDiscordClick(serverId) {
     try {
         const { error } = await supabase.rpc('increment_discord_click', { server_id_param: parseInt(serverId, 10) });
         if (error) {
+            if (error.message.includes('function') && error.message.includes('does not exist')) {
+                console.warn("⚠️ Función RPC increment_discord_click no existe. Ejecuta supabase_rpc_functions.sql en Supabase.");
+                return;
+            }
             console.error("API Error (incrementDiscordClick):", error);
+        } else {
+            console.log("✅ Clic Discord incrementado para servidor:", serverId);
         }
     } catch (error) {
         console.error("Error incrementando clic de Discord:", error);

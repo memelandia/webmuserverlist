@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Simple Test</h1>
+    
+    <button onclick="testSupabase()">Test Supabase</button>
+    <button onclick="testBasicQuery()">Test Basic Query</button>
+    <button onclick="testNewFunctions()">Test New Functions</button>
+    
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Inicializar Supabase directamente aquí
+        const SUPABASE_URL = 'https://bqipsuaxtkhcwtjawtpy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxaXBzdWF4dGtoY3d0amF3dHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEzNTcyNjIsImV4cCI6MjA2NjkzMzI2Mn0.XVbUzRExUXVGCu4WFS_qYSQrNFSXVKPCB2rqgvlNmeo';
+        
+        let supabaseClient;
+        
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            addResult('✅ Supabase client inicializado', 'success');
+        } catch (error) {
+            addResult('❌ Error inicializando Supabase: ' + error.message, 'error');
+        }
+        
+        function addResult(message, type) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        function testSupabase() {
+            if (supabaseClient) {
+                addResult('✅ Supabase client está disponible', 'success');
+            } else {
+                addResult('❌ Supabase client no está disponible', 'error');
+            }
+        }
+        
+        async function testBasicQuery() {
+            try {
+                addResult('🔍 Probando consulta básica...', 'success');
+                const { data, error } = await supabaseClient
+                    .from('servers')
+                    .select('id, name')
+                    .limit(5);
+                
+                if (error) {
+                    addResult('❌ Error en consulta: ' + error.message, 'error');
+                } else {
+                    addResult(`✅ Consulta exitosa: ${data.length} servidores encontrados`, 'success');
+                    if (data.length > 0) {
+                        addResult(`Primer servidor: ${data[0].name}`, 'success');
+                    }
+                }
+            } catch (error) {
+                addResult('❌ Error en testBasicQuery: ' + error.message, 'error');
+            }
+        }
+        
+        async function testNewFunctions() {
+            try {
+                addResult('🔍 Probando funciones RPC...', 'success');
+                
+                // Test de función RPC (sin modificar datos reales)
+                const { data, error } = await supabaseClient.rpc('increment_server_view', { 
+                    server_id_param: 999999 // ID que no existe para no modificar datos reales
+                });
+                
+                if (error) {
+                    if (error.message.includes('function') && error.message.includes('does not exist')) {
+                        addResult('⚠️ Las funciones RPC no están creadas en Supabase', 'error');
+                    } else {
+                        addResult('❌ Error en RPC: ' + error.message, 'error');
+                    }
+                } else {
+                    addResult('✅ Función RPC ejecutada correctamente', 'success');
+                }
+            } catch (error) {
+                addResult('❌ Error en testNewFunctions: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
