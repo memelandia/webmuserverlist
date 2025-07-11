@@ -50,7 +50,6 @@ function populateForm(form, server) {
     form.exp_rate.value = server.exp_rate || '';
     form.drop_rate.value = server.drop_rate || '';
     form.reset_info.value = server.reset_info || '';
-    form.antihack_info.value = server.antihack_info || '';
     form.website_url.value = server.website_url || '';
     form.discord_url.value = server.discord_url || '';
 
@@ -95,7 +94,6 @@ async function handleFormSubmit(e, serverId) {
             exp_rate: parseInt(formData.get('exp_rate')) || null,
             drop_rate: parseInt(formData.get('drop_rate')) || null,
             reset_info: formData.get('reset_info'),
-            antihack_info: formData.get('antihack_info'),
             website_url: formData.get('website_url'),
             discord_url: formData.get('discord_url'),
             opening_date: formData.get('opening_date') || null,

@@ -194,18 +194,105 @@ export async function updateUserAvatar(userId, avatarPath) {
 }
 
 export async function uploadFile(file, bucket) {
-    if (!file) return null;
-    if (file.size > 2 * 1024 * 1024) { 
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`); 
+    // Validación inicial
+    if (!file) {
+        console.log("uploadFile: No se proporcionó archivo, retornando null");
+        return null;
     }
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
-    const { data, error } = await window.supabaseClient.storage.from(bucket).upload(fileName, file, { cacheControl: '3600', upsert: false });
-    if (error) {
-        console.error("Error de Supabase al subir archivo:", error);
-        throw new Error(`Fallo al subir el archivo: ${error.message}`);
+
+    // Validación de tamaño
+    if (file.size > 2 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
     }
-    if (!data || !data.path) throw new Error("La subida no devolvió una ruta de archivo válida.");
-    return data.path;
+
+    // Validación de tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
+    }
+
+    // Generar nombre único para el archivo
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-_]/g, '').substring(0, 50);
+    const fileName = `${Date.now()}-${cleanFileName}.${fileExtension}`;
+
+    console.log(`uploadFile: Iniciando subida de ${file.name} (${file.size} bytes) al bucket ${bucket}`);
+
+    try {
+        // Verificar que el cliente de Supabase esté disponible
+        if (!window.supabaseClient) {
+            throw new Error("Cliente de Supabase no está inicializado");
+        }
+
+        // Verificar que el usuario esté autenticado
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        if (sessionError) {
+            throw new Error(`Error de autenticación: ${sessionError.message}`);
+        }
+        if (!session) {
+            throw new Error("Debes iniciar sesión para subir archivos");
+        }
+
+        console.log(`uploadFile: Usuario autenticado: ${session.user.email}`);
+
+        // Crear una promesa con timeout para evitar cuelgues
+        const uploadPromise = window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Timeout: La subida tardó más de 30 segundos")), 30000);
+        });
+
+        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+
+        if (error) {
+            console.error("Error de Supabase al subir archivo:", error);
+
+            // Manejar errores específicos de Supabase
+            if (error.message?.includes('duplicate')) {
+                throw new Error("Ya existe un archivo con ese nombre. Intenta de nuevo.");
+            } else if (error.message?.includes('size')) {
+                throw new Error("El archivo es demasiado grande para el servidor.");
+            } else if (error.message?.includes('policy') || error.message?.includes('permission') || error.message?.includes('RLS')) {
+                throw new Error(`No tienes permisos para subir archivos al bucket '${bucket}'. Contacta al administrador para configurar las políticas de seguridad.`);
+            } else if (error.message?.includes('bucket') && error.message?.includes('not found')) {
+                throw new Error(`El bucket '${bucket}' no existe. Contacta al administrador.`);
+            } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
+                throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+            } else {
+                throw new Error(`Error al subir archivo: ${error.message}`);
+            }
+        }
+
+        // Validar que la respuesta sea correcta
+        if (!data) {
+            throw new Error("La subida no devolvió datos válidos.");
+        }
+
+        if (!data.path) {
+            console.error("Respuesta de subida sin path:", data);
+            throw new Error("La subida no devolvió una ruta de archivo válida.");
+        }
+
+        console.log(`uploadFile: Subida exitosa, path: ${data.path}`);
+        return data.path;
+
+    } catch (error) {
+        console.error("Error en uploadFile:", error);
+
+        // Re-lanzar el error con un mensaje más claro si es necesario
+        if (error.message.includes("Timeout")) {
+            throw error;
+        } else if (error.message.includes("Cliente de Supabase")) {
+            throw error;
+        } else {
+            throw new Error(`Fallo al subir el archivo ${file.name}: ${error.message}`);
+        }
+    }
 }
 
 export async function addServer(serverData) {

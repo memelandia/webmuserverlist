@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-container { max-width: 600px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .feedback { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test de Subida de Archivos - MuServerList</h1>
+        
+        <div class="test-section">
+            <h3>Test 1: Subida de Logo</h3>
+            <input type="file" id="test-logo" accept="image/*">
+            <button onclick="testUpload('test-logo', 'server-images', 'logo-feedback')">Subir Logo</button>
+            <div id="logo-feedback" class="feedback" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2: Subida de Banner</h3>
+            <input type="file" id="test-banner" accept="image/*">
+            <button onclick="testUpload('test-banner', 'server-banners', 'banner-feedback')">Subir Banner</button>
+            <div id="banner-feedback" class="feedback" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 3: Subida de Galería</h3>
+            <input type="file" id="test-gallery" accept="image/*" multiple>
+            <button onclick="testGalleryUpload()">Subir Galería</button>
+            <div id="gallery-feedback" class="feedback" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 4: Estado de Autenticación</h3>
+            <button onclick="checkAuthStatus()">Verificar Autenticación</button>
+            <div id="auth-feedback" class="feedback" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test 5: Validaciones</h3>
+            <button onclick="testValidations()">Probar Validaciones</button>
+            <div id="validation-feedback" class="feedback" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Logs del Sistema</h3>
+            <div id="system-logs" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        // Hacer las funciones disponibles globalmente para los botones
+        window.api = api;
+        
+        // Función para mostrar logs
+        function addLog(message) {
+            const logsContainer = document.getElementById('system-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logsContainer.innerHTML += `[${timestamp}] ${message}\n`;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Sobrescribir console.log para capturar logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '));
+        };
+        
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('ERROR: ' + args.join(' '));
+        };
+        
+        window.addLog = addLog;
+
+        // Test de estado de autenticación
+        window.checkAuthStatus = async function() {
+            const feedback = document.getElementById('auth-feedback');
+            addLog('Verificando estado de autenticación...');
+
+            try {
+                const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+
+                if (error) {
+                    showFeedback(feedback, `Error al obtener sesión: ${error.message}`, 'error');
+                    addLog(`Error de sesión: ${error.message}`);
+                    return;
+                }
+
+                if (!session) {
+                    showFeedback(feedback, 'No hay usuario autenticado. Necesitas iniciar sesión primero.', 'error');
+                    addLog('Usuario no autenticado');
+
+                    // Intentar autenticación automática para pruebas
+                    showFeedback(feedback, 'Intentando autenticación automática...', 'info');
+
+                    // Redirigir a la página principal para autenticarse
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 3000);
+
+                    return;
+                }
+
+                const userInfo = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    created_at: session.user.created_at
+                };
+
+                showFeedback(feedback, `✅ Usuario autenticado: ${userInfo.email} (ID: ${userInfo.id})`, 'success');
+                addLog(`Usuario autenticado: ${JSON.stringify(userInfo)}`);
+
+                // Verificar permisos de storage
+                await testStoragePermissions();
+
+            } catch (error) {
+                showFeedback(feedback, `Error inesperado: ${error.message}`, 'error');
+                addLog(`Error inesperado: ${error.message}`);
+            }
+        };
+
+        // Test de permisos de storage
+        window.testStoragePermissions = async function() {
+            addLog('Verificando permisos de storage...');
+
+            const buckets = ['server-images', 'server-banners', 'server-gallery'];
+
+            for (const bucket of buckets) {
+                try {
+                    // Intentar listar archivos del bucket para verificar permisos de lectura
+                    const { data, error } = await window.supabaseClient.storage
+                        .from(bucket)
+                        .list('', { limit: 1 });
+
+                    if (error) {
+                        addLog(`❌ Bucket ${bucket}: Error de permisos - ${error.message}`);
+                    } else {
+                        addLog(`✅ Bucket ${bucket}: Permisos de lectura OK`);
+                    }
+                } catch (error) {
+                    addLog(`❌ Bucket ${bucket}: Error al verificar - ${error.message}`);
+                }
+            }
+        };
+
+        // Test de subida individual
+        window.testUpload = async function(inputId, bucket, feedbackId) {
+            const input = document.getElementById(inputId);
+            const feedback = document.getElementById(feedbackId);
+            const file = input.files[0];
+            
+            if (!file) {
+                showFeedback(feedback, 'Por favor selecciona un archivo', 'error');
+                return;
+            }
+            
+            showFeedback(feedback, 'Subiendo archivo...', 'info');
+            addLog(`Iniciando test de subida: ${file.name} al bucket ${bucket}`);
+            
+            try {
+                const result = await api.uploadFile(file, bucket);
+                showFeedback(feedback, `¡Éxito! Archivo subido: ${result}`, 'success');
+                addLog(`Test exitoso: ${result}`);
+            } catch (error) {
+                showFeedback(feedback, `Error: ${error.message}`, 'error');
+                addLog(`Test fallido: ${error.message}`);
+            }
+        };
+        
+        // Test de subida de galería
+        window.testGalleryUpload = async function() {
+            const input = document.getElementById('test-gallery');
+            const feedback = document.getElementById('gallery-feedback');
+            const files = input.files;
+            
+            if (files.length === 0) {
+                showFeedback(feedback, 'Por favor selecciona al menos un archivo', 'error');
+                return;
+            }
+            
+            showFeedback(feedback, `Subiendo ${files.length} archivos...`, 'info');
+            addLog(`Iniciando test de galería: ${files.length} archivos`);
+            
+            try {
+                const results = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    showFeedback(feedback, `Subiendo archivo ${i + 1} de ${files.length}: ${file.name}`, 'info');
+                    
+                    const result = await api.uploadFile(file, 'server-gallery');
+                    results.push(result);
+                    addLog(`Archivo ${i + 1} subido: ${result}`);
+                }
+                
+                showFeedback(feedback, `¡Éxito! ${results.length} archivos subidos`, 'success');
+                addLog(`Test de galería exitoso: ${results.length} archivos`);
+            } catch (error) {
+                showFeedback(feedback, `Error: ${error.message}`, 'error');
+                addLog(`Test de galería fallido: ${error.message}`);
+            }
+        };
+        
+        // Test de validaciones
+        window.testValidations = async function() {
+            const feedback = document.getElementById('validation-feedback');
+            addLog('Iniciando tests de validación');
+            
+            const tests = [
+                { name: 'Archivo null', test: () => api.uploadFile(null, 'test') },
+                { name: 'Archivo undefined', test: () => api.uploadFile(undefined, 'test') },
+                { name: 'Bucket vacío', test: () => api.uploadFile(new File(['test'], 'test.txt'), '') }
+            ];
+            
+            let results = [];
+            
+            for (const testCase of tests) {
+                try {
+                    const result = await testCase.test();
+                    results.push(`✓ ${testCase.name}: ${result || 'null'}`);
+                    addLog(`Validación ${testCase.name}: OK`);
+                } catch (error) {
+                    results.push(`✗ ${testCase.name}: ${error.message}`);
+                    addLog(`Validación ${testCase.name}: ${error.message}`);
+                }
+            }
+            
+            showFeedback(feedback, results.join('\n'), 'info');
+        };
+        
+        function showFeedback(element, message, type) {
+            element.textContent = message;
+            element.className = `feedback ${type}`;
+            element.style.display = 'block';
+        }
+        
+        addLog('Sistema de tests inicializado');
+    </script>
+</body>
+</html>

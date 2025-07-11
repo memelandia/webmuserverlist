@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Supabase - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 12px 24px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+        .code { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 14px; overflow-x: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .log { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnóstico Completo de Supabase</h1>
+        <p>Esta herramienta verifica el estado completo de tu configuración de Supabase para identificar problemas de permisos.</p>
+        
+        <div class="section">
+            <h2>1. Estado General</h2>
+            <button onclick="runFullDiagnostic()">🚀 Ejecutar Diagnóstico Completo</button>
+            <div id="general-status"></div>
+        </div>
+        
+        <div class="grid">
+            <div class="section">
+                <h3>2. Autenticación</h3>
+                <button onclick="checkAuth()">Verificar Autenticación</button>
+                <div id="auth-status"></div>
+            </div>
+            
+            <div class="section">
+                <h3>3. Buckets de Storage</h3>
+                <button onclick="checkBuckets()">Verificar Buckets</button>
+                <div id="buckets-status"></div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="section">
+                <h3>4. Permisos de Storage</h3>
+                <button onclick="checkStoragePermissions()">Verificar Permisos</button>
+                <div id="permissions-status"></div>
+            </div>
+            
+            <div class="section">
+                <h3>5. Test de Subida</h3>
+                <input type="file" id="test-file" accept="image/*">
+                <button onclick="testUpload()">Probar Subida</button>
+                <div id="upload-status"></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>6. Configuración SQL Recomendada</h3>
+            <p>Si hay problemas de permisos, ejecuta este SQL en tu Dashboard de Supabase:</p>
+            <div class="code" id="sql-config">
+-- Cargando configuración SQL...
+            </div>
+            <button onclick="copySQLConfig()">📋 Copiar SQL</button>
+        </div>
+        
+        <div class="section">
+            <h3>7. Logs del Sistema</h3>
+            <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+            <div id="system-logs" class="log">Iniciando sistema de diagnóstico...\n</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        // Variables globales
+        let diagnosticResults = {};
+        
+        // Función para agregar logs
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('system-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logsContainer.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Función para mostrar estado
+        function showStatus(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // 1. Diagnóstico completo
+        window.runFullDiagnostic = async function() {
+            addLog('Iniciando diagnóstico completo...', 'info');
+            showStatus('general-status', '🔄 Ejecutando diagnóstico completo...', 'info');
+            
+            try {
+                await checkAuth();
+                await checkBuckets();
+                await checkStoragePermissions();
+                await loadSQLConfig();
+                
+                // Resumen final
+                const issues = Object.values(diagnosticResults).filter(r => !r.success).length;
+                if (issues === 0) {
+                    showStatus('general-status', '✅ Diagnóstico completado: Todo funciona correctamente', 'success');
+                    addLog('Diagnóstico completado: Sin problemas detectados', 'success');
+                } else {
+                    showStatus('general-status', `⚠️ Diagnóstico completado: ${issues} problemas detectados`, 'warning');
+                    addLog(`Diagnóstico completado: ${issues} problemas encontrados`, 'warning');
+                }
+            } catch (error) {
+                showStatus('general-status', `❌ Error en diagnóstico: ${error.message}`, 'error');
+                addLog(`Error en diagnóstico: ${error.message}`, 'error');
+            }
+        };
+        
+        // 2. Verificar autenticación
+        window.checkAuth = async function() {
+            addLog('Verificando autenticación...', 'info');
+            
+            try {
+                const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+                
+                if (error) {
+                    diagnosticResults.auth = { success: false, error: error.message };
+                    showStatus('auth-status', `❌ Error de sesión: ${error.message}`, 'error');
+                    addLog(`Error de autenticación: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!session) {
+                    diagnosticResults.auth = { success: false, error: 'No autenticado' };
+                    showStatus('auth-status', '❌ Usuario no autenticado. <a href="index.html">Ir a iniciar sesión</a>', 'error');
+                    addLog('Usuario no autenticado', 'error');
+                    return;
+                }
+                
+                diagnosticResults.auth = { success: true, user: session.user };
+                showStatus('auth-status', `✅ Usuario autenticado: ${session.user.email}`, 'success');
+                addLog(`Usuario autenticado: ${session.user.email}`, 'success');
+                
+            } catch (error) {
+                diagnosticResults.auth = { success: false, error: error.message };
+                showStatus('auth-status', `❌ Error inesperado: ${error.message}`, 'error');
+                addLog(`Error inesperado en autenticación: ${error.message}`, 'error');
+            }
+        };
+        
+        // 3. Verificar buckets
+        window.checkBuckets = async function() {
+            addLog('Verificando buckets de storage...', 'info');
+            
+            const requiredBuckets = ['server-images', 'server-banners', 'server-gallery', 'avatars'];
+            const bucketStatus = [];
+            
+            try {
+                const { data: buckets, error } = await window.supabaseClient.storage.listBuckets();
+                
+                if (error) {
+                    diagnosticResults.buckets = { success: false, error: error.message };
+                    showStatus('buckets-status', `❌ Error al listar buckets: ${error.message}`, 'error');
+                    addLog(`Error al listar buckets: ${error.message}`, 'error');
+                    return;
+                }
+                
+                for (const required of requiredBuckets) {
+                    const exists = buckets.find(b => b.id === required);
+                    if (exists) {
+                        bucketStatus.push(`✅ ${required} (público: ${exists.public ? 'Sí' : 'No'})`);
+                        addLog(`Bucket ${required}: Existe`, 'success');
+                    } else {
+                        bucketStatus.push(`❌ ${required} (no existe)`);
+                        addLog(`Bucket ${required}: No existe`, 'error');
+                    }
+                }
+                
+                const allExist = requiredBuckets.every(req => buckets.find(b => b.id === req));
+                diagnosticResults.buckets = { success: allExist, buckets: buckets };
+                
+                showStatus('buckets-status', bucketStatus.join('<br>'), allExist ? 'success' : 'warning');
+                
+            } catch (error) {
+                diagnosticResults.buckets = { success: false, error: error.message };
+                showStatus('buckets-status', `❌ Error inesperado: ${error.message}`, 'error');
+                addLog(`Error inesperado en buckets: ${error.message}`, 'error');
+            }
+        };
+        
+        // 4. Verificar permisos de storage
+        window.checkStoragePermissions = async function() {
+            addLog('Verificando permisos de storage...', 'info');
+            
+            const buckets = ['server-images', 'server-banners', 'server-gallery', 'avatars'];
+            const permissionStatus = [];
+            let allPermissionsOk = true;
+            
+            for (const bucket of buckets) {
+                try {
+                    const { data, error } = await window.supabaseClient.storage
+                        .from(bucket)
+                        .list('', { limit: 1 });
+                    
+                    if (error) {
+                        permissionStatus.push(`❌ ${bucket}: ${error.message}`);
+                        addLog(`Permisos ${bucket}: Error - ${error.message}`, 'error');
+                        allPermissionsOk = false;
+                    } else {
+                        permissionStatus.push(`✅ ${bucket}: Lectura OK`);
+                        addLog(`Permisos ${bucket}: OK`, 'success');
+                    }
+                } catch (error) {
+                    permissionStatus.push(`❌ ${bucket}: ${error.message}`);
+                    addLog(`Permisos ${bucket}: Error - ${error.message}`, 'error');
+                    allPermissionsOk = false;
+                }
+            }
+            
+            diagnosticResults.permissions = { success: allPermissionsOk };
+            showStatus('permissions-status', permissionStatus.join('<br>'), allPermissionsOk ? 'success' : 'error');
+        };
+        
+        // 5. Test de subida
+        window.testUpload = async function() {
+            const fileInput = document.getElementById('test-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('upload-status', '❌ Por favor selecciona un archivo', 'error');
+                return;
+            }
+            
+            addLog(`Probando subida de archivo: ${file.name}`, 'info');
+            showStatus('upload-status', '🔄 Subiendo archivo de prueba...', 'info');
+            
+            try {
+                const result = await api.uploadFile(file, 'server-images');
+                showStatus('upload-status', `✅ Subida exitosa: ${result}`, 'success');
+                addLog(`Subida exitosa: ${result}`, 'success');
+                
+                // Limpiar el archivo de prueba después de 5 segundos
+                setTimeout(async () => {
+                    try {
+                        await window.supabaseClient.storage.from('server-images').remove([result]);
+                        addLog('Archivo de prueba eliminado', 'info');
+                    } catch (e) {
+                        addLog('No se pudo eliminar el archivo de prueba', 'warning');
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                showStatus('upload-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Error en subida: ${error.message}`, 'error');
+            }
+        };
+        
+        // 6. Cargar configuración SQL
+        window.loadSQLConfig = async function() {
+            const sqlConfig = `-- CONFIGURACIÓN DE POLÍTICAS PARA SUPABASE STORAGE
+-- Ejecutar en SQL Editor del Dashboard de Supabase
+
+-- Crear buckets si no existen
+INSERT INTO storage.buckets (id, name, public) VALUES 
+('server-images', 'server-images', true),
+('server-banners', 'server-banners', true),
+('server-gallery', 'server-gallery', true),
+('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Políticas para server-images
+CREATE POLICY "Usuarios pueden subir imágenes" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'server-images' AND auth.role() = 'authenticated');
+CREATE POLICY "Imágenes públicas" ON storage.objects FOR SELECT USING (bucket_id = 'server-images');
+CREATE POLICY "Usuarios pueden actualizar imágenes" ON storage.objects FOR UPDATE USING (bucket_id = 'server-images' AND auth.role() = 'authenticated');
+CREATE POLICY "Usuarios pueden eliminar imágenes" ON storage.objects FOR DELETE USING (bucket_id = 'server-images' AND auth.role() = 'authenticated');
+
+-- Políticas para server-banners
+CREATE POLICY "Usuarios pueden subir banners" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'server-banners' AND auth.role() = 'authenticated');
+CREATE POLICY "Banners públicos" ON storage.objects FOR SELECT USING (bucket_id = 'server-banners');
+CREATE POLICY "Usuarios pueden actualizar banners" ON storage.objects FOR UPDATE USING (bucket_id = 'server-banners' AND auth.role() = 'authenticated');
+CREATE POLICY "Usuarios pueden eliminar banners" ON storage.objects FOR DELETE USING (bucket_id = 'server-banners' AND auth.role() = 'authenticated');
+
+-- Políticas para server-gallery
+CREATE POLICY "Usuarios pueden subir galería" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'server-gallery' AND auth.role() = 'authenticated');
+CREATE POLICY "Galería pública" ON storage.objects FOR SELECT USING (bucket_id = 'server-gallery');
+CREATE POLICY "Usuarios pueden actualizar galería" ON storage.objects FOR UPDATE USING (bucket_id = 'server-gallery' AND auth.role() = 'authenticated');
+CREATE POLICY "Usuarios pueden eliminar galería" ON storage.objects FOR DELETE USING (bucket_id = 'server-gallery' AND auth.role() = 'authenticated');
+
+-- Políticas para avatars
+CREATE POLICY "Usuarios pueden subir avatars" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+CREATE POLICY "Avatars públicos" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "Usuarios pueden actualizar avatars" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+CREATE POLICY "Usuarios pueden eliminar avatars" ON storage.objects FOR DELETE USING (bucket_id = 'avatars' AND auth.role() = 'authenticated');`;
+            
+            document.getElementById('sql-config').textContent = sqlConfig;
+        };
+        
+        // 7. Copiar SQL
+        window.copySQLConfig = function() {
+            const sqlText = document.getElementById('sql-config').textContent;
+            navigator.clipboard.writeText(sqlText).then(() => {
+                addLog('Configuración SQL copiada al portapapeles', 'success');
+            }).catch(() => {
+                addLog('No se pudo copiar al portapapeles', 'warning');
+            });
+        };
+        
+        // 8. Limpiar logs
+        window.clearLogs = function() {
+            document.getElementById('system-logs').innerHTML = 'Logs limpiados...\n';
+        };
+        
+        // Inicialización
+        addLog('Sistema de diagnóstico inicializado', 'success');
+        loadSQLConfig();
+    </script>
+</body>
+</html>
