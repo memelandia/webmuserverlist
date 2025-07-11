@@ -96,20 +96,43 @@ export async function getCalendarOpenings() {
     return data;
 }
 
-export async function getServerById(id) {
-    // CORRECCIÓN: Usar maybeSingle() para que devuelva null en lugar de error si no encuentra el servidor.
+export async function getServerById(serverId) {
+    if (!serverId) throw new Error("Se requiere un ID de servidor válido.");
+    
+    // Consulta básica que solo obtiene datos de la tabla servers
     const { data, error } = await supabase
         .from('servers')
-        .select('*, profiles(username)')
-        .eq('id', id)
-        .in('status', ['aprobado', 'pendiente'])
-        .maybeSingle();
-
-    if (error) { 
-        console.error("API Error (getServerById):", error); 
-        throw new Error("Ocurrió un error al buscar el servidor."); 
+        .select('*')
+        .eq('id', serverId)
+        .single();
+    
+    if (error) {
+        console.error("API Error (getServerById):", error);
+        throw new Error("Ocurrió un error al buscar el servidor.");
     }
-    // La comprobación de si es nulo se hace ahora en servidor.js
+    
+    if (!data) {
+        throw new Error("Servidor no encontrado o no disponible.");
+    }
+    
+    // Obtener información adicional del propietario si existe
+    if (data.user_id) {
+        try {
+            const { data: ownerData } = await supabase
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', data.user_id)
+                .single();
+                
+            if (ownerData) {
+                data.owner = ownerData;
+            }
+        } catch (profileError) {
+            console.warn("No se pudo obtener información del propietario:", profileError);
+            // No lanzamos error aquí para que la página siga funcionando
+        }
+    }
+    
     return data;
 }
 
@@ -263,30 +286,20 @@ export async function getRankingServers(rankingType = 'general', page = 1, pageS
     const from = (page - 1) * pageSize;
 
     if (rankingType === 'monthly') {
-        // CORRECCIÓN: Usar la función RPC creada en la base de datos
-        const { data, error } = await supabase.rpc('get_monthly_ranking', {
-            page_size: pageSize,
-            page_offset: from
-        });
-
-        // La función RPC no devuelve el conteo total, así que lo obtenemos por separado.
-        // Esto solo es necesario para la paginación.
-        const { count, error: countError } = await supabase
+        // Usar consulta directa en lugar de RPC para garantizar compatibilidad
+        const { data, error, count } = await supabase
             .from('monthly_server_votes')
-            .select('*', { count: 'exact', head: true });
+            .select('*', { count: 'exact' })
+            .order('monthly_votes_count', { ascending: false, nullsFirst: false })
+            .range(from, from + pageSize - 1);
 
         if (error) {
-            console.error("API Error (getRankingServers - monthly RPC):", error);
+            console.error("API Error (getRankingServers - monthly):", error);
             throw error;
         }
-        if (countError) {
-             console.error("API Error (getRankingServers - monthly count):", countError);
-            // Podemos seguir sin el count, la paginación no se mostrará bien, pero los datos sí.
-        }
-
-        return { data: data || [], count: count || 0 };
-
+        return { data, count };
     } else { // Ranking General
+        // Mantener el código existente para el ranking general
         const { data, error, count } = await supabase
             .from('servers')
             .select('*, average_rating, review_count', { count: 'exact' })
