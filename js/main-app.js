@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             initProfilePage();
             break;
         case 'page-agregar':
+            console.log("🚀 Inicializando página de agregar servidor...");
             initAddServerPage();
             break;
         case 'page-editar-servidor':

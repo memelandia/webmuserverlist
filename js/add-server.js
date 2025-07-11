@@ -4,31 +4,48 @@ import * as api from './modules/api.js';
 
 export async function initAddServerPage() {
     console.log("🚀 Inicializando Página de Agregar Servidor (add-server.js)...");
+
     const authRequiredMessage = document.getElementById('auth-required-message');
     const form = document.getElementById('add-server-form');
     const loginLink = document.getElementById('login-link');
 
-    if (!form || !authRequiredMessage) return;
+    console.log("Elementos encontrados:", {
+        authRequiredMessage: !!authRequiredMessage,
+        form: !!form,
+        loginLink: !!loginLink
+    });
 
+    if (!form || !authRequiredMessage) {
+        console.error("❌ Elementos críticos no encontrados en el DOM");
+        return;
+    }
+
+    console.log("Verificando sesión de usuario...");
     const { data: { session } } = await window.supabaseClient.auth.getSession();
+    console.log("Sesión obtenida:", session ? `Usuario: ${session.user.email}` : "No hay sesión");
 
     if (!session) {
+        console.log("❌ Usuario no autenticado, mostrando mensaje de login");
         authRequiredMessage.classList.remove('hidden');
         form.classList.add('hidden');
         if (loginLink) {
             loginLink.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log("Click en login link");
                 // Usamos un evento personalizado para desacoplar el modal de esta página
                 document.dispatchEvent(new CustomEvent('show-auth-modal', { detail: { mode: 'login' } }));
             });
         }
         return;
     }
-    
+
+    console.log("✅ Usuario autenticado, mostrando formulario");
     authRequiredMessage.classList.add('hidden');
     form.classList.remove('hidden');
-    
+
+    console.log("Agregando event listener al formulario...");
     form.addEventListener('submit', handleFormSubmit);
+    console.log("✅ Página de agregar servidor inicializada completamente");
 }
 
 async function handleFormSubmit(e) {
