@@ -2,6 +2,49 @@
 
 import * as api from './modules/api.js';
 
+// Función de upload simplificada que no verifica sesión
+async function uploadFileDirectly(file, bucket) {
+    if (!file) return null;
+
+    // Validaciones básicas
+    if (file.size > 2 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
+    }
+
+    // Generar nombre único
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
+
+    console.log(`Subiendo ${file.name} como ${fileName} al bucket ${bucket}`);
+
+    // Subida directa
+    const { data, error } = await window.supabaseClient.storage
+        .from(bucket)
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
+
+    if (error) {
+        console.error(`Error al subir ${file.name}:`, error);
+        throw new Error(`Error al subir ${file.name}: ${error.message}`);
+    }
+
+    if (!data?.path) {
+        throw new Error(`No se obtuvo path para ${file.name}`);
+    }
+
+    console.log(`${file.name} subido exitosamente: ${data.path}`);
+    return data.path;
+}
+
 export async function initAddServerPage() {
     console.log("🚀 Inicializando Página de Agregar Servidor (add-server.js)...");
 
@@ -132,7 +175,7 @@ async function handleFormSubmit(e) {
                 const startTime = Date.now();
                 console.log(`Timestamp inicio subida logo: ${startTime}`);
 
-                serverData.image_url = await api.uploadFile(logoFile, 'server-images');
+                serverData.image_url = await uploadFileDirectly(logoFile, 'server-images');
 
                 const endTime = Date.now();
                 console.log(`Timestamp fin subida logo: ${endTime} (duración: ${endTime - startTime}ms)`);
@@ -153,7 +196,7 @@ async function handleFormSubmit(e) {
                 console.log("Iniciando subida de banner...");
 
                 console.log("Iniciando subida de banner...");
-                serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
+                serverData.banner_url = await uploadFileDirectly(bannerFile, 'server-banners');
                 console.log("Banner subido exitosamente:", serverData.banner_url);
             } catch (bannerError) {
                 throw new Error(`Error al subir el banner: ${bannerError.message}`);
@@ -178,7 +221,7 @@ async function handleFormSubmit(e) {
                     feedbackEl.textContent = `Subiendo imagen ${i + 1} de ${galleryFiles.length}...`;
 
                     console.log(`Iniciando subida de galería ${i + 1}...`);
-                    const path = await api.uploadFile(file, 'server-gallery');
+                    const path = await uploadFileDirectly(file, 'server-gallery');
                     if (path) {
                         galleryPaths.push(path);
                     }

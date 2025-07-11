@@ -4,6 +4,16 @@ const supabase = window.supabaseClient;
 
 // --- API de Servidores y Widgets ---
 
+export async function getServers() {
+    const { data, error } = await supabase
+        .from('servers')
+        .select('*')
+        .eq('status', 'aprobado')
+        .order('created_at', { ascending: false });
+    if (error) { console.error("API Error (getServers):", error); throw new Error("No se pudieron obtener los servidores."); }
+    return data || [];
+}
+
 export async function getFeaturedServers() {
     const { data, error } = await supabase
         .from('servers')
