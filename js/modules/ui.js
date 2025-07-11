@@ -569,17 +569,46 @@ export function renderOwnerDashboard(container, data) {
             </aside>
             <main class="profile-main-content">
                 ${(servers && servers.length > 0) ? `
-                <div class="widget">
+                <div class="widget dashboard-stats-widget">
                     <h3 class="widget-title">Rendimiento Global</h3>
                     <div class="owner-stats-grid">
-                        <div class="stat-card"><div class="stat-card-icon"><i class="fa-solid fa-eye"></i></div><div class="stat-card-value">${totals.views.toLocaleString("es-ES")}</div><div class="stat-card-label">Vistas Totales</div></div>
-                        <div class="stat-card"><div class="stat-card-icon"><i class="fa-solid fa-mouse-pointer"></i></div><div class="stat-card-value">${totals.webClicks.toLocaleString("es-ES")}</div><div class="stat-card-label">Clics a Web</div></div>
-                        <div class="stat-card"><div class="stat-card-icon"><i class="fab fa-discord"></i></div><div class="stat-card-value">${totals.discordClicks.toLocaleString("es-ES")}</div><div class="stat-card-label">Clics a Discord</div></div>
-                        <div class="stat-card"><div class="stat-card-icon"><i class="fa-solid fa-heart"></i></div><div class="stat-card-value">${totals.votes.toLocaleString("es-ES")}</div><div class="stat-card-label">Votos Totales</div></div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon"><i class="fa-solid fa-eye"></i></div>
+                            <div class="stat-card-value">${totals.views.toLocaleString("es-ES")}</div>
+                            <div class="stat-card-label">Vistas Totales</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon"><i class="fa-solid fa-mouse-pointer"></i></div>
+                            <div class="stat-card-value">${totals.webClicks.toLocaleString("es-ES")}</div>
+                            <div class="stat-card-label">Clics a Web</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon"><i class="fab fa-discord"></i></div>
+                            <div class="stat-card-value">${totals.discordClicks.toLocaleString("es-ES")}</div>
+                            <div class="stat-card-label">Clics a Discord</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon"><i class="fa-solid fa-heart"></i></div>
+                            <div class="stat-card-value">${totals.votes.toLocaleString("es-ES")}</div>
+                            <div class="stat-card-label">Votos Totales</div>
+                        </div>
                     </div>
+                </div>
+                <div class="widget dashboard-charts-widget">
+                    <h3 class="widget-title">Análisis Detallado</h3>
                     <div class="owner-charts-grid">
-                        <div class="widget" style="margin-bottom:0;"><h3 class="widget-title" style="margin-bottom: 1.5rem">Interacciones</h3><canvas id="interactions-chart"></canvas></div>
-                        <div class="widget" style="margin-bottom:0;"><h3 class="widget-title" style="margin-bottom: 1.5rem">Distribución de Votos</h3><canvas id="votes-chart"></canvas></div>
+                        <div class="chart-container">
+                            <h4 class="chart-title">Interacciones por Servidor</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="interactions-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <h4 class="chart-title">Distribución de Votos</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="votes-chart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>` : ''}
                 <div class="widget">
