@@ -6,6 +6,10 @@ import * as api from './modules/api.js';
 async function uploadFileDirectly(file, bucket) {
     if (!file) return null;
 
+    console.log(`🔄 INICIO uploadFileDirectly: ${file.name} (${file.size} bytes) → ${bucket}`);
+    console.log(`🌐 URL actual: ${window.location.href}`);
+    console.log(`🔑 Supabase client disponible: ${!!window.supabaseClient}`);
+
     // Validaciones básicas
     if (file.size > 2 * 1024 * 1024) {
         throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
@@ -22,27 +26,58 @@ async function uploadFileDirectly(file, bucket) {
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
 
-    console.log(`Subiendo ${file.name} como ${fileName} al bucket ${bucket}`);
+    console.log(`📝 Nombre generado: ${fileName}`);
 
-    // Subida directa
-    const { data, error } = await window.supabaseClient.storage
-        .from(bucket)
-        .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
+    try {
+        console.log(`⬆️ Iniciando subida a Supabase Storage...`);
+
+        // Crear timeout para detectar cuelgues
+        const uploadPromise = window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                console.error(`⏰ TIMEOUT: Subida de ${file.name} tardó más de 15 segundos`);
+                reject(new Error(`Timeout: La subida de ${file.name} tardó más de 15 segundos`));
+            }, 15000);
         });
 
-    if (error) {
-        console.error(`Error al subir ${file.name}:`, error);
-        throw new Error(`Error al subir ${file.name}: ${error.message}`);
-    }
+        console.log(`⏳ Esperando resultado de subida...`);
+        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
 
-    if (!data?.path) {
-        throw new Error(`No se obtuvo path para ${file.name}`);
-    }
+        console.log(`📊 Resultado de subida:`, { data, error });
 
-    console.log(`${file.name} subido exitosamente: ${data.path}`);
-    return data.path;
+        if (error) {
+            console.error(`❌ Error de Supabase:`, error);
+
+            // Detectar errores específicos
+            if (error.message?.includes('CORS')) {
+                throw new Error(`Error CORS: Tu dominio web no está configurado en Supabase. Contacta al administrador.`);
+            } else if (error.message?.includes('policy') || error.message?.includes('RLS')) {
+                throw new Error(`Error de permisos: ${error.message}`);
+            } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+                throw new Error(`Error de red: Verifica tu conexión a internet.`);
+            } else {
+                throw new Error(`Error al subir ${file.name}: ${error.message}`);
+            }
+        }
+
+        if (!data?.path) {
+            console.error(`❌ No se obtuvo path en la respuesta:`, data);
+            throw new Error(`No se obtuvo path para ${file.name}`);
+        }
+
+        console.log(`✅ ${file.name} subido exitosamente: ${data.path}`);
+        return data.path;
+
+    } catch (error) {
+        console.error(`💥 Error en uploadFileDirectly:`, error);
+        throw error;
+    }
 }
 
 export async function initAddServerPage() {
