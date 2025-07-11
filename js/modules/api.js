@@ -193,6 +193,69 @@ export async function updateUserAvatar(userId, avatarPath) {
     if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
+// Función de upload simplificada sin verificación de sesión
+export async function uploadFileSimple(file, bucket) {
+    console.log(`uploadFileSimple: Iniciando con ${file?.name} al bucket ${bucket}`);
+
+    if (!file) {
+        console.log("uploadFileSimple: No se proporcionó archivo, retornando null");
+        return null;
+    }
+
+    // Validación de tamaño
+    if (file.size > 2 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    }
+
+    // Validación de tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
+    }
+
+    try {
+        // Verificar que el cliente de Supabase esté disponible
+        if (!window.supabaseClient) {
+            throw new Error("Cliente de Supabase no está inicializado");
+        }
+
+        // Generar nombre único
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
+
+        console.log(`uploadFileSimple: Nombre generado: ${fileName}`);
+
+        // Subida directa sin verificación de sesión (asumimos que ya está autenticado)
+        console.log(`uploadFileSimple: Iniciando subida directa...`);
+        const { data, error } = await window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        console.log(`uploadFileSimple: Resultado de subida:`, { data, error });
+
+        if (error) {
+            console.error(`uploadFileSimple: Error de Supabase:`, error);
+            throw new Error(`Error de Supabase: ${error.message}`);
+        }
+
+        if (!data?.path) {
+            throw new Error("No se obtuvo path del archivo subido");
+        }
+
+        console.log(`uploadFileSimple: Éxito - ${data.path}`);
+        return data.path;
+
+    } catch (error) {
+        console.error(`uploadFileSimple: Error:`, error);
+        throw error;
+    }
+}
+
 // Función alternativa de upload con enfoque diferente
 export async function uploadFileAlternative(file, bucket) {
     console.log(`uploadFileAlternative: Iniciando con ${file?.name} al bucket ${bucket}`);
@@ -276,12 +339,33 @@ export async function uploadFile(file, bucket) {
             throw new Error("Cliente de Supabase no está inicializado");
         }
 
-        // Verificar que el usuario esté autenticado
-        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        // Verificar que el usuario esté autenticado con timeout
+        console.log(`uploadFile: Verificando sesión de usuario...`);
+
+        let session, sessionError;
+        try {
+            // Crear timeout para getSession
+            const sessionPromise = window.supabaseClient.auth.getSession();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("Timeout al verificar sesión")), 5000);
+            });
+
+            const result = await Promise.race([sessionPromise, timeoutPromise]);
+            session = result.data?.session;
+            sessionError = result.error;
+
+            console.log(`uploadFile: Verificación de sesión completada`);
+        } catch (error) {
+            console.error(`uploadFile: Error al verificar sesión:`, error);
+            throw new Error(`Error al verificar autenticación: ${error.message}`);
+        }
+
         if (sessionError) {
+            console.error(`uploadFile: Error de sesión:`, sessionError);
             throw new Error(`Error de autenticación: ${sessionError.message}`);
         }
         if (!session) {
+            console.error(`uploadFile: No hay sesión activa`);
             throw new Error("Debes iniciar sesión para subir archivos");
         }
 
