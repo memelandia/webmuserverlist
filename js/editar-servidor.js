@@ -1,33 +1,34 @@
-// js/editar-servidor.js (v13 - Controlador)
+// js/editar-servidor.js
 
 import * as api from './modules/api.js';
-
-let serverDataCache = null;
 
 export async function initEditServerPage() {
     console.log("🚀 Inicializando Página de Editar Servidor (editar-servidor.js)...");
     
-    const formContainer = document.getElementById('edit-server-container');
     const loadingMessage = document.getElementById('loading-message');
     const form = document.getElementById('edit-server-form');
     const urlParams = new URLSearchParams(window.location.search);
     const serverId = urlParams.get('id');
 
     if (!serverId) {
-        loadingMessage.textContent = 'Error: No se especificó un ID de servidor.';
+        loadingMessage.innerHTML = '<h2>Error</h2><p>No se especificó un ID de servidor.</p>';
         return;
     }
 
     try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) {
-            loadingMessage.innerHTML = 'Debes <a href="#" id="login-redirect-btn">iniciar sesión</a> para editar.';
+            loadingMessage.innerHTML = '<h2>Acceso Restringido</h2><p>Debes <a href="#" id="login-redirect-btn">iniciar sesión</a> para editar un servidor.</p>';
+            document.getElementById('login-redirect-btn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.dispatchEvent(new CustomEvent('show-auth-modal', { detail: { mode: 'login' } }));
+            });
             return;
         }
 
-        serverDataCache = await api.getServerForEdit(serverId, session.user.id);
+        const serverData = await api.getServerForEdit(serverId, session.user.id);
         
-        populateForm(form, serverDataCache);
+        populateForm(form, serverData);
         
         loadingMessage.classList.add('hidden');
         form.classList.remove('hidden');
@@ -35,8 +36,8 @@ export async function initEditServerPage() {
         form.addEventListener('submit', (e) => handleFormSubmit(e, serverId));
 
     } catch (error) {
-        console.error(error);
-        loadingMessage.textContent = `Error: ${error.message}`;
+        console.error("Error al cargar datos para editar:", error);
+        loadingMessage.innerHTML = `<h2>Error al Cargar</h2><p>${error.message}</p>`;
     }
 }
 
@@ -54,9 +55,16 @@ function populateForm(form, server) {
     form.discord_url.value = server.discord_url || '';
 
     if (server.opening_date) {
-        const date = new Date(server.opening_date);
-        form.opening_date.value = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-            .toISOString().slice(0, 16);
+        // Formatear la fecha para el input datetime-local
+        try {
+            const date = new Date(server.opening_date);
+            // Ajustar a la zona horaria local para la visualización correcta en el input
+            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+            form.opening_date.value = localDate.toISOString().slice(0, 16);
+        } catch (e) {
+            console.warn("No se pudo parsear la fecha de apertura: ", server.opening_date);
+            form.opening_date.value = '';
+        }
     }
 
     form.querySelectorAll('input[name="events"]').forEach(cb => {
@@ -78,47 +86,51 @@ async function handleFormSubmit(e, serverId) {
 
     try {
         const formData = new FormData(form);
-        let updatedData = {};
-
-        // Recopilar solo los campos que no son archivos
-        for (const [key, value] of formData.entries()) {
-            if (!key.includes('-input')) {
-                updatedData[key] = value;
-            }
-        }
-        
-        // Procesar datos específicos
-        updatedData.exp_rate = parseInt(updatedData.exp_rate) || null;
-        updatedData.drop_rate = parseInt(updatedData.drop_rate) || null;
-        updatedData.opening_date = updatedData.opening_date || null;
-        updatedData.events = formData.getAll('events');
+        const updatedData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            version: formData.get('version'),
+            type: formData.get('type'),
+            configuration: formData.get('configuration'),
+            exp_rate: parseInt(formData.get('exp_rate')) || null,
+            drop_rate: parseInt(formData.get('drop_rate')) || null,
+            reset_info: formData.get('reset_info'),
+            antihack_info: formData.get('antihack_info'),
+            website_url: formData.get('website_url'),
+            discord_url: formData.get('discord_url'),
+            opening_date: formData.get('opening_date') || null,
+            events: formData.getAll('events')
+        };
         
         const logoFile = document.getElementById('logo-file').files[0];
         const bannerFile = document.getElementById('banner-file').files[0];
         const galleryFiles = document.getElementById('gallery-files').files;
         
         if (logoFile) {
-            feedbackEl.textContent = 'Subiendo logo...';
+            feedbackEl.textContent = 'Subiendo nuevo logo...';
+            feedbackEl.className = 'feedback-message info active';
             updatedData.image_url = await api.uploadFile(logoFile, 'server-images');
         }
         if (bannerFile) {
-            feedbackEl.textContent = 'Subiendo banner...';
+            feedbackEl.textContent = 'Subiendo nuevo banner...';
+            feedbackEl.className = 'feedback-message info active';
             updatedData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
         }
         if (galleryFiles.length > 0) {
-            feedbackEl.textContent = `Subiendo ${galleryFiles.length} imágenes...`;
+            feedbackEl.textContent = `Subiendo ${galleryFiles.length} nuevas imágenes...`;
+            feedbackEl.className = 'feedback-message info active';
             const uploadPromises = Array.from(galleryFiles).map(file => api.uploadFile(file, 'server-gallery'));
             updatedData.gallery_urls = await Promise.all(uploadPromises);
         }
         
         await api.updateServer(serverId, updatedData);
 
-        feedbackEl.textContent = '¡Servidor actualizado! Redirigiendo...';
+        feedbackEl.textContent = '¡Servidor actualizado con éxito! Redirigiendo...';
         feedbackEl.className = 'feedback-message success active';
         setTimeout(() => { window.location.href = `servidor.html?id=${serverId}`; }, 2000);
 
     } catch (error) {
-        console.error('Error al actualizar:', error);
+        console.error('Error al actualizar el servidor:', error);
         feedbackEl.textContent = `Error: ${error.message}`;
         feedbackEl.className = 'feedback-message error active';
         submitButton.disabled = false;

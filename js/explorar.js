@@ -1,17 +1,19 @@
-// js/explorar.js (v13 - Controlador de la Página de Explorar)
+// js/explorar.js
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 
-// La función principal que se llamará desde main-app.js
 export function initExplorarPage() {
     console.log("🚀 Inicializando Página de Explorar (explorar.js)...");
     
-    // Referencias a los elementos del DOM
     const filtersForm = document.getElementById('explore-filters-form');
     const resetBtn = document.getElementById('reset-filters-btn');
 
-    // Manejadores de eventos del formulario
+    if (!filtersForm || !resetBtn) {
+        console.error("No se encontraron los elementos del formulario de filtros.");
+        return;
+    }
+
     filtersForm.addEventListener('submit', (e) => {
         e.preventDefault();
         loadServers();
@@ -24,10 +26,8 @@ export function initExplorarPage() {
         loadServers();
     });
     
-    // Lógica del slider de experiencia
     ui.initExpSlider();
     
-    // Carga inicial de servidores
     loadServers();
 }
 
@@ -38,17 +38,11 @@ async function loadServers() {
     ui.renderLoading(serversGridContainer, "Buscando servidores...");
     
     try {
-        // 1. Obtener filtros desde la UI
         const filters = ui.getExploreFilters();
-
-        // 2. Llamar a la API con los filtros
         const servers = await api.getExploreServers(filters);
-
-        // 3. Renderizar los resultados con el módulo UI
         ui.renderExploreServers(serversGridContainer, servers);
-
     } catch (error) {
         console.error("Error cargando servidores en explorar:", error);
-        ui.renderError(serversGridContainer, "Error al cargar los servidores.");
+        ui.renderError(serversGridContainer, "No se pudieron cargar los servidores. Inténtalo de nuevo.");
     }
 }

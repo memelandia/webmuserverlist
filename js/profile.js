@@ -1,10 +1,10 @@
-// js/profile.js (v17 - Final con router de perfiles y subida de avatar)
+// js/profile.js
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 
 export async function initProfilePage() {
-    console.log("🚀 Inicializando Página de Perfil con Router de Roles (profile.js)...");
+    console.log("🚀 Inicializando Página de Perfil (profile.js)...");
 
     const profileContent = document.getElementById('profile-content');
     if (!profileContent) return;
@@ -20,20 +20,19 @@ export async function initProfilePage() {
     try {
         const profile = await api.getUserProfile(session.user.id);
         
-        // --- ROUTER DE PERFILES ---
-        // Decide qué tipo de perfil o dashboard cargar basado en el rol del usuario.
+        // Router de perfiles basado en el rol del usuario
         switch (profile.role) {
             case 'owner':
                 await loadOwnerDashboard(profileContent, profile, session);
                 break;
-            case 'admin': // Admin ve el perfil de player por ahora, su panel es aparte.
+            case 'admin':
             case 'player':
             default:
                 await loadUserProfile(profileContent, profile, session);
                 break;
         }
         
-        // La inicialización del avatar se hace DESPUÉS de que el HTML del perfil esté renderizado.
+        // La inicialización del avatar se hace DESPUÉS de que el HTML del perfil esté renderizado
         initAvatarUploader(session.user.id, profile);
 
     } catch (error) {
@@ -45,7 +44,7 @@ export async function initProfilePage() {
 // Carga el perfil estándar para 'player' o 'admin'
 async function loadUserProfile(container, profile, session) {
     ui.renderLoading(container, "Cargando tu información...");
-    // Usamos Promise.all para cargar servidores y reseñas en paralelo
+    // Usamos Promise.all para cargar servidores y reseñas en paralelo y mejorar velocidad
     const [servers, reviews] = await Promise.all([
         api.getServersByUserId(session.user.id),
         api.getReviewsByUserId(session.user.id)
@@ -77,10 +76,7 @@ function initAvatarUploader(userId, profile) {
     const uploadInput = document.getElementById('avatar-upload-input');
     const feedbackEl = document.getElementById('avatar-feedback');
 
-    if (!uploadInput || !feedbackEl) {
-        console.warn("Elementos para subir avatar no encontrados en el DOM.");
-        return;
-    }
+    if (!uploadInput || !feedbackEl) return;
 
     uploadInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -97,32 +93,28 @@ function initAvatarUploader(userId, profile) {
         feedbackEl.style.color = 'var(--text-secondary)';
 
         try {
-            // Organizar avatares por usuario para mejor seguridad y organización
             const filePath = `${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-_]/g, '')}`;
             
             // Borrar avatar antiguo para no acumular basura en el Storage.
             if (profile.avatar_url) {
                 try {
-                    // La ruta guardada es solo el path, no el nombre del bucket
+                    // La ruta guardada es solo el path, no la URL pública completa.
                     await window.supabaseClient.storage.from('avatars').remove([profile.avatar_url]);
                 } catch (deleteError) {
-                    console.warn('No se pudo eliminar el avatar anterior:', deleteError);
-                    // No es un error crítico, continuamos con la subida
+                    console.warn('No se pudo eliminar el avatar anterior (puede que no existiera):', deleteError.message);
                 }
             }
             
-            // Subir nuevo avatar
             const { data, error } = await window.supabaseClient.storage
                 .from('avatars')
                 .upload(filePath, file, { 
                     cacheControl: '3600', 
-                    upsert: false // No sobreescribir, generamos nombres únicos
+                    upsert: false
                 });
                 
             if (error) throw error;
             
-            // Actualizar el perfil del usuario con la nueva URL del avatar
-            await api.updateUserAvatar(userId, filePath);
+            await api.updateUserAvatar(userId, data.path);
             
             feedbackEl.textContent = '¡Avatar actualizado!';
             feedbackEl.style.color = 'var(--success-color)';

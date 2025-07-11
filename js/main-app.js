@@ -5,7 +5,7 @@ import { initRankingPage } from './ranking.js';
 import { initExplorarPage } from './explorar.js';
 import { initCalendarioPage } from './calendario.js';
 import { initServidorPage } from './servidor.js';
-import { initProfilePage } from './profile.js'; // <-- AÑADIDO
+import { initProfilePage } from './profile.js';
 import { initAddServerPage } from './add-server.js';
 import { initEditServerPage } from './editar-servidor.js';  
 import { initAdminPage } from './admin.js'; 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'page-servidor':
             initServidorPage();
             break;
-        case 'page-profile': // <-- AÑADIDO
+        case 'page-profile':
             initProfilePage();
             break;
         case 'page-agregar':
@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             initAdminPage();
             break;
         default:
-            console.log(`%cAtención: No hay script para la página "${pageId}".`, "color: orange;");
+            // No es necesario un mensaje de error, algunas páginas pueden no tener JS específico.
+            console.log(`No hay un script de inicialización específico para la página "${pageId}".`);
             break;
     }
 });

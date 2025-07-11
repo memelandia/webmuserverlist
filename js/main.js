@@ -1,18 +1,13 @@
-// js/main.js (v13 - Controlador de la Página de Inicio)
+// js/main.js (Controlador de la Página de Inicio)
 
-// Importamos las funciones que necesitamos de nuestros módulos.
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 
-// Función de inicialización para la página de inicio.
 export function initHomePage() {
     console.log("🚀 Inicializando Página de Inicio (main.js)...");
     
-    // Inicia todos los componentes visuales de la home.
     initParticles();
-    initNavigation();
-
-    // Carga todos los widgets de la página de inicio.
+    initMobileNavigation();
     loadHomeWidgets();
 }
 
@@ -23,16 +18,23 @@ function initParticles() {
     }
 }
 
-function initNavigation() {
+function initMobileNavigation() {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const navMenu = document.querySelector('.nav-menu');
     if (mobileMenuBtn && navMenu) {
-        mobileMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); navMenu.classList.toggle('active'); });
-        document.addEventListener('click', (e) => { if (navMenu.classList.contains('active') && !navMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) { navMenu.classList.remove('active'); } });
+        mobileMenuBtn.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            navMenu.classList.toggle('active'); 
+        });
+        // Cierra el menú si se hace clic fuera de él
+        document.addEventListener('click', (e) => { 
+            if (navMenu.classList.contains('active') && !navMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) { 
+                navMenu.classList.remove('active'); 
+            } 
+        });
     }
 }
 
-// Carga los widgets de forma asíncrona.
 function loadHomeWidgets() {
     loadFeaturedCarousel();
     loadServerOfTheMonth();
@@ -49,7 +51,7 @@ async function loadFeaturedCarousel() {
     try {
         const servers = await api.getFeaturedServers();
         ui.renderFeaturedCarousel(container, servers);
-        ui.initCarouselControls(); // La lógica de los botones ahora está en ui.js
+        ui.initCarouselControls();
     } catch (error) {
         console.error("Error cargando carrusel:", error);
         ui.renderError(container, "No se pudieron cargar los servidores destacados.");

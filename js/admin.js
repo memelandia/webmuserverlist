@@ -1,12 +1,10 @@
-// js/admin.js (v14 - COMPLETO con corrección de bugs)
+// js/admin.js
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
 
 let currentTab = 'pending-servers';
-let abortController = new AbortController(); // Para cancelar peticiones en curso
 
-// La función principal que se llamará desde main-app.js
 export async function initAdminPage() {
     console.log("🚀 Inicializando Panel de Administración (admin.js)...");
     
@@ -20,7 +18,6 @@ export async function initAdminPage() {
         return;
     }
     
-    // 1. Verificación de permisos
     try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) throw new Error("Acceso restringido. Debes iniciar sesión.");
@@ -36,36 +33,27 @@ export async function initAdminPage() {
         authRequired.style.display = 'block';
         const p = authRequired.querySelector('p');
         if (p) p.textContent = error.message;
-        return; // Detenemos la ejecución si no hay permisos
+        return;
     }
 
-    // 2. Lógica de Pestañas (Tabs) usando delegación de eventos
     tabsContainer.addEventListener('click', (e) => {
         const tab = e.target.closest('.admin-tab');
         if (!tab || tab.classList.contains('active')) return;
 
-        // Abortar la petición de la pestaña anterior si estaba en curso
-        abortController.abort();
-        abortController = new AbortController(); // Crear un nuevo controller para la nueva petición
-
         tabsContainer.querySelector('.active')?.classList.remove('active');
         tab.classList.add('active');
         currentTab = tab.dataset.tab;
-        renderAdminContent(contentContainer, currentTab);
+        renderAdminContent();
     });
 
-    // 3. Manejadores de eventos centralizados en el contenedor de contenido
-    contentContainer.addEventListener('click', (e) => handleContentClick(e, contentContainer));
-    contentContainer.addEventListener('change', (e) => handleContentChange(e, contentContainer));
-    contentContainer.addEventListener('submit', (e) => handleContentSubmit(e, contentContainer));
+    contentContainer.addEventListener('click', handleContentClick);
+    contentContainer.addEventListener('change', handleContentChange);
+    contentContainer.addEventListener('submit', handleContentSubmit);
     
-    // Carga inicial
-    renderAdminContent(contentContainer, currentTab);
+    renderAdminContent();
 }
 
-// --- Manejadores de Eventos Delegados ---
-
-async function handleContentClick(e, container) {
+async function handleContentClick(e) {
     const target = e.target;
     const approveBtn = target.closest('.approve-btn');
     const denyBtn = target.closest('.deny-btn');
@@ -74,7 +62,7 @@ async function handleContentClick(e, container) {
         approveBtn.disabled = true;
         approveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         await api.updateServer(approveBtn.dataset.id, { status: 'aprobado' });
-        renderAdminContent(container, currentTab); 
+        renderAdminContent(); 
     }
 
     if (denyBtn) {
@@ -82,12 +70,12 @@ async function handleContentClick(e, container) {
             denyBtn.disabled = true;
             denyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             await api.deleteServer(denyBtn.dataset.id);
-            renderAdminContent(container, currentTab); 
+            renderAdminContent(); 
         }
     }
 }
 
-async function handleContentChange(e, container) {
+async function handleContentChange(e) {
     const target = e.target;
 
     if (target.matches('.featured-toggle')) {
@@ -104,7 +92,6 @@ async function handleContentChange(e, container) {
              try {
                 await api.updateUserProfile(userId, { role: newRole });
                 alert(`Rol de usuario actualizado a ${newRole}.`);
-                renderAdminContent(container, currentTab);
              } catch(error) {
                 console.error("Error al actualizar rol:", error);
                 alert("Hubo un error al actualizar el rol.");
@@ -116,7 +103,7 @@ async function handleContentChange(e, container) {
     }
 }
 
-async function handleContentSubmit(e, container) {
+async function handleContentSubmit(e) {
     if (e.target.id !== 'som-selection-form') return;
     e.preventDefault();
     
@@ -137,7 +124,7 @@ async function handleContentSubmit(e, container) {
         await api.setServerOfTheMonth(selectedServerId);
         ui.setFormFeedback(feedbackEl, '¡Servidor del Mes actualizado con éxito!', 'success');
         
-        setTimeout(() => renderAdminContent(container, currentTab), 2000);
+        setTimeout(() => renderAdminContent(), 2000);
 
     } catch (error) {
         ui.setFormFeedback(feedbackEl, `Error: ${error.message}`, 'error');
@@ -146,13 +133,15 @@ async function handleContentSubmit(e, container) {
     }
 }
 
-// --- Función Principal de Renderizado de Contenido ---
-async function renderAdminContent(container, tabName) {
-    ui.renderLoading(container, `Cargando ${tabName.replace(/-/g, ' ')}...`);
+async function renderAdminContent() {
+    const container = document.getElementById('admin-content');
+    if (!container) return;
+
+    ui.renderLoading(container, `Cargando...`);
 
     try {
         let content;
-        switch (tabName) {
+        switch (currentTab) {
             case 'pending-servers':
                 const pendingServers = await api.getServersByStatus('pendiente');
                 content = ui.renderAdminPendingServers(pendingServers);
@@ -170,15 +159,11 @@ async function renderAdminContent(container, tabName) {
                 content = ui.renderAdminSoM({ currentWinner, allServers });
                 break;
             default:
-                content = `<p class="error-text">Pestaña no encontrada: ${tabName}</p>`;
+                content = `<p class="error-text">Pestaña no encontrada: ${currentTab}</p>`;
         }
-        if (container.isConnected) { // Comprobar si el contenedor sigue en el DOM
-            container.innerHTML = content;
-        }
+        container.innerHTML = content;
     } catch(error) {
-        if (error.name !== 'AbortError') { // Ignorar errores de aborto
-            console.error("Error al renderizar contenido de admin:", error);
-            if(container.isConnected) ui.renderError(container, `Error al cargar: ${error.message}`);
-        }
+        console.error("Error al renderizar contenido de admin:", error);
+        ui.renderError(container, `Error al cargar: ${error.message}`);
     }
 }
