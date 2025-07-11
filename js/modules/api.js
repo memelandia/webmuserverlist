@@ -109,12 +109,11 @@ export async function getCalendarOpenings() {
 export async function getServerById(serverId) {
     if (!serverId) throw new Error("Se requiere un ID de servidor válido.");
     
-    // Consulta básica que solo obtiene datos de la tabla servers
     const { data, error } = await supabase
         .from('servers')
         .select('*')
         .eq('id', serverId)
-        .single();
+        .maybeSingle();
     
     if (error) {
         console.error("API Error (getServerById):", error);
@@ -122,25 +121,8 @@ export async function getServerById(serverId) {
     }
     
     if (!data) {
-        throw new Error("Servidor no encontrado o no disponible.");
-    }
-    
-    // Obtener información adicional del propietario si existe
-    if (data.user_id) {
-        try {
-            const { data: ownerData } = await supabase
-                .from('profiles')
-                .select('username, avatar_url')
-                .eq('id', data.user_id)
-                .single();
-                
-            if (ownerData) {
-                data.owner = ownerData;
-            }
-        } catch (profileError) {
-            console.warn("No se pudo obtener información del propietario:", profileError);
-            // No lanzamos error aquí para que la página siga funcionando
-        }
+        // Devuelve null en lugar de lanzar un error, el controlador se encargará de mostrar el mensaje.
+        return null;
     }
     
     return data;
@@ -203,229 +185,52 @@ export async function updateUserAvatar(userId, avatarPath) {
     if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
-// Función de upload simplificada sin verificación de sesión
-export async function uploadFileSimple(file, bucket) {
-    console.log(`uploadFileSimple: Iniciando con ${file?.name} al bucket ${bucket}`);
-
-    if (!file) {
-        console.log("uploadFileSimple: No se proporcionó archivo, retornando null");
-        return null;
-    }
-
-    // Validación de tamaño
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
-    }
-
-    // Validación de tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
-    }
-
-    try {
-        // Verificar que el cliente de Supabase esté disponible
-        if (!window.supabaseClient) {
-            throw new Error("Cliente de Supabase no está inicializado");
-        }
-
-        // Generar nombre único
-        const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(2, 8);
-        const fileExtension = file.name.split('.').pop() || 'jpg';
-        const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
-
-        console.log(`uploadFileSimple: Nombre generado: ${fileName}`);
-
-        // Subida directa sin verificación de sesión (asumimos que ya está autenticado)
-        console.log(`uploadFileSimple: Iniciando subida directa...`);
-        const { data, error } = await window.supabaseClient.storage
-            .from(bucket)
-            .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
-
-        console.log(`uploadFileSimple: Resultado de subida:`, { data, error });
-
-        if (error) {
-            console.error(`uploadFileSimple: Error de Supabase:`, error);
-            throw new Error(`Error de Supabase: ${error.message}`);
-        }
-
-        if (!data?.path) {
-            throw new Error("No se obtuvo path del archivo subido");
-        }
-
-        console.log(`uploadFileSimple: Éxito - ${data.path}`);
-        return data.path;
-
-    } catch (error) {
-        console.error(`uploadFileSimple: Error:`, error);
-        throw error;
-    }
-}
-
-// Función alternativa de upload con enfoque diferente
-export async function uploadFileAlternative(file, bucket) {
-    console.log(`uploadFileAlternative: Iniciando con ${file?.name} al bucket ${bucket}`);
-
-    if (!file) {
-        console.log("uploadFileAlternative: No se proporcionó archivo, retornando null");
-        return null;
-    }
-
-    try {
-        // Verificar autenticación primero
-        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
-        if (sessionError || !session) {
-            throw new Error("No estás autenticado");
-        }
-
-        // Generar nombre único
-        const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(2, 8);
-        const fileExtension = file.name.split('.').pop() || 'jpg';
-        const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
-
-        console.log(`uploadFileAlternative: Nombre generado: ${fileName}`);
-
-        // Intentar subida directa sin Promise.race
-        console.log(`uploadFileAlternative: Iniciando subida directa...`);
-        const { data, error } = await window.supabaseClient.storage
-            .from(bucket)
-            .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
-
-        console.log(`uploadFileAlternative: Resultado de subida:`, { data, error });
-
-        if (error) {
-            throw new Error(`Error de Supabase: ${error.message}`);
-        }
-
-        if (!data?.path) {
-            throw new Error("No se obtuvo path del archivo subido");
-        }
-
-        console.log(`uploadFileAlternative: Éxito - ${data.path}`);
-        return data.path;
-
-    } catch (error) {
-        console.error(`uploadFileAlternative: Error:`, error);
-        throw error;
-    }
-}
-
+// ÚNICA FUNCIÓN DE SUBIDA DE ARCHIVOS: MÁS ROBUSTA Y CON TIMEOUT AUMENTADO
 export async function uploadFile(file, bucket) {
-    // Validación inicial
-    if (!file) {
-        console.log("uploadFile: No se proporcionó archivo, retornando null");
-        return null;
+    if (!file) return null;
+
+    if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
+        throw new Error(`El archivo ${file.name} es demasiado grande (máx 2MB).`);
     }
+    
+    const fileExtension = file.name.split('.').pop() || 'tmp';
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
 
-    // Validación de tamaño
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
-    }
-
-    // Validación de tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
-    }
-
-    // Generar nombre único para el archivo
-    const fileExtension = file.name.split('.').pop() || 'jpg';
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-_]/g, '').substring(0, 50);
-    const fileName = `${Date.now()}-${cleanFileName}.${fileExtension}`;
-
-    console.log(`uploadFile: Iniciando subida de ${file.name} (${file.size} bytes) al bucket ${bucket}`);
+    console.log(`[Upload] Iniciando: ${fileName} a bucket '${bucket}'`);
 
     try {
-        // Verificar que el cliente de Supabase esté disponible
-        if (!window.supabaseClient) {
-            throw new Error("Cliente de Supabase no está inicializado");
-        }
+        if (!window.supabaseClient) throw new Error("Supabase client no inicializado.");
 
-        // Verificar que el usuario esté autenticado
-        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
-        if (sessionError) {
-            throw new Error(`Error de autenticación: ${sessionError.message}`);
-        }
-        if (!session) {
-            throw new Error("Debes iniciar sesión para subir archivos");
-        }
-
-        console.log(`uploadFile: Usuario autenticado: ${session.user.email}`);
-
-        // Crear una promesa con timeout para evitar cuelgues
-        console.log(`uploadFile: Iniciando upload a bucket ${bucket} con archivo ${fileName}`);
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) throw new Error("Debes iniciar sesión para subir archivos.");
 
         const uploadPromise = window.supabaseClient.storage
             .from(bucket)
-            .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => {
-                console.log(`uploadFile: TIMEOUT después de 30 segundos para ${fileName}`);
-                reject(new Error("Timeout: La subida tardó más de 30 segundos"));
-            }, 30000);
+            // **CORRECCIÓN CLAVE:** Aumentamos el timeout a 60 segundos (60000 ms)
+            setTimeout(() => reject(new Error("Timeout: La subida tardó más de 60 segundos. Revisa tu conexión a internet o el tamaño del archivo.")), 60000);
         });
-
-        console.log(`uploadFile: Esperando resultado de Promise.race para ${fileName}`);
+        
         const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
-        console.log(`uploadFile: Promise.race completado para ${fileName}`, { data, error });
+        
+        if (error) throw error; // Re-lanzamos el error de Supabase o del Timeout
 
-        if (error) {
-            console.error("Error de Supabase al subir archivo:", error);
-
-            // Manejar errores específicos de Supabase
-            if (error.message?.includes('duplicate')) {
-                throw new Error("Ya existe un archivo con ese nombre. Intenta de nuevo.");
-            } else if (error.message?.includes('size')) {
-                throw new Error("El archivo es demasiado grande para el servidor.");
-            } else if (error.message?.includes('policy') || error.message?.includes('permission') || error.message?.includes('RLS')) {
-                throw new Error(`No tienes permisos para subir archivos al bucket '${bucket}'. Contacta al administrador para configurar las políticas de seguridad.`);
-            } else if (error.message?.includes('bucket') && error.message?.includes('not found')) {
-                throw new Error(`El bucket '${bucket}' no existe. Contacta al administrador.`);
-            } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
-                throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-            } else {
-                throw new Error(`Error al subir archivo: ${error.message}`);
-            }
+        if (!data || !data.path) {
+            throw new Error("La respuesta del servidor no contiene la ruta del archivo después de la subida.");
         }
 
-        // Validar que la respuesta sea correcta
-        if (!data) {
-            throw new Error("La subida no devolvió datos válidos.");
-        }
-
-        if (!data.path) {
-            console.error("Respuesta de subida sin path:", data);
-            throw new Error("La subida no devolvió una ruta de archivo válida.");
-        }
-
-        console.log(`uploadFile: Subida exitosa, path: ${data.path}`);
+        console.log(`[Upload] Éxito: ${data.path}`);
         return data.path;
 
-    } catch (error) {
-        console.error("Error en uploadFile:", error);
-
-        // Re-lanzar el error con un mensaje más claro si es necesario
-        if (error.message.includes("Timeout")) {
-            throw error;
-        } else if (error.message.includes("Cliente de Supabase")) {
-            throw error;
-        } else {
-            throw new Error(`Fallo al subir el archivo ${file.name}: ${error.message}`);
-        }
+    } catch (err) {
+        console.error(`[Upload] Fallo en la subida a '${bucket}':`, err);
+        // Lanzamos el error para que la función que llama (handleFormSubmit) lo capture.
+        throw err;
     }
 }
+
 
 export async function addServer(serverData) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -500,31 +305,34 @@ export async function setServerOfTheMonth(newWinnerId) {
     if (error) { console.error("API Error (setServerOfTheMonth):", error); throw new Error("No se pudo actualizar el Servidor del Mes."); }
 }
 
-// --- API de Ranking ---
 export async function getRankingServers(rankingType = 'general', page = 1, pageSize = 15) {
     const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
     if (rankingType === 'monthly') {
-        // Usar consulta directa en lugar de RPC para garantizar compatibilidad
-        const { data, error, count } = await supabase
-            .from('monthly_server_votes')
-            .select('*', { count: 'exact' })
-            .order('monthly_votes_count', { ascending: false, nullsFirst: false })
-            .range(from, from + pageSize - 1);
+        // CORRECCIÓN: Usando RPC es más eficiente si funciona. Asegúrate que la función exista en tu BD.
+        const { data, error } = await supabase.rpc('get_monthly_ranking', {
+            page_size: pageSize,
+            page_offset: from
+        });
 
+        const { count, error: countError } = await supabase
+            .from('monthly_server_votes')
+            .select('*', { count: 'exact', head: true });
+            
         if (error) {
             console.error("API Error (getRankingServers - monthly):", error);
             throw error;
         }
-        return { data, count };
+
+        return { data: data || [], count: count || 0 };
     } else { // Ranking General
-        // Mantener el código existente para el ranking general
         const { data, error, count } = await supabase
             .from('servers')
             .select('*, average_rating, review_count', { count: 'exact' })
             .eq('status', 'aprobado')
             .order('votes_count', { ascending: false, nullsFirst: false })
-            .range(from, from + pageSize - 1);
+            .range(from, to);
 
         if (error) {
             console.error("API Error (getRankingServers - general):", error);
