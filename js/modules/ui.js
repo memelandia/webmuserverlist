@@ -360,6 +360,25 @@ export function renderCalendarPage(container, servers) {
     }).join("");
 }
 
+// --- Funciones Auxiliares para Roles ---
+function getRoleIcon(role) {
+    const icons = {
+        'player': '<i class="fa-solid fa-user"></i>',
+        'owner': '<i class="fa-solid fa-crown"></i>',
+        'admin': '<i class="fa-solid fa-shield-halved"></i>'
+    };
+    return icons[role] || '<i class="fa-solid fa-user"></i>';
+}
+
+function getRoleDisplayName(role) {
+    const names = {
+        'player': 'Jugador',
+        'owner': 'Propietario',
+        'admin': 'Administrador'
+    };
+    return names[role] || 'Jugador';
+}
+
 // --- Componentes de la Página de Servidor ---
 function getEventIcon(eventName) {
     const icons = { "Blood Castle": "fa-solid fa-chess-rook", "Devil Square": "fa-solid fa-square", "Chaos Castle": "fa-solid fa-dungeon", "Illusion Temple": "fa-solid fa-eye", "Doppelganger": "fa-solid fa-clone", "Castle Siege": "fa-brands fa-fort-awesome", "Crywolf Event": "fa-brands fa-wolf-pack-battalion", "Kanturu Event": "fa-solid fa-biohazard", "Last Man Standing": "fa-solid fa-khanda", "Golden Invasion": "fa-solid fa-dragon", "White Wizard": "fa-solid fa-hat-wizard", "Invasión de Conejos": "fa-solid fa-carrot" };
@@ -556,16 +575,39 @@ export function renderOwnerDashboard(container, data) {
         <div class="page-header"><h1><i class="fa-solid fa-chart-line"></i> Dashboard de Servidores</h1></div>
         <div class="profile-grid">
             <aside class="profile-sidebar">
-                 <div class="widget" style="text-align:center;">
+                 <div class="widget profile-info-widget">
                     <div class="profile-avatar-container">
                         <img src="${avatar}" alt="Avatar de ${profile.username}" id="profile-avatar-img" class="profile-avatar-img">
                         <label for="avatar-upload-input" id="avatar-upload-label" title="Cambiar avatar"><i class="fa-solid fa-camera"></i></label>
                         <input type="file" id="avatar-upload-input" accept="image/png, image/jpeg, image/gif">
                     </div>
                     <div id="avatar-feedback"></div>
-                    <h2>${profile.username || "Usuario"}</h2>
-                    <p class="text-secondary" style="word-wrap:break-word;">${session.user.email}</p>
-                    <p class="text-secondary">Rol: <span style="text-transform: capitalize;">${profile.role}</span></p>
+
+                    <div class="profile-user-info">
+                        <h2 class="profile-username">${profile.username || "Usuario"}</h2>
+
+                        <div class="profile-detail-item">
+                            <div class="profile-detail-icon">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <div class="profile-detail-content">
+                                <span class="profile-detail-label">Correo Electrónico</span>
+                                <span class="profile-detail-value">${session.user.email}</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-detail-item">
+                            <div class="profile-detail-icon profile-role-icon role-${profile.role}">
+                                ${getRoleIcon(profile.role)}
+                            </div>
+                            <div class="profile-detail-content">
+                                <span class="profile-detail-label">Rol de Usuario</span>
+                                <span class="profile-detail-value">
+                                    <span class="role-badge role-${profile.role}">${getRoleDisplayName(profile.role)}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </aside>
             <main class="profile-main-content">
