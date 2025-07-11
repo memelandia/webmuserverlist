@@ -264,6 +264,41 @@ export async function updateUserAvatar(userId, avatarPath) {
 }
 
 // Función de upload simplificada sin verificación de sesión
+// === FUNCIÓN DE TEST PARA DEBUGGING ===
+// Usar desde la consola: testUpload()
+window.testUpload = async function(fileInput = null) {
+    console.log('🧪 [TEST] Iniciando test de upload...');
+
+    try {
+        // Si no se proporciona input, intentar encontrar uno en la página
+        const input = fileInput || document.getElementById('logo-file') || document.querySelector('input[type="file"]');
+
+        if (!input) {
+            console.log('❌ [TEST] No se encontró input de archivo. Usa: testUpload(document.getElementById("logo-file"))');
+            return;
+        }
+
+        const file = input.files[0];
+        if (!file) {
+            console.log('❌ [TEST] No hay archivo seleccionado en el input');
+            return;
+        }
+
+        console.log(`🧪 [TEST] Archivo seleccionado: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+
+        // Test con función robusta
+        console.log('🧪 [TEST] Probando uploadFileRobust...');
+        const result = await window.api.uploadFileRobust(file, 'server-images');
+
+        console.log('✅ [TEST] Upload exitoso:', result);
+        return result;
+
+    } catch (error) {
+        console.error('❌ [TEST] Upload falló:', error);
+        throw error;
+    }
+};
+
 export async function uploadFileSimple(file, bucket) {
     console.log(`uploadFileSimple: Iniciando con ${file?.name} al bucket ${bucket}`);
 
@@ -272,9 +307,9 @@ export async function uploadFileSimple(file, bucket) {
         return null;
     }
 
-    // Validación de tamaño
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    // Validación de tamaño aumentada
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 10MB.`);
     }
 
     // Validación de tipo de archivo
@@ -385,13 +420,17 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
     const baseTimeout = 15000; // Empezar con 15 segundos
     const timeoutMultiplier = 1.5; // Aumentar timeout en cada retry
 
-    // Logging inicial
+    // Logging inicial detallado
     logNetworkDiagnostics('UPLOAD_START', {
         fileName: file?.name,
         fileSize: file?.size,
+        fileSizeMB: file?.size ? (file.size / (1024 * 1024)).toFixed(2) : 'unknown',
+        fileType: file?.type,
         bucket,
         retryAttempt: retryCount,
-        maxRetries
+        maxRetries,
+        environment: window.location.hostname,
+        userAgent: navigator.userAgent.substring(0, 50)
     });
 
     // Validación inicial
@@ -400,10 +439,17 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
         return null;
     }
 
-    // Validaciones de archivo
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    // Validaciones de archivo - Límite aumentado temporalmente para debugging
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 10MB.`);
     }
+
+    // Log del tamaño del archivo para debugging
+    logNetworkDiagnostics('FILE_SIZE_CHECK', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileSizeMB: (file.size / (1024 * 1024)).toFixed(2)
+    });
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
@@ -443,8 +489,12 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
             fileName,
             bucket,
             timeout: currentTimeout,
-            retryAttempt: retryCount
+            retryAttempt: retryCount,
+            supabaseClientAvailable: !!window.supabaseClient,
+            storageAvailable: !!window.supabaseClient?.storage
         });
+
+        console.log(`🚀 [UPLOAD] Iniciando upload: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB) -> ${bucket}`);
 
         // Crear promesa de upload (sin headers personalizados para evitar interferencias)
         const uploadPromise = window.supabaseClient.storage
@@ -457,6 +507,7 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
         // Promesa de timeout
         const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => {
+                console.log(`⏰ [UPLOAD] TIMEOUT después de ${currentTimeout/1000}s: ${fileName}`);
                 logNetworkDiagnostics('UPLOAD_TIMEOUT', {
                     fileName,
                     timeout: currentTimeout,
@@ -466,8 +517,17 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
             }, currentTimeout);
         });
 
+        console.log(`⏳ [UPLOAD] Esperando resultado para: ${fileName}`);
+
         // Ejecutar upload con timeout
         const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+
+        console.log(`📋 [UPLOAD] Resultado para ${fileName}:`, {
+            success: !error,
+            hasData: !!data,
+            hasPath: !!data?.path,
+            errorMessage: error?.message
+        });
 
         if (error) {
             logNetworkDiagnostics('UPLOAD_ERROR', {
@@ -545,10 +605,12 @@ export async function uploadFile(file, bucket) {
         return null;
     }
 
-    // Validación de tamaño
-    if (file.size > 2 * 1024 * 1024) {
-        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    // Validación de tamaño - Límite aumentado temporalmente
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 10MB.`);
     }
+
+    console.log(`uploadFile: Archivo ${file.name} - Tamaño: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
 
     // Validación de tipo de archivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -752,4 +814,21 @@ export async function getRankingServers(rankingType = 'general', page = 1, pageS
         }
         return { data, count };
     }
+}
+
+// === EXPOSICIÓN GLOBAL PARA DEBUGGING ===
+// Exponer funciones de API globalmente para debugging en producción
+if (typeof window !== 'undefined') {
+    window.api = {
+        uploadFile,
+        uploadFileRobust,
+        uploadFileSimple,
+        uploadFileAlternative,
+        getServers,
+        getFeaturedServers,
+        getCalendarOpenings,
+        getExploreServers
+    };
+
+    console.log('🔧 API functions exposed globally for debugging');
 }
