@@ -339,33 +339,12 @@ export async function uploadFile(file, bucket) {
             throw new Error("Cliente de Supabase no está inicializado");
         }
 
-        // Verificar que el usuario esté autenticado con timeout
-        console.log(`uploadFile: Verificando sesión de usuario...`);
-
-        let session, sessionError;
-        try {
-            // Crear timeout para getSession
-            const sessionPromise = window.supabaseClient.auth.getSession();
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error("Timeout al verificar sesión")), 5000);
-            });
-
-            const result = await Promise.race([sessionPromise, timeoutPromise]);
-            session = result.data?.session;
-            sessionError = result.error;
-
-            console.log(`uploadFile: Verificación de sesión completada`);
-        } catch (error) {
-            console.error(`uploadFile: Error al verificar sesión:`, error);
-            throw new Error(`Error al verificar autenticación: ${error.message}`);
-        }
-
+        // Verificar que el usuario esté autenticado
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
         if (sessionError) {
-            console.error(`uploadFile: Error de sesión:`, sessionError);
             throw new Error(`Error de autenticación: ${sessionError.message}`);
         }
         if (!session) {
-            console.error(`uploadFile: No hay sesión activa`);
             throw new Error("Debes iniciar sesión para subir archivos");
         }
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de Funciones API</h1>
+        <p>Verificar que las funciones básicas de API funcionen correctamente.</p>
+        
+        <div class="test-section">
+            <h3>1. Test de Conexión</h3>
+            <button onclick="testConnection()">🔗 Probar Conexión</button>
+            <div id="connection-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Test de Servidores</h3>
+            <button onclick="testGetServers()">📊 Obtener Servidores</button>
+            <div id="servers-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Test de Ranking</h3>
+            <button onclick="testGetRanking()">🏆 Obtener Ranking</button>
+            <div id="ranking-result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Logs del Sistema</h3>
+            <button onclick="clearLogs()">🗑️ Limpiar</button>
+            <div id="system-logs" class="log">Iniciando tests...\n</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        import * as api from './js/modules/api.js';
+        
+        // Sistema de logging
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('system-logs');
+            const timestamp = new Date().toISOString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logsContainer.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        function showResult(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        // Sobrescribir console para capturar logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('LOG: ' + args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('ERROR: ' + args.join(' '), 'error');
+        };
+        
+        // Test 1: Conexión básica
+        window.testConnection = async function() {
+            addLog('Probando conexión básica...', 'info');
+            showResult('connection-result', '🔄 Probando conexión...', 'info');
+            
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error("Cliente de Supabase no está inicializado");
+                }
+                
+                // Test básico de conexión
+                const { data, error } = await window.supabaseClient
+                    .from('servers')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                addLog('Conexión exitosa', 'success');
+                showResult('connection-result', '✅ Conexión exitosa con Supabase', 'success');
+                
+            } catch (error) {
+                addLog(`Error de conexión: ${error.message}`, 'error');
+                showResult('connection-result', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Test 2: Obtener servidores
+        window.testGetServers = async function() {
+            addLog('Probando obtener servidores...', 'info');
+            showResult('servers-result', '🔄 Obteniendo servidores...', 'info');
+            
+            try {
+                const servers = await api.getServers();
+                addLog(`Servidores obtenidos: ${servers.length}`, 'success');
+                showResult('servers-result', `✅ ${servers.length} servidores obtenidos correctamente`, 'success');
+                
+            } catch (error) {
+                addLog(`Error al obtener servidores: ${error.message}`, 'error');
+                showResult('servers-result', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Test 3: Obtener ranking
+        window.testGetRanking = async function() {
+            addLog('Probando obtener ranking...', 'info');
+            showResult('ranking-result', '🔄 Obteniendo ranking...', 'info');
+            
+            try {
+                const ranking = await api.getRankingServers();
+                addLog(`Ranking obtenido: ${ranking.data.length} servidores`, 'success');
+                showResult('ranking-result', `✅ Ranking obtenido: ${ranking.data.length} servidores`, 'success');
+                
+            } catch (error) {
+                addLog(`Error al obtener ranking: ${error.message}`, 'error');
+                showResult('ranking-result', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+        
+        // Limpiar logs
+        window.clearLogs = function() {
+            document.getElementById('system-logs').innerHTML = 'Logs limpiados...\n';
+        };
+        
+        // Hacer funciones disponibles globalmente
+        window.api = api;
+        
+        addLog('Sistema de tests inicializado', 'success');
+        
+        // Auto-test de conexión
+        setTimeout(testConnection, 1000);
+    </script>
+</body>
+</html>
