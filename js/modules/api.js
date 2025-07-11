@@ -129,7 +129,7 @@ export async function getGlobalStats() {
         console.error("API Error (getGlobalStats):", serverCount.error || userCount.error || votesData.error);
         return { totalServers: 0, totalUsers: 0, totalVotes: 0 };
     }
-    
+
     const totalVotes = votesData.data ? votesData.data.reduce((acc, s) => acc + (s.votes_count || 0), 0) : 0;
     return { totalServers: serverCount.count, totalUsers: userCount.count, totalVotes: totalVotes };
 }
@@ -138,7 +138,7 @@ export async function getExploreServers(filters) {
     let query = supabase.from('servers')
         .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
         .eq('status', 'aprobado');
-        
+
     if (filters.name) query = query.ilike('name', `%${filters.name}%`);
     if (filters.version) query = query.eq('version', filters.version);
     if (filters.type) query = query.eq('type', filters.type);
@@ -446,18 +446,12 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
             retryAttempt: retryCount
         });
 
-        // Crear promesa de upload con headers explícitos
+        // Crear promesa de upload (sin headers personalizados para evitar interferencias)
         const uploadPromise = window.supabaseClient.storage
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
-                upsert: false,
-                // Forzar headers de autenticación explícitos
-                headers: {
-                    'Authorization': `Bearer ${(await window.supabaseClient.auth.getSession()).data.session?.access_token}`,
-                    'Content-Type': file.type,
-                    'x-client-info': 'webmuserverlist-vercel'
-                }
+                upsert: false
             });
 
         // Promesa de timeout
