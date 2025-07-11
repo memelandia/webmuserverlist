@@ -2,6 +2,66 @@
 
 const supabase = window.supabaseClient;
 
+// === DIAGNÓSTICO AVANZADO DE RED ===
+// Función para logging detallado de problemas de red en producción
+function logNetworkDiagnostics(operation, details = {}) {
+    const timestamp = new Date().toISOString();
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const environment = isProduction ? 'PRODUCTION' : 'DEVELOPMENT';
+
+    const diagnosticInfo = {
+        timestamp,
+        environment,
+        operation,
+        hostname: window.location.hostname,
+        userAgent: navigator.userAgent,
+        connectionType: navigator.connection?.effectiveType || 'unknown',
+        onlineStatus: navigator.onLine,
+        supabaseClientStatus: !!window.supabaseClient,
+        ...details
+    };
+
+    console.log(`🔍 [${environment}] NETWORK DIAGNOSTIC - ${operation}:`, diagnosticInfo);
+
+    // En producción, también enviamos a la consola del navegador para debugging
+    if (isProduction) {
+        console.table(diagnosticInfo);
+    }
+
+    return diagnosticInfo;
+}
+
+// Función para capturar información detallada de la sesión de autenticación
+async function getDetailedAuthInfo() {
+    try {
+        if (!window.supabaseClient) {
+            return { error: 'Supabase client not initialized' };
+        }
+
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+
+        if (error) {
+            return { error: error.message, errorCode: error.status };
+        }
+
+        if (!session) {
+            return { error: 'No active session' };
+        }
+
+        return {
+            userId: session.user?.id,
+            userEmail: session.user?.email,
+            tokenExpiry: session.expires_at,
+            tokenType: session.token_type,
+            accessTokenLength: session.access_token?.length || 0,
+            refreshTokenLength: session.refresh_token?.length || 0,
+            isExpired: session.expires_at ? new Date(session.expires_at * 1000) < new Date() : false
+        };
+    } catch (error) {
+        return { error: error.message };
+    }
+}
+
 // --- API de Servidores y Widgets ---
 
 export async function getServers() {
@@ -318,6 +378,172 @@ export async function uploadFileAlternative(file, bucket) {
     }
 }
 
+// === FUNCIÓN DE UPLOAD ROBUSTA PARA PRODUCCIÓN ===
+// Esta función está específicamente diseñada para manejar problemas de Vercel/Supabase
+export async function uploadFileRobust(file, bucket, retryCount = 0) {
+    const maxRetries = 3;
+    const baseTimeout = 15000; // Empezar con 15 segundos
+    const timeoutMultiplier = 1.5; // Aumentar timeout en cada retry
+
+    // Logging inicial
+    logNetworkDiagnostics('UPLOAD_START', {
+        fileName: file?.name,
+        fileSize: file?.size,
+        bucket,
+        retryAttempt: retryCount,
+        maxRetries
+    });
+
+    // Validación inicial
+    if (!file) {
+        logNetworkDiagnostics('UPLOAD_ERROR', { error: 'No file provided' });
+        return null;
+    }
+
+    // Validaciones de archivo
+    if (file.size > 2 * 1024 * 1024) {
+        throw new Error(`El archivo ${file.name} excede el límite de 2MB.`);
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
+    }
+
+    // Generar nombre único
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const fileName = `${timestamp}-${randomSuffix}.${fileExtension}`;
+
+    try {
+        // Verificar cliente Supabase
+        if (!window.supabaseClient) {
+            logNetworkDiagnostics('UPLOAD_ERROR', { error: 'Supabase client not initialized' });
+            throw new Error("Cliente de Supabase no está inicializado");
+        }
+
+        // Obtener información detallada de autenticación
+        const authInfo = await getDetailedAuthInfo();
+        logNetworkDiagnostics('AUTH_CHECK', authInfo);
+
+        if (authInfo.error) {
+            throw new Error(`Error de autenticación: ${authInfo.error}`);
+        }
+
+        if (authInfo.isExpired) {
+            logNetworkDiagnostics('AUTH_ERROR', { error: 'Token expired' });
+            throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+        }
+
+        // Configurar timeout dinámico basado en el intento
+        const currentTimeout = baseTimeout * Math.pow(timeoutMultiplier, retryCount);
+
+        logNetworkDiagnostics('UPLOAD_ATTEMPT', {
+            fileName,
+            bucket,
+            timeout: currentTimeout,
+            retryAttempt: retryCount
+        });
+
+        // Crear promesa de upload con headers explícitos
+        const uploadPromise = window.supabaseClient.storage
+            .from(bucket)
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false,
+                // Forzar headers de autenticación explícitos
+                headers: {
+                    'Authorization': `Bearer ${(await window.supabaseClient.auth.getSession()).data.session?.access_token}`,
+                    'Content-Type': file.type,
+                    'x-client-info': 'webmuserverlist-vercel'
+                }
+            });
+
+        // Promesa de timeout
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                logNetworkDiagnostics('UPLOAD_TIMEOUT', {
+                    fileName,
+                    timeout: currentTimeout,
+                    retryAttempt: retryCount
+                });
+                reject(new Error(`Timeout: La subida tardó más de ${currentTimeout/1000} segundos`));
+            }, currentTimeout);
+        });
+
+        // Ejecutar upload con timeout
+        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
+
+        if (error) {
+            logNetworkDiagnostics('UPLOAD_ERROR', {
+                error: error.message,
+                errorCode: error.status,
+                retryAttempt: retryCount
+            });
+
+            // Si es un error de timeout o red y tenemos retries disponibles
+            if (retryCount < maxRetries && (
+                error.message?.includes('timeout') ||
+                error.message?.includes('network') ||
+                error.message?.includes('fetch') ||
+                error.status >= 500
+            )) {
+                logNetworkDiagnostics('RETRY_ATTEMPT', {
+                    retryAttempt: retryCount + 1,
+                    reason: error.message
+                });
+
+                // Esperar antes del retry (backoff exponencial)
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+
+                // Retry recursivo
+                return uploadFileRobust(file, bucket, retryCount + 1);
+            }
+
+            // Manejar errores específicos
+            if (error.message?.includes('duplicate')) {
+                throw new Error("Ya existe un archivo con ese nombre. Intenta de nuevo.");
+            } else if (error.message?.includes('policy') || error.message?.includes('permission')) {
+                throw new Error(`No tienes permisos para subir archivos al bucket '${bucket}'.`);
+            } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
+                throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+            } else {
+                throw new Error(`Error al subir archivo: ${error.message}`);
+            }
+        }
+
+        // Validar respuesta
+        if (!data?.path) {
+            logNetworkDiagnostics('UPLOAD_ERROR', { error: 'No path in response', data });
+            throw new Error("La subida no devolvió una ruta de archivo válida.");
+        }
+
+        logNetworkDiagnostics('UPLOAD_SUCCESS', {
+            fileName,
+            path: data.path,
+            retryAttempt: retryCount
+        });
+
+        return data.path;
+
+    } catch (error) {
+        logNetworkDiagnostics('UPLOAD_FINAL_ERROR', {
+            error: error.message,
+            retryAttempt: retryCount,
+            fileName
+        });
+
+        // Si llegamos al máximo de retries, lanzar error final
+        if (retryCount >= maxRetries) {
+            throw new Error(`Fallo definitivo al subir ${file.name} después de ${maxRetries} intentos: ${error.message}`);
+        }
+
+        throw error;
+    }
+}
+
+// Mantener la función original como fallback
 export async function uploadFile(file, bucket) {
     // Validación inicial
     if (!file) {

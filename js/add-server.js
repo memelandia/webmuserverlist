@@ -77,25 +77,52 @@ async function handleFormSubmit(e) {
         const galleryFiles = document.getElementById('gallery-files').files;
         
         if (logoFile) {
-            setFeedback('Subiendo logo... (esto puede tardar un momento)', 'info');
-            serverData.image_url = await api.uploadFile(logoFile, 'server-images');
+            setFeedback('Subiendo logo... (usando método robusto para producción)', 'info');
+            try {
+                serverData.image_url = await api.uploadFileRobust(logoFile, 'server-images');
+            } catch (error) {
+                console.warn('Upload robusto falló, intentando método tradicional:', error);
+                serverData.image_url = await api.uploadFile(logoFile, 'server-images');
+            }
         }
-        
+
         if (bannerFile) {
             setFeedback('Subiendo banner...', 'info');
-            serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
+            try {
+                serverData.banner_url = await api.uploadFileRobust(bannerFile, 'server-banners');
+            } catch (error) {
+                console.warn('Upload robusto falló, intentando método tradicional:', error);
+                serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
+            }
         }
-        
+
         if (galleryFiles.length > 0) {
             if (galleryFiles.length > 6) throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
-            
-            const galleryUploads = Array.from(galleryFiles).map((file, index) => {
-                setFeedback(`Subiendo imagen ${index + 1}/${galleryFiles.length}...`, 'info');
-                return api.uploadFile(file, 'server-gallery');
-            });
-            
-            const galleryPaths = await Promise.all(galleryUploads);
-            serverData.gallery_urls = galleryPaths.filter(path => path !== null);
+
+            setFeedback(`Subiendo galería (${galleryFiles.length} imágenes)...`, 'info');
+
+            // Subir imágenes de galería una por una para mejor control de errores
+            const galleryPaths = [];
+            for (let i = 0; i < galleryFiles.length; i++) {
+                const file = galleryFiles[i];
+                setFeedback(`Subiendo imagen ${i + 1}/${galleryFiles.length}...`, 'info');
+
+                try {
+                    const path = await api.uploadFileRobust(file, 'server-gallery');
+                    if (path) galleryPaths.push(path);
+                } catch (error) {
+                    console.warn(`Upload robusto falló para imagen ${i + 1}, intentando método tradicional:`, error);
+                    try {
+                        const path = await api.uploadFile(file, 'server-gallery');
+                        if (path) galleryPaths.push(path);
+                    } catch (fallbackError) {
+                        console.error(`Falló completamente la subida de imagen ${i + 1}:`, fallbackError);
+                        // Continuar con las demás imágenes
+                    }
+                }
+            }
+
+            serverData.gallery_urls = galleryPaths;
         }
 
         setFeedback('Guardando datos del servidor...', 'info');
