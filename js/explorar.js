@@ -5,12 +5,12 @@ import * as ui from './modules/ui.js';
 
 export function initExplorarPage() {
     console.log("🚀 Inicializando Página de Explorar (explorar.js)...");
-    
+
     const filtersForm = document.getElementById('explore-filters-form');
     const resetBtn = document.getElementById('reset-filters-btn');
 
     if (!filtersForm || !resetBtn) {
-        console.error("No se encontraron los elementos del formulario de filtros.");
+        console.error("❌ No se encontraron los elementos del formulario de filtros.");
         return;
     }
 
@@ -25,9 +25,8 @@ export function initExplorarPage() {
         document.getElementById('filter-exp-slider').dispatchEvent(new Event('input'));
         loadServers();
     });
-    
+
     ui.initExpSlider();
-    
     loadServers();
 }
 

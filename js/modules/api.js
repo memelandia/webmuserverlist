@@ -201,28 +201,71 @@ export async function getGlobalStats() {
 }
 
 export async function getExploreServers(filters) {
-    // Crear hash único para los filtros para caché
-    const filterHash = btoa(JSON.stringify(filters)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    console.log("🔍 getExploreServers called with filters:", filters);
+
+    // Crear hash único y más específico para los filtros
+    const filterString = JSON.stringify({
+        name: filters.name || '',
+        version: filters.version || '',
+        type: filters.type || '',
+        configuration: filters.configuration || '',
+        exp: filters.exp || 100000,
+        sort: filters.sort || 'default'
+    });
+
+    const filterHash = btoa(filterString).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+    console.log("🔑 Filter hash:", filterHash);
 
     // Usar caché inteligente para listas de servidores
     return await cache.getServerList(filterHash, async () => {
+        console.log("🌐 Ejecutando consulta a Supabase...");
+
         let query = supabase.from('servers')
             .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
             .eq('status', 'aprobado');
 
-        if (filters.name) query = query.ilike('name', `%${filters.name}%`);
-        if (filters.version) query = query.eq('version', filters.version);
-        if (filters.type) query = query.eq('type', filters.type);
-        if (filters.configuration) query = query.eq('configuration', filters.configuration);
-        if (filters.exp < 99999) query = query.lte('exp_rate', filters.exp);
-
-        switch (filters.sort) {
-            case 'newest': query = query.order('created_at', { ascending: false }); break;
-            case 'opening_soon': query = query.not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }); break;
-            default: query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false }); break;
+        console.log("🔧 Aplicando filtros:");
+        if (filters.name) {
+            console.log("  - Nombre:", filters.name);
+            query = query.ilike('name', `%${filters.name}%`);
         }
+        if (filters.version) {
+            console.log("  - Versión:", filters.version);
+            query = query.eq('version', filters.version);
+        }
+        if (filters.type) {
+            console.log("  - Tipo:", filters.type);
+            query = query.eq('type', filters.type);
+        }
+        if (filters.configuration) {
+            console.log("  - Configuración:", filters.configuration);
+            query = query.eq('configuration', filters.configuration);
+        }
+        if (filters.exp < 99999) {
+            console.log("  - EXP máximo:", filters.exp);
+            query = query.lte('exp_rate', filters.exp);
+        }
+
+        console.log("📊 Aplicando ordenamiento:", filters.sort);
+        switch (filters.sort) {
+            case 'newest':
+                query = query.order('created_at', { ascending: false });
+                break;
+            case 'opening_soon':
+                query = query.not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true });
+                break;
+            default:
+                query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false });
+                break;
+        }
+
         const { data, error } = await query;
-        if (error) { console.error("API Error (getExploreServers):", error); throw error; }
+        if (error) {
+            console.error("❌ API Error (getExploreServers):", error);
+            throw error;
+        }
+
+        console.log("✅ Query successful, found servers:", data.length);
         return data;
     });
 }
