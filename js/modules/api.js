@@ -329,20 +329,20 @@ export async function getUserProfile(userId) {
     try {
         // Usar caché inteligente para perfiles de usuario
         return await cache.getUserProfile(userId, async () => {
-            const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
+            const { data, error } = await supabase.from('profiles').select('id, username, avatar_url, role, status, updated_at').eq('id', userId).single();
             if (error) {
                 console.error("API Error (getUserProfile):", error);
-                throw new Error("No se pudo obtener el perfil de usuario.");
+                throw new Error(`No se pudo obtener el perfil de usuario: ${error.message}`);
             }
             return data;
         });
     } catch (cacheError) {
         console.warn("Error en caché, usando consulta directa:", cacheError);
         // Fallback: consulta directa sin caché
-        const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
+        const { data, error } = await supabase.from('profiles').select('id, username, avatar_url, role, status, updated_at').eq('id', userId).single();
         if (error) {
             console.error("API Error (getUserProfile - fallback):", error);
-            throw new Error("No se pudo obtener el perfil de usuario.");
+            throw new Error(`No se pudo obtener el perfil de usuario: ${error.message}`);
         }
         return data;
     }
@@ -862,7 +862,7 @@ export async function deleteServer(serverId) {
 }
 
 export async function getAllUsersForAdmin() {
-    const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at');
+    const { data, error } = await supabase.from('profiles').select('id, username, avatar_url, role, status, updated_at');
     if (error) { console.error("API Error (getAllUsersForAdmin):", error); throw error; }
     return data.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
 }
