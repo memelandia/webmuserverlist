@@ -29,7 +29,6 @@ const CONFIG = {
         'js/modules/api.js',
         'js/modules/ui.js',
         'js/modules/utils.js',
-        'js/modules/cache.js',
         'js/modules/lazy-loading.js'
     ],
     

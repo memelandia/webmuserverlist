@@ -137,25 +137,8 @@
 
         window.testCache = async function() {
             const container = document.getElementById('cache-status');
-            try {
-                const { cache } = await import('./js/modules/cache.js');
-                
-                // Test básico de caché
-                const stats = cache.getStats();
-                
-                container.innerHTML = `
-                    <div class="success">
-                        ✅ Sistema de caché funcionando<br>
-                        <strong>Supported:</strong> ${stats.supported}<br>
-                        <strong>Entries:</strong> ${stats.totalEntries}<br>
-                        <strong>Size:</strong> ${stats.totalSizeKB}KB
-                    </div>
-                `;
-                log('Cache system working', 'success');
-            } catch (error) {
-                container.innerHTML = `<div class="error">❌ Error en sistema de caché: ${error.message}</div>`;
-                log(`Cache error: ${error.message}`, 'error');
-            }
+            container.innerHTML = `<div class="info">⚠️ Sistema de caché deshabilitado</div>`;
+            log('Cache system disabled', 'info');
         };
 
         window.testDirectAPI = async function() {

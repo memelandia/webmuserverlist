@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple - MuServerList</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #1a4d1a; }
+        .error { background: #4d1a1a; }
+        .info { background: #1a1a4d; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Simple de Módulos</h1>
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    
+    <script type="module">
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            resultsDiv.appendChild(div);
+            console.log(message);
+        }
+
+        async function testModules() {
+            addResult('🚀 Iniciando test de módulos...', 'info');
+            
+            try {
+                // Test 1: Cargar api.js
+                addResult('📍 Cargando api.js...', 'info');
+                const api = await import('./js/modules/api.js');
+                addResult('✅ api.js cargado exitosamente', 'success');
+                
+                // Test 2: Verificar funciones
+                if (typeof api.getFeaturedServers === 'function') {
+                    addResult('✅ getFeaturedServers disponible', 'success');
+                } else {
+                    addResult('❌ getFeaturedServers no disponible', 'error');
+                }
+                
+                // Test 3: Verificar que getHomepageData NO existe
+                if (typeof api.getHomepageData === 'undefined') {
+                    addResult('✅ getHomepageData correctamente eliminada', 'success');
+                } else {
+                    addResult('❌ getHomepageData todavía existe', 'error');
+                }
+                
+                // Test 4: Probar llamada real
+                addResult('📍 Probando llamada a getFeaturedServers...', 'info');
+                const servers = await api.getFeaturedServers();
+                addResult(`✅ getFeaturedServers funciona: ${servers.length} servidores obtenidos`, 'success');
+                
+                // Test 5: Cargar ui.js
+                addResult('📍 Cargando ui.js...', 'info');
+                const ui = await import('./js/modules/ui.js');
+                addResult('✅ ui.js cargado exitosamente', 'success');
+                
+                // Test 6: Cargar utils.js
+                addResult('📍 Cargando utils.js...', 'info');
+                const utils = await import('./js/modules/utils.js');
+                addResult('✅ utils.js cargado exitosamente', 'success');
+                
+                // Test 7: Verificar que cache.js NO existe
+                try {
+                    await import('./js/modules/cache.js');
+                    addResult('❌ cache.js todavía existe', 'error');
+                } catch (error) {
+                    addResult('✅ cache.js correctamente eliminado', 'success');
+                }
+                
+                addResult('🎉 TODOS LOS TESTS PASARON - RESTAURACIÓN EXITOSA', 'success');
+                
+            } catch (error) {
+                addResult(`❌ ERROR: ${error.message}`, 'error');
+                console.error('Error completo:', error);
+            }
+        }
+
+        // Esperar a que Supabase esté listo
+        function waitForSupabase() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.supabaseClient) {
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        // Ejecutar tests
+        document.addEventListener('DOMContentLoaded', async () => {
+            await waitForSupabase();
+            await testModules();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Clean API</title>
+</head>
+<body>
+    <h1>Test API Limpia</h1>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+
+        async function testCleanAPI() {
+            try {
+                log('🚀 Probando API limpia...');
+                
+                // Test import
+                const api = await import('./js/modules/api-clean.js');
+                log('✅ api-clean.js importado exitosamente');
+                
+                // Test función
+                const servers = await api.getFeaturedServers();
+                log(`✅ getFeaturedServers funciona: ${servers.length} servidores`);
+                
+                log('🎉 API LIMPIA FUNCIONA CORRECTAMENTE');
+                
+                // Ahora probar la API original
+                log('🔍 Probando API original...');
+                const apiOriginal = await import('./js/modules/api.js');
+                log('✅ api.js original importado exitosamente');
+                
+                const serversOriginal = await apiOriginal.getFeaturedServers();
+                log(`✅ API original funciona: ${serversOriginal.length} servidores`);
+                
+                log('🎉 AMBAS APIs FUNCIONAN - PROBLEMA RESUELTO');
+                
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`);
+                console.error('Error completo:', error);
+            }
+        }
+
+        // Esperar Supabase y ejecutar
+        function waitForSupabase() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.supabaseClient) {
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await waitForSupabase();
+            await testCleanAPI();
+        });
+    </script>
+</body>
+</html>

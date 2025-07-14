@@ -38,89 +38,12 @@ function initMobileNavigation() {
 }
 
 function loadHomeWidgets() {
-    // NUEVA IMPLEMENTACIÓN OPTIMIZADA
-    // Una sola llamada RPC en lugar de 5 consultas separadas
-    loadHomepageDataOptimized();
+    loadFeaturedCarousel();
+    loadServerOfTheMonth();
+    loadTopRankingWidget();
+    loadUpcomingEventsWidget();
+    loadGlobalStats();
 }
-
-// =====================================================
-// NUEVA FUNCIÓN OPTIMIZADA - UNA SOLA CONSULTA RPC
-// =====================================================
-async function loadHomepageDataOptimized() {
-    console.log("🚀 Cargando datos de homepage con RPC optimizada...");
-
-    // Mostrar skeleton loading en todos los contenedores
-    const containers = {
-        carousel: document.getElementById('featured-carousel'),
-        serverOfMonth: document.getElementById('server-of-the-month-widget'),
-        ranking: document.getElementById('ranking-widget-list'),
-        calendar: document.getElementById('calendar-widget-list')
-    };
-
-    // Mostrar skeleton loading states específicos
-    if (containers.carousel) ui.renderSkeletonLoading(containers.carousel, 'carousel');
-    if (containers.serverOfMonth) ui.renderSkeletonLoading(containers.serverOfMonth, 'server-of-month');
-    if (containers.ranking) ui.renderSkeletonLoading(containers.ranking, 'ranking', 5);
-    if (containers.calendar) ui.renderSkeletonLoading(containers.calendar, 'calendar', 3);
-
-    // Mostrar skeleton para estadísticas globales
-    const statsContainers = document.querySelectorAll('.hero-stats .stat-number');
-    statsContainers.forEach(container => {
-        if (container) container.innerHTML = '<div class="skeleton skeleton-stat-number" style="width: 60px; height: 2em; margin: 0 auto;"></div>';
-    });
-
-    try {
-        // UNA SOLA LLAMADA que obtiene todos los datos
-        const homepageData = await api.getHomepageData();
-
-        console.log("✅ Datos de homepage cargados exitosamente:", homepageData);
-
-        // Renderizar cada sección con los datos obtenidos
-        if (containers.carousel) {
-            ui.renderFeaturedCarousel(containers.carousel, homepageData.featuredServers);
-            ui.initCarouselControls();
-        }
-
-        if (containers.serverOfMonth) {
-            ui.renderServerOfTheMonth(containers.serverOfMonth, homepageData.serverOfTheMonth);
-        }
-
-        if (containers.ranking) {
-            ui.renderRankingWidget(containers.ranking, homepageData.topRanking);
-        }
-
-        if (containers.calendar) {
-            ui.renderCalendarWidget(containers.calendar, homepageData.upcomingOpenings);
-        }
-
-        // Renderizar estadísticas globales
-        ui.renderGlobalStats(homepageData.globalStats);
-
-    } catch (error) {
-        console.error("❌ Error cargando datos de homepage:", error);
-
-        // Mostrar errores en cada contenedor
-        Object.entries(containers).forEach(([key, container]) => {
-            if (container) {
-                const errorMessages = {
-                    carousel: "No se pudieron cargar los servidores destacados.",
-                    serverOfMonth: "No se pudo cargar el Servidor del Mes.",
-                    ranking: "No se pudo cargar el ranking.",
-                    calendar: "No se pudo cargar el calendario."
-                };
-                ui.renderError(container, errorMessages[key] || "Error de carga.");
-            }
-        });
-    }
-}
-
-// =====================================================
-// FUNCIONES LEGACY (mantenidas como fallback)
-// Estas funciones están disponibles si necesitas volver
-// al método anterior de consultas individuales
-// =====================================================
-
-/* LEGACY FUNCTIONS - COMMENTED OUT (available as fallback)
 
 async function loadFeaturedCarousel() {
     const container = document.getElementById('featured-carousel');
@@ -185,4 +108,3 @@ async function loadGlobalStats() {
     }
 }
 
-*/
