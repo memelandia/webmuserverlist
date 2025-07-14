@@ -372,34 +372,14 @@ export function initExpSlider() {
 }
 
 export function getExploreFilters() {
-    console.log("🔍 getExploreFilters() llamada");
-
-    const nameEl = document.getElementById("filter-name");
-    const versionEl = document.getElementById("filter-version");
-    const typeEl = document.getElementById("filter-type");
-    const configEl = document.getElementById("filter-configuration");
-    const expSliderEl = document.getElementById("filter-exp-slider");
-    const sortEl = document.getElementById("filter-sort");
-
-    console.log("📋 Elementos de filtros:");
-    console.log("  - Name:", nameEl ? nameEl.value : "❌ No encontrado");
-    console.log("  - Version:", versionEl ? versionEl.value : "❌ No encontrado");
-    console.log("  - Type:", typeEl ? typeEl.value : "❌ No encontrado");
-    console.log("  - Config:", configEl ? configEl.value : "❌ No encontrado");
-    console.log("  - Exp slider:", expSliderEl ? expSliderEl.value : "❌ No encontrado");
-    console.log("  - Sort:", sortEl ? sortEl.value : "❌ No encontrado");
-
-    const filters = {
-        name: nameEl ? nameEl.value.trim() : "",
-        version: versionEl ? versionEl.value : "",
-        type: typeEl ? typeEl.value : "",
-        configuration: configEl ? configEl.value : "",
-        exp: expSliderEl ? getExpValueFromSlider(expSliderEl.value) : 100000,
-        sort: sortEl ? sortEl.value : "default",
+    return {
+        name: document.getElementById("filter-name").value.trim(),
+        version: document.getElementById("filter-version").value,
+        type: document.getElementById("filter-type").value,
+        configuration: document.getElementById("filter-configuration").value,
+        exp: getExpValueFromSlider(document.getElementById("filter-exp-slider").value),
+        sort: document.getElementById("filter-sort").value,
     };
-
-    console.log("🎯 Filtros finales:", filters);
-    return filters;
 }
 
 export function renderExploreServers(container, servers) {
