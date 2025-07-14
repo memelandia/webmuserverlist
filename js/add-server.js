@@ -1,6 +1,7 @@
 // js/add-server.js
 
-import * as api from './modules/api.js';
+// TEMPORAL: Usar API simple para evitar problemas de sintaxis
+import * as api from './modules/api-simple.js';
 
 export async function initAddServerPage() {
     console.log("🚀 Inicializando Página de Agregar Servidor (add-server.js)...");

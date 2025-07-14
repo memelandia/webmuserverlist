@@ -3,7 +3,16 @@
 // TEMPORAL: Comentado cache para debugging
 // import { cache } from './cache.js';
 
-const supabase = window.supabaseClient;
+// Función auxiliar para obtener el cliente de Supabase de forma segura
+function getSupabaseClient() {
+    if (!window.supabaseClient) {
+        throw new Error('Supabase client no está disponible. Asegúrate de que esté inicializado.');
+    }
+    return window.supabaseClient;
+}
+
+// TEMPORAL: Usar directamente window.supabaseClient en lugar de proxy
+// const supabase = getSupabaseClient();
 
 // === DIAGNÓSTICO AVANZADO DE RED ===
 // Función para logging detallado de problemas de red en producción
@@ -68,7 +77,7 @@ async function getDetailedAuthInfo() {
 // --- API de Servidores y Widgets ---
 
 export async function getServers() {
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
         .from('servers')
         .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date, votes_count, average_rating, review_count, status, created_at')
         .eq('status', 'aprobado')
@@ -78,7 +87,7 @@ export async function getServers() {
 }
 
 export async function getFeaturedServers() {
-    const { data, error } = await supabase
+    const { data, error } = await window.supabaseClient
         .from('servers')
         .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, opening_date')
         .eq('status', 'aprobado')
@@ -583,43 +592,22 @@ export async function uploadFileAlternative(file, bucket) {
 }
 
 // === FUNCIÓN DE UPLOAD ROBUSTA PARA PRODUCCIÓN ===
-// Esta función está específicamente diseñada para manejar problemas de Vercel/Supabase
+// TEMPORAL: Versión simplificada para solucionar problemas urgentes
 export async function uploadFileRobust(file, bucket, retryCount = 0) {
-    const maxRetries = 3;
-    const baseTimeout = 15000; // Empezar con 15 segundos
-    const timeoutMultiplier = 1.5; // Aumentar timeout en cada retry
-
-    // Logging inicial detallado
-    logNetworkDiagnostics('UPLOAD_START', {
-        fileName: file?.name,
-        fileSize: file?.size,
-        fileSizeMB: file?.size ? (file.size / (1024 * 1024)).toFixed(2) : 'unknown',
-        fileType: file?.type,
-        bucket,
-        retryAttempt: retryCount,
-        maxRetries,
-        environment: window.location.hostname,
-        userAgent: navigator.userAgent.substring(0, 50)
-    });
+    console.log(`🚀 uploadFileRobust: ${file?.name} -> ${bucket} (intento ${retryCount + 1})`);
 
     // Validación inicial
     if (!file) {
-        logNetworkDiagnostics('UPLOAD_ERROR', { error: 'No file provided' });
+        console.log("uploadFileRobust: No se proporcionó archivo");
         return null;
     }
 
-    // Validaciones de archivo - Límite aumentado temporalmente para debugging
+    // Validación de tamaño
     if (file.size > 10 * 1024 * 1024) {
         throw new Error(`El archivo ${file.name} excede el límite de 10MB.`);
     }
 
-    // Log del tamaño del archivo para debugging
-    logNetworkDiagnostics('FILE_SIZE_CHECK', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileSizeMB: (file.size / (1024 * 1024)).toFixed(2)
-    });
-
+    // Validación de tipo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
         throw new Error(`Tipo de archivo no permitido: ${file.type}. Solo se permiten imágenes.`);
@@ -634,137 +622,55 @@ export async function uploadFileRobust(file, bucket, retryCount = 0) {
     try {
         // Verificar cliente Supabase
         if (!window.supabaseClient) {
-            logNetworkDiagnostics('UPLOAD_ERROR', { error: 'Supabase client not initialized' });
             throw new Error("Cliente de Supabase no está inicializado");
         }
 
-        // Obtener información detallada de autenticación
-        const authInfo = await getDetailedAuthInfo();
-        logNetworkDiagnostics('AUTH_CHECK', authInfo);
-
-        if (authInfo.error) {
-            throw new Error(`Error de autenticación: ${authInfo.error}`);
+        // Verificación simple de autenticación
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) {
+            throw new Error("Debes iniciar sesión para subir archivos");
         }
 
-        if (authInfo.isExpired) {
-            logNetworkDiagnostics('AUTH_ERROR', { error: 'Token expired' });
-            throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-        }
+        console.log(`🚀 Subiendo archivo: ${fileName} -> ${bucket}`);
 
-        // Configurar timeout dinámico basado en el intento
-        const currentTimeout = baseTimeout * Math.pow(timeoutMultiplier, retryCount);
-
-        logNetworkDiagnostics('UPLOAD_ATTEMPT', {
-            fileName,
-            bucket,
-            timeout: currentTimeout,
-            retryAttempt: retryCount,
-            supabaseClientAvailable: !!window.supabaseClient,
-            storageAvailable: !!window.supabaseClient?.storage
-        });
-
-        console.log(`🚀 [UPLOAD] Iniciando upload: ${fileName} (${(file.size / (1024 * 1024)).toFixed(2)}MB) -> ${bucket}`);
-
-        // Crear promesa de upload (sin headers personalizados para evitar interferencias)
-        const uploadPromise = window.supabaseClient.storage
+        // Upload simple sin timeout complejo
+        const { data, error } = await window.supabaseClient.storage
             .from(bucket)
             .upload(fileName, file, {
                 cacheControl: '3600',
                 upsert: false
             });
 
-        // Promesa de timeout
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => {
-                console.log(`⏰ [UPLOAD] TIMEOUT después de ${currentTimeout/1000}s: ${fileName}`);
-                logNetworkDiagnostics('UPLOAD_TIMEOUT', {
-                    fileName,
-                    timeout: currentTimeout,
-                    retryAttempt: retryCount
-                });
-                reject(new Error(`Timeout: La subida tardó más de ${currentTimeout/1000} segundos`));
-            }, currentTimeout);
-        });
-
-        console.log(`⏳ [UPLOAD] Esperando resultado para: ${fileName}`);
-
-        // Ejecutar upload con timeout
-        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
-
-        console.log(`📋 [UPLOAD] Resultado para ${fileName}:`, {
-            success: !error,
-            hasData: !!data,
-            hasPath: !!data?.path,
-            errorMessage: error?.message
-        });
-
         if (error) {
-            logNetworkDiagnostics('UPLOAD_ERROR', {
-                error: error.message,
-                errorCode: error.status,
-                retryAttempt: retryCount
-            });
+            console.error(`❌ Error upload: ${error.message}`);
 
-            // Si es un error de timeout o red y tenemos retries disponibles
-            if (retryCount < maxRetries && (
-                error.message?.includes('timeout') ||
-                error.message?.includes('network') ||
-                error.message?.includes('fetch') ||
-                error.status >= 500
-            )) {
-                logNetworkDiagnostics('RETRY_ATTEMPT', {
-                    retryAttempt: retryCount + 1,
-                    reason: error.message
-                });
-
-                // Esperar antes del retry (backoff exponencial)
-                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
-
-                // Retry recursivo
+            // Retry simple si no es el último intento
+            if (retryCount < 2) {
+                console.log(`🔄 Reintentando upload (${retryCount + 1}/3)...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
                 return uploadFileRobust(file, bucket, retryCount + 1);
             }
 
-            // Manejar errores específicos
-            if (error.message?.includes('duplicate')) {
-                throw new Error("Ya existe un archivo con ese nombre. Intenta de nuevo.");
-            } else if (error.message?.includes('policy') || error.message?.includes('permission')) {
-                throw new Error(`No tienes permisos para subir archivos al bucket '${bucket}'.`);
-            } else if (error.message?.includes('JWT') || error.message?.includes('token')) {
-                throw new Error("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
-            } else {
-                throw new Error(`Error al subir archivo: ${error.message}`);
-            }
+            throw new Error(`Error subiendo archivo: ${error.message}`);
         }
 
-        // Validar respuesta
-        if (!data?.path) {
-            logNetworkDiagnostics('UPLOAD_ERROR', { error: 'No path in response', data });
-            throw new Error("La subida no devolvió una ruta de archivo válida.");
-        }
-
-        logNetworkDiagnostics('UPLOAD_SUCCESS', {
-            fileName,
-            path: data.path,
-            retryAttempt: retryCount
-        });
-
+        console.log(`✅ Upload exitoso: ${data.path}`);
         return data.path;
 
     } catch (error) {
-        logNetworkDiagnostics('UPLOAD_FINAL_ERROR', {
-            error: error.message,
-            retryAttempt: retryCount,
-            fileName
-        });
+        console.error(`❌ Error en uploadFileRobust: ${error.message}`);
 
-        // Si llegamos al máximo de retries, lanzar error final
-        if (retryCount >= maxRetries) {
-            throw new Error(`Fallo definitivo al subir ${file.name} después de ${maxRetries} intentos: ${error.message}`);
+        // Retry simple si no es el último intento
+        if (retryCount < 2) {
+            console.log(`🔄 Reintentando upload (${retryCount + 1}/3)...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+            return uploadFileRobust(file, bucket, retryCount + 1);
         }
 
         throw error;
     }
-}
+
+
 
 // Mantener la función original como fallback
 export async function uploadFile(file, bucket) {
