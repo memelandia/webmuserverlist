@@ -98,6 +98,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.error("❌ Error cargando página de perfil:", error);
                 }
                 break;
+            case 'page-agregar':
+                console.log("➕ Cargando página de agregar servidor...");
+                try {
+                    const { initAuth } = await import('./modules/auth.js');
+                    const { initAddServerPage } = await import('./add-server.js');
+
+                    await initAuth();
+                    initAddServerPage();
+                    console.log("✅ Página de agregar servidor cargada");
+                } catch (error) {
+                    console.error("❌ Error cargando página de agregar servidor:", error);
+                }
+                break;
             default:
                 console.log(`📄 Página "${pageId}" - cargando solo autenticación`);
                 try {
