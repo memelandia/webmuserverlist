@@ -200,20 +200,40 @@ export async function getGlobalStats() {
     return { totalServers: serverCount.count, totalUsers: userCount.count, totalVotes: totalVotes };
 }
 
-export async function getExploreServers(filters) {
-    // Crear hash único y más específico para los filtros
-    const filterString = JSON.stringify({
-        name: filters.name || '',
+// Función auxiliar para generar hash único de filtros
+function generateFilterHash(filters) {
+    // Normalizar filtros para generar hash consistente
+    const normalizedFilters = {
+        name: (filters.name || '').toLowerCase().trim(),
         version: filters.version || '',
         type: filters.type || '',
         configuration: filters.configuration || '',
         exp: filters.exp || 100000,
         sort: filters.sort || 'default'
-    });
+    };
 
-    const filterHash = btoa(filterString).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+    // Crear string único y determinístico
+    const filterString = Object.keys(normalizedFilters)
+        .sort()
+        .map(key => `${key}:${normalizedFilters[key]}`)
+        .join('|');
 
-    // Usar caché inteligente para listas de servidores
+    // Generar hash más robusto
+    let hash = 0;
+    for (let i = 0; i < filterString.length; i++) {
+        const char = filterString.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+
+    return Math.abs(hash).toString(36);
+}
+
+export async function getExploreServers(filters) {
+    // Generar hash único para los filtros
+    const filterHash = generateFilterHash(filters);
+
+    // Usar caché mejorado para listas de servidores
     return await cache.getServerList(filterHash, async () => {
         let query = supabase.from('servers')
             .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')

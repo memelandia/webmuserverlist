@@ -359,12 +359,26 @@ export const cache = {
         CACHE_CONFIG.USER_PROFILE
     ),
 
-    // Lista de servidores con filtros
-    getServerList: (filterHash, fetchFn) => cacheManager.getCachedData(
-        `${CACHE_PREFIXES.LIST}servers_${filterHash}`, 
-        fetchFn, 
-        CACHE_CONFIG.SERVER_LIST
-    ),
+    // Lista de servidores con filtros - VERSIÓN MEJORADA
+    getServerList: async (filterHash, fetchFn) => {
+        const cacheKey = `${CACHE_PREFIXES.LIST}servers_${filterHash}`;
+
+        // Verificar si ya existe en caché
+        const cached = cacheManager.get(cacheKey);
+        if (cached && !cacheManager.isExpired(cached, CACHE_CONFIG.SERVER_LIST)) {
+            console.log(`🎯 Cache HIT para filtros: ${filterHash}`);
+            return cached.data;
+        }
+
+        // Si no hay caché o expiró, obtener datos frescos
+        console.log(`🔄 Cache MISS para filtros: ${filterHash}, obteniendo datos frescos...`);
+        const freshData = await fetchFn();
+
+        // Guardar en caché con clave específica
+        cacheManager.set(cacheKey, freshData);
+
+        return freshData;
+    },
 
     // Datos de ranking
     getRankingData: (type, page, fetchFn) => cacheManager.getCachedData(
