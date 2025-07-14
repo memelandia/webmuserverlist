@@ -16,7 +16,6 @@ function getPublicImageUrl(bucketName, imagePath, options = {}, fallbackUrl = 'i
     return data.publicUrl || fallbackUrl;
 }
 
-
 // --- API de Servidores y Widgets ---
 
 export async function getServers() {
@@ -182,29 +181,92 @@ export async function updateUserAvatar(userId, avatarPath) {
     if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
+/**
+ * --- INICIO DE LA CORRECCIÓN ---
+ * Función de subida de archivos "a prueba de balas".
+ * Incluye validaciones, logs detallados, y un timeout para evitar que la aplicación se congele.
+ */
 export async function uploadFile(file, bucket) {
-    if (!file) return null;
+    console.log(`[uploadFile] Iniciando subida: ${file.name} a bucket '${bucket}'`);
+
+    // 1. Validaciones previas
+    if (!file) {
+        console.error("[uploadFile] Error: No se proporcionó ningún archivo.");
+        throw new Error("No se seleccionó ningún archivo para subir.");
+    }
+
+    const MAX_SIZE_MB = 5;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        console.error(`[uploadFile] Error: El archivo ${file.name} excede el límite de ${MAX_SIZE_MB}MB.`);
+        throw new Error(`El archivo es demasiado grande. El límite es de ${MAX_SIZE_MB}MB.`);
+    }
+    
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-        throw new Error('Tipo de archivo no permitido. Solo imágenes.');
+        console.error(`[uploadFile] Error: Tipo de archivo no permitido: ${file.type}`);
+        throw new Error('Tipo de archivo no válido. Solo se permiten imágenes (JPEG, PNG, GIF, WebP).');
     }
-    if (file.size > 5 * 1024 * 1024) { // Límite de 5MB
-        throw new Error('El archivo excede el límite de 5MB.');
-    }
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (!session) throw new Error("Debes iniciar sesión para subir archivos.");
 
+    // 2. Verificación de sesión
+    const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+    if (sessionError || !session) {
+        console.error("[uploadFile] Error: No hay sesión de usuario activa.");
+        throw new Error("Debes iniciar sesión para subir archivos.");
+    }
+    console.log(`[uploadFile] Sesión verificada para usuario: ${session.user.id}`);
+
+    // 3. Preparación del nombre del archivo
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${session.user.id}/${Date.now()}.${fileExtension}`;
+    const cleanFileName = file.name.substring(0, file.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9_-]/g, '');
+    const finalFileName = `${session.user.id}/${Date.now()}_${cleanFileName}.${fileExtension}`;
+    console.log(`[uploadFile] Nombre de archivo final: ${finalFileName}`);
 
-    const { data, error } = await window.supabaseClient.storage.from(bucket).upload(fileName, file);
+    // 4. Lógica de subida con Timeout
+    const UPLOAD_TIMEOUT = 20000; // 20 segundos
+    
+    try {
+        const uploadPromise = window.supabaseClient.storage
+            .from(bucket)
+            .upload(finalFileName, file, {
+                cacheControl: '3600',
+                upsert: false // No sobreescribir si ya existe
+            });
 
-    if (error) {
-        console.error("API Error (uploadFile):", error);
-        throw new Error(`Error al subir archivo: ${error.message}`);
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('La subida del archivo tardó demasiado (Timeout). Revisa tu conexión a internet.')), UPLOAD_TIMEOUT);
+        });
+
+        // 5. Ejecutar la subida
+        console.log("[uploadFile] Ejecutando Promise.race para la subida...");
+        const result = await Promise.race([uploadPromise, timeoutPromise]);
+        
+        // La promesa de Supabase se resolvió, ahora verificamos si tuvo errores internos.
+        if (result.error) {
+            console.error('[uploadFile] Error devuelto por Supabase:', result.error);
+            // Proporciona un mensaje más amigable basado en el error de Supabase
+            if (result.error.message.includes("exceeds the maximum allowed size")) {
+                throw new Error("El archivo excede el tamaño máximo permitido por el servidor.");
+            }
+            throw new Error(`Error del servidor de almacenamiento: ${result.error.message}`);
+        }
+        
+        if (!result.data || !result.data.path) {
+             console.error('[uploadFile] Error: La subida no devolvió una ruta de archivo válida.', result);
+             throw new Error('El servidor de almacenamiento no devolvió una ruta válida para el archivo.');
+        }
+
+        console.log(`[uploadFile] Éxito. Ruta del archivo: ${result.data.path}`);
+        return result.data.path;
+
+    } catch (e) {
+        // Captura tanto los errores del try como el error de timeout
+        console.error(`[uploadFile] Fallo final en el proceso de subida:`, e);
+        // Re-lanza el error para que sea capturado por el manejador del formulario.
+        throw e;
     }
-    return data.path;
 }
+// --- FIN DE LA CORRECCIÓN ---
+
 
 export async function addServer(serverData) {
     const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -299,20 +361,15 @@ export async function getRankingServers(rankingType = 'general', page = 1, pageS
     const to = from + pageSize - 1;
 
     if (rankingType === 'monthly') {
-        // --- INICIO DE LA CORRECCIÓN ---
-        // Se reemplaza la llamada a la función RPC 'get_monthly_ranking' que no existe,
-        // por una consulta directa a la vista 'monthly_server_votes'.
         const { data, error, count } = await window.supabaseClient
-            .from('monthly_server_votes') // <-- Consulta a la vista en lugar de RPC
-            .select('*, average_rating, review_count', { count: 'exact' }) // Se asume que la vista tiene estos campos
+            .from('monthly_server_votes') 
+            .select('*, average_rating, review_count', { count: 'exact' }) 
             .order('monthly_votes_count', { ascending: false, nullsFirst: false })
             .range(from, to);
-        // --- FIN DE LA CORRECCIÓN ---
 
         if (error) { 
             console.error("API Error (getRankingServers monthly):", error); 
-            // Proveer un mensaje de error más útil
-            if (error.code === '42P01') { // "undefined_table"
+            if (error.code === '42P01') { 
                  throw new Error("No se pudo encontrar la vista de ranking mensual ('monthly_server_votes').");
             }
             throw error; 
