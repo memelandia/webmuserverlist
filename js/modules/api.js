@@ -296,13 +296,13 @@ export async function voteForServer(serverId) {
 
 export async function getUserProfile(userId) {
     if (!userId) throw new Error("Se requiere un ID de usuario para obtener el perfil.");
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
     if (error) { console.error("API Error (getUserProfile):", error); throw new Error("No se pudo obtener el perfil de usuario."); }
     return data;
 }
 
 export async function getServersByUserId(userId) {
-    const { data, error } = await supabase.from('servers').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, version, type, status, created_at, votes_count, view_count, website_click_count, discord_click_count').eq('user_id', userId).order('created_at', { ascending: false });
     if (error) { console.error("API Error (getServersByUserId):", error); throw new Error("No se pudieron obtener los servidores del usuario."); }
     return data;
 }
@@ -780,14 +780,14 @@ export async function addServer(serverData) {
 
 export async function getServerForEdit(serverId, userId) {
     const profile = await getUserProfile(userId);
-    let query = supabase.from('servers').select('*').eq('id', serverId);
+    let query = supabase.from('servers').select('id, name, description, version, type, configuration, exp_rate, drop_rate, reset_info, antihack_info, image_url, banner_url, gallery_urls, events, website_url, discord_url, opening_date, user_id, status, is_featured, is_ads').eq('id', serverId);
     if (profile.role !== 'admin') {
         query = query.eq('user_id', userId);
     }
     const { data, error } = await query.single();
-    if (error || !data) { 
-        console.error("API Error (getServerForEdit):", error); 
-        throw new Error('Servidor no encontrado o no tienes permiso para editarlo.'); 
+    if (error || !data) {
+        console.error("API Error (getServerForEdit):", error);
+        throw new Error('Servidor no encontrado o no tienes permiso para editarlo.');
     }
     return data;
 }
@@ -798,13 +798,13 @@ export async function updateServer(serverId, updatedData) {
 }
 
 export async function getServersByStatus(status) {
-    const { data, error } = await supabase.from('servers').select('*').eq('status', status);
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, version, type, status, created_at, user_id').eq('status', status);
     if (error) { console.error("API Error (getServersByStatus):", error); throw error; }
     return data;
 }
 
 export async function getAllServersForAdmin() {
-    const { data, error } = await supabase.from('servers').select('*').neq('status', 'pendiente').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('servers').select('id, name, image_url, version, type, status, is_featured, created_at, user_id').neq('status', 'pendiente').order('created_at', { ascending: false });
     if (error) { console.error("API Error (getAllServersForAdmin):", error); throw error; }
     return data;
 }
@@ -815,7 +815,7 @@ export async function deleteServer(serverId) {
 }
 
 export async function getAllUsersForAdmin() {
-    const { data, error } = await supabase.from('profiles').select('*');
+    const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at');
     if (error) { console.error("API Error (getAllUsersForAdmin):", error); throw error; }
     return data.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
 }
