@@ -326,12 +326,26 @@ export async function voteForServer(serverId) {
 export async function getUserProfile(userId) {
     if (!userId) throw new Error("Se requiere un ID de usuario para obtener el perfil.");
 
-    // Usar caché inteligente para perfiles de usuario
-    return await cache.getUserProfile(userId, async () => {
+    try {
+        // Usar caché inteligente para perfiles de usuario
+        return await cache.getUserProfile(userId, async () => {
+            const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
+            if (error) {
+                console.error("API Error (getUserProfile):", error);
+                throw new Error("No se pudo obtener el perfil de usuario.");
+            }
+            return data;
+        });
+    } catch (cacheError) {
+        console.warn("Error en caché, usando consulta directa:", cacheError);
+        // Fallback: consulta directa sin caché
         const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
-        if (error) { console.error("API Error (getUserProfile):", error); throw new Error("No se pudo obtener el perfil de usuario."); }
+        if (error) {
+            console.error("API Error (getUserProfile - fallback):", error);
+            throw new Error("No se pudo obtener el perfil de usuario.");
+        }
         return data;
-    });
+    }
 }
 
 export async function getServersByUserId(userId) {

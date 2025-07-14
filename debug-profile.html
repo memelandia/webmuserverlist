@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Profile Error</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #0f0f0f; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .debug-section { background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .error { border-left: 4px solid #e53e3e; }
+        .success { border-left: 4px solid #2f855a; }
+        .info { border-left: 4px solid #3182ce; }
+        button { background: #ff3333; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #e62e2e; }
+        pre { background: #252525; padding: 15px; border-radius: 4px; overflow-x: auto; }
+        .log { background: #0a0a0a; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Debug Profile Error</h1>
+        <p>Herramienta de diagnóstico para el error del perfil de usuario.</p>
+        
+        <!-- Estado de Autenticación -->
+        <div class="debug-section info">
+            <h2>🔐 Estado de Autenticación</h2>
+            <button onclick="checkAuth()">Verificar Autenticación</button>
+            <div id="auth-status"></div>
+        </div>
+
+        <!-- Test de Módulos -->
+        <div class="debug-section info">
+            <h2>📦 Test de Módulos</h2>
+            <button onclick="testModules()">Probar Importaciones</button>
+            <div id="modules-status"></div>
+        </div>
+
+        <!-- Test de Caché -->
+        <div class="debug-section info">
+            <h2>💾 Test de Sistema de Caché</h2>
+            <button onclick="testCache()">Probar Caché</button>
+            <div id="cache-status"></div>
+        </div>
+
+        <!-- Test de API Directa -->
+        <div class="debug-section info">
+            <h2>🔌 Test de API Directa</h2>
+            <button onclick="testDirectAPI()">Probar API Sin Caché</button>
+            <div id="api-status"></div>
+        </div>
+
+        <!-- Test de getUserProfile -->
+        <div class="debug-section info">
+            <h2>👤 Test de getUserProfile</h2>
+            <button onclick="testGetUserProfile()">Probar getUserProfile</button>
+            <div id="profile-status"></div>
+        </div>
+
+        <!-- Log de Errores -->
+        <div class="debug-section">
+            <h2>📝 Log de Errores</h2>
+            <button onclick="clearLog()">Limpiar Log</button>
+            <div id="error-log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    <script type="module">
+        let logContainer;
+
+        function log(message, type = 'info') {
+            if (!logContainer) logContainer = document.getElementById('error-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f56565' : type === 'success' ? '#48bb78' : '#63b3ed';
+            logContainer.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        window.checkAuth = async function() {
+            const container = document.getElementById('auth-status');
+            try {
+                const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+                
+                if (error) {
+                    container.innerHTML = `<div class="error">❌ Error de autenticación: ${error.message}</div>`;
+                    log(`Auth error: ${error.message}`, 'error');
+                    return;
+                }
+
+                if (!session) {
+                    container.innerHTML = '<div class="error">❌ No hay sesión activa</div>';
+                    log('No active session', 'error');
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="success">
+                        ✅ Sesión activa<br>
+                        <strong>User ID:</strong> ${session.user.id}<br>
+                        <strong>Email:</strong> ${session.user.email}<br>
+                        <strong>Expires:</strong> ${new Date(session.expires_at * 1000).toLocaleString()}
+                    </div>
+                `;
+                log(`Auth success: ${session.user.email}`, 'success');
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Error crítico: ${error.message}</div>`;
+                log(`Critical auth error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testModules = async function() {
+            const container = document.getElementById('modules-status');
+            try {
+                // Test import de cache
+                const { cache } = await import('./js/modules/cache.js');
+                log('Cache module imported successfully', 'success');
+
+                // Test import de api
+                const api = await import('./js/modules/api.js');
+                log('API module imported successfully', 'success');
+
+                container.innerHTML = `
+                    <div class="success">
+                        ✅ Módulos importados correctamente<br>
+                        <strong>Cache:</strong> ${typeof cache}<br>
+                        <strong>API:</strong> ${typeof api}<br>
+                        <strong>getUserProfile:</strong> ${typeof api.getUserProfile}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Error importando módulos: ${error.message}</div>`;
+                log(`Module import error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testCache = async function() {
+            const container = document.getElementById('cache-status');
+            try {
+                const { cache } = await import('./js/modules/cache.js');
+                
+                // Test básico de caché
+                const stats = cache.getStats();
+                
+                container.innerHTML = `
+                    <div class="success">
+                        ✅ Sistema de caché funcionando<br>
+                        <strong>Supported:</strong> ${stats.supported}<br>
+                        <strong>Entries:</strong> ${stats.totalEntries}<br>
+                        <strong>Size:</strong> ${stats.totalSizeKB}KB
+                    </div>
+                `;
+                log('Cache system working', 'success');
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Error en sistema de caché: ${error.message}</div>`;
+                log(`Cache error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testDirectAPI = async function() {
+            const container = document.getElementById('api-status');
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                if (!session) {
+                    container.innerHTML = '<div class="error">❌ No hay sesión para probar</div>';
+                    return;
+                }
+
+                // Consulta directa a Supabase sin caché
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('id, username, email, avatar_url, role, created_at')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (error) {
+                    container.innerHTML = `<div class="error">❌ Error en API directa: ${error.message}</div>`;
+                    log(`Direct API error: ${error.message}`, 'error');
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="success">
+                        ✅ API directa funcionando<br>
+                        <strong>Username:</strong> ${data.username || 'N/A'}<br>
+                        <strong>Email:</strong> ${data.email || 'N/A'}<br>
+                        <strong>Role:</strong> ${data.role || 'N/A'}
+                    </div>
+                `;
+                log('Direct API success', 'success');
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Error crítico en API: ${error.message}</div>`;
+                log(`Critical API error: ${error.message}`, 'error');
+            }
+        };
+
+        window.testGetUserProfile = async function() {
+            const container = document.getElementById('profile-status');
+            try {
+                const { data: { session } } = await window.supabaseClient.auth.getSession();
+                if (!session) {
+                    container.innerHTML = '<div class="error">❌ No hay sesión para probar</div>';
+                    return;
+                }
+
+                const api = await import('./js/modules/api.js');
+                const profile = await api.getUserProfile(session.user.id);
+
+                container.innerHTML = `
+                    <div class="success">
+                        ✅ getUserProfile funcionando<br>
+                        <strong>ID:</strong> ${profile.id}<br>
+                        <strong>Username:</strong> ${profile.username || 'N/A'}<br>
+                        <strong>Email:</strong> ${profile.email || 'N/A'}<br>
+                        <strong>Role:</strong> ${profile.role || 'N/A'}<br>
+                        <strong>Created:</strong> ${profile.created_at || 'N/A'}
+                    </div>
+                `;
+                log('getUserProfile success', 'success');
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Error en getUserProfile: ${error.message}</div>`;
+                log(`getUserProfile error: ${error.message}`, 'error');
+                
+                // Mostrar stack trace si está disponible
+                if (error.stack) {
+                    log(`Stack trace: ${error.stack}`, 'error');
+                }
+            }
+        };
+
+        window.clearLog = function() {
+            document.getElementById('error-log').innerHTML = '';
+        };
+
+        // Capturar errores globales
+        window.addEventListener('error', (event) => {
+            log(`Global error: ${event.error.message}`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Unhandled promise rejection: ${event.reason}`, 'error');
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Debug tool initialized');
+        });
+    </script>
+</body>
+</html>
