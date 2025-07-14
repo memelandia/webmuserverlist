@@ -1,6 +1,7 @@
 // js/add-server.js
 
 import * as api from './modules/api.js';
+import * as ui from './modules/ui.js';
 
 export async function initAddServerPage() {
     console.log("🚀 Inicializando Página de Agregar Servidor (add-server.js)...");
@@ -38,22 +39,11 @@ async function handleFormSubmit(e) {
     e.preventDefault();
     const form = e.target;
     const submitButton = form.querySelector('button[type="submit"]');
-    const feedbackEl = form.querySelector('#form-feedback');
-
-    const setFeedback = (message, type) => {
-        feedbackEl.textContent = message;
-        feedbackEl.className = `feedback-message ${type} active`;
-    };
+    const feedbackEl = document.getElementById('form-feedback');
     
-    const setButtonState = (text, disabled) => {
-        submitButton.innerHTML = text;
-        submitButton.disabled = disabled;
-    };
-
-    setButtonState('<i class="fa-solid fa-spinner fa-spin"></i> Procesando...', true);
-    setFeedback('', '');
-
-    console.log('=== INICIANDO PROCESO DE ADD-SERVER ===');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    ui.setFormFeedback(feedbackEl, '', '');
 
     try {
         const serverData = {
@@ -70,72 +60,48 @@ async function handleFormSubmit(e) {
             opening_date: form.elements.opening_date.value || null,
             events: Array.from(form.querySelectorAll('input[name="events"]:checked')).map(cb => cb.value)
         };
-        console.log("Datos del formulario preparados:", serverData);
-
+        
         const logoFile = document.getElementById('logo-file').files[0];
         const bannerFile = document.getElementById('banner-file').files[0];
         const galleryFiles = document.getElementById('gallery-files').files;
         
         if (logoFile) {
-            setFeedback('Subiendo logo... (usando método robusto para producción)', 'info');
-            try {
-                serverData.image_url = await api.uploadFileRobust(logoFile, 'server-images');
-            } catch (error) {
-                console.warn('Upload robusto falló, intentando método tradicional:', error);
-                serverData.image_url = await api.uploadFile(logoFile, 'server-images');
-            }
+            ui.setFormFeedback(feedbackEl, 'Subiendo logo...', 'info');
+            serverData.image_url = await api.uploadFile(logoFile, 'server-images');
         }
 
         if (bannerFile) {
-            setFeedback('Subiendo banner...', 'info');
-            try {
-                serverData.banner_url = await api.uploadFileRobust(bannerFile, 'server-banners');
-            } catch (error) {
-                console.warn('Upload robusto falló, intentando método tradicional:', error);
-                serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
-            }
+            ui.setFormFeedback(feedbackEl, 'Subiendo banner...', 'info');
+            serverData.banner_url = await api.uploadFile(bannerFile, 'server-banners');
         }
 
         if (galleryFiles.length > 0) {
             if (galleryFiles.length > 6) throw new Error("Puedes subir un máximo de 6 imágenes a la galería.");
+            
+            ui.setFormFeedback(feedbackEl, `Subiendo galería (0/${galleryFiles.length})...`, 'info');
+            
+            const uploadPromises = Array.from(galleryFiles).map((file, index) => {
+                return api.uploadFile(file, 'server-gallery').then(path => {
+                    ui.setFormFeedback(feedbackEl, `Subiendo galería (${index + 1}/${galleryFiles.length})...`, 'info');
+                    return path;
+                });
+            });
 
-            setFeedback(`Subiendo galería (${galleryFiles.length} imágenes)...`, 'info');
-
-            // Subir imágenes de galería una por una para mejor control de errores
-            const galleryPaths = [];
-            for (let i = 0; i < galleryFiles.length; i++) {
-                const file = galleryFiles[i];
-                setFeedback(`Subiendo imagen ${i + 1}/${galleryFiles.length}...`, 'info');
-
-                try {
-                    const path = await api.uploadFileRobust(file, 'server-gallery');
-                    if (path) galleryPaths.push(path);
-                } catch (error) {
-                    console.warn(`Upload robusto falló para imagen ${i + 1}, intentando método tradicional:`, error);
-                    try {
-                        const path = await api.uploadFile(file, 'server-gallery');
-                        if (path) galleryPaths.push(path);
-                    } catch (fallbackError) {
-                        console.error(`Falló completamente la subida de imagen ${i + 1}:`, fallbackError);
-                        // Continuar con las demás imágenes
-                    }
-                }
-            }
-
-            serverData.gallery_urls = galleryPaths;
+            serverData.gallery_urls = await Promise.all(uploadPromises);
         }
 
-        setFeedback('Guardando datos del servidor...', 'info');
+        ui.setFormFeedback(feedbackEl, 'Guardando datos del servidor...', 'info');
         await api.addServer(serverData);
         
-        setFeedback('¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo...', 'success');
+        ui.setFormFeedback(feedbackEl, '¡Éxito! Tu servidor ha sido enviado para revisión. Redirigiendo...', 'success');
         form.reset();
         
         setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
 
     } catch (error) {
-        console.error('ERROR FINAL en handleFormSubmit:', error);
-        setFeedback(`Error: ${error.message}`, 'error');
-        setButtonState('<i class="fa-solid fa-paper-plane"></i> Enviar Servidor', false);
+        console.error('Error al agregar servidor:', error);
+        ui.setFormFeedback(feedbackEl, `Error: ${error.message}`, 'error');
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Servidor';
     }
 }

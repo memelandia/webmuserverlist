@@ -1,142 +1,67 @@
 // /js/main-app.js
-// TEMPORAL: Imports simplificados para debugging
-// import { initAuth } from './modules/auth.js';
-// import { initHomePage } from './main.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("🚀 Aplicación MuServerList iniciada.");
 
+    if (!window.supabaseClient) {
+        console.error("❌ ERROR CRÍTICO: Cliente de Supabase no está disponible.");
+        document.body.innerHTML = '<h1>Error de Conexión</h1><p>No se pudo conectar con el servicio. Por favor, recarga la página o inténtalo más tarde.</p>';
+        return;
+    }
+
     try {
-        // Verificar que Supabase esté disponible
-        if (!window.supabaseClient) {
-            console.log("⏳ Esperando Supabase...");
-            await waitForSupabase();
-        }
-
-        console.log("✅ Supabase disponible");
-
-        const pageId = document.body.id;
+        const pageId = document.body.id || 'unknown';
         console.log(`Página actual detectada: "${pageId}"`);
 
-        // Cargar módulos dinámicamente según la página
+        // La autenticación es necesaria en casi todas las páginas
+        const { initAuth } = await import('./modules/auth.js');
+        await initAuth();
+
+        // Cargar módulos específicos de la página dinámicamente
         switch (pageId) {
             case 'page-home':
-                console.log("🏠 Cargando página de inicio...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initHomePage } = await import('./main.js');
-
-                    await initAuth();
-                    initHomePage();
-                    console.log("✅ Página de inicio cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de inicio:", error);
-                }
+                const { initHomePage } = await import('./main.js');
+                initHomePage();
                 break;
             case 'page-explorar':
-                console.log("🔍 Cargando página de explorar...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initExplorarPage } = await import('./explorar.js');
-
-                    await initAuth();
-                    initExplorarPage();
-                    console.log("✅ Página de explorar cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de explorar:", error);
-                }
+                const { initExplorarPage } = await import('./explorar.js');
+                initExplorarPage();
                 break;
             case 'page-ranking':
-                console.log("🏆 Cargando página de ranking...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initRankingPage } = await import('./ranking.js');
-
-                    await initAuth();
-                    initRankingPage();
-                    console.log("✅ Página de ranking cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de ranking:", error);
-                }
+                const { initRankingPage } = await import('./ranking.js');
+                initRankingPage();
                 break;
             case 'page-calendario':
-                console.log("📅 Cargando página de calendario...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initCalendarioPage } = await import('./calendario.js');
-
-                    await initAuth();
-                    initCalendarioPage();
-                    console.log("✅ Página de calendario cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de calendario:", error);
-                }
+                const { initCalendarioPage } = await import('./calendario.js');
+                initCalendarioPage();
                 break;
             case 'page-servidor':
-                console.log("🖥️ Cargando página de servidor...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initServidorPage } = await import('./servidor.js');
-
-                    await initAuth();
-                    initServidorPage();
-                    console.log("✅ Página de servidor cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de servidor:", error);
-                }
+                const { initServidorPage } = await import('./servidor.js');
+                initServidorPage();
                 break;
             case 'page-profile':
-                console.log("👤 Cargando página de perfil...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initProfilePage } = await import('./profile.js');
-
-                    await initAuth();
-                    initProfilePage();
-                    console.log("✅ Página de perfil cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de perfil:", error);
-                }
+                const { initProfilePage } = await import('./profile.js');
+                initProfilePage();
                 break;
             case 'page-agregar':
-                console.log("➕ Cargando página de agregar servidor...");
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    const { initAddServerPage } = await import('./add-server.js');
-
-                    await initAuth();
-                    initAddServerPage();
-                    console.log("✅ Página de agregar servidor cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando página de agregar servidor:", error);
-                }
+                const { initAddServerPage } = await import('./add-server.js');
+                initAddServerPage();
+                break;
+            case 'page-editar-servidor':
+                const { initEditServerPage } = await import('./editar-servidor.js');
+                initEditServerPage();
+                break;
+            case 'page-admin':
+                 const { initAdminPage } = await import('./admin.js');
+                 initAdminPage();
                 break;
             default:
-                console.log(`📄 Página "${pageId}" - cargando solo autenticación`);
-                try {
-                    const { initAuth } = await import('./modules/auth.js');
-                    await initAuth();
-                    console.log("✅ Autenticación cargada");
-                } catch (error) {
-                    console.error("❌ Error cargando autenticación:", error);
-                }
+                console.log(`📄 Página "${pageId}" no requiere un módulo de inicialización específico.`);
                 break;
         }
+        console.log(`✅ Página "${pageId}" cargada correctamente.`);
+
     } catch (error) {
-        console.error("❌ Error general inicializando aplicación:", error);
+        console.error("❌ Error general al inicializar la aplicación:", error);
     }
 });
-
-// Función para esperar a que Supabase esté disponible
-function waitForSupabase() {
-    return new Promise((resolve) => {
-        const checkSupabase = () => {
-            if (window.supabaseClient) {
-                resolve();
-            } else {
-                setTimeout(checkSupabase, 100);
-            }
-        };
-        checkSupabase();
-    });
-}

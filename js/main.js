@@ -2,8 +2,6 @@
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
-// TEMPORAL: Comentado service worker para debugging
-// import { registerServiceWorker } from './modules/service-worker.js';
 
 export function initHomePage() {
     console.log("🚀 Inicializando Página de Inicio (main.js)...");
@@ -49,7 +47,7 @@ async function loadFeaturedCarousel() {
     const container = document.getElementById('featured-carousel');
     if (!container) return;
 
-    ui.renderLoading(container, "Cargando servidores destacados...");
+    ui.renderSkeletonLoading(container, 'carousel', 4);
     try {
         const servers = await api.getFeaturedServers();
         ui.renderFeaturedCarousel(container, servers);
@@ -63,7 +61,7 @@ async function loadFeaturedCarousel() {
 async function loadServerOfTheMonth() {
     const container = document.getElementById('server-of-the-month-widget');
     if (!container) return;
-    ui.renderLoading(container);
+    ui.renderSkeletonLoading(container, 'server-of-month');
     try {
         const server = await api.getServerOfTheMonth();
         ui.renderServerOfTheMonth(container, server);
@@ -76,7 +74,7 @@ async function loadServerOfTheMonth() {
 async function loadTopRankingWidget() {
     const container = document.getElementById('ranking-widget-list');
     if (!container) return;
-    ui.renderLoading(container);
+    ui.renderSkeletonLoading(container, 'ranking', 5);
     try {
         const servers = await api.getTopRankingWidget();
         ui.renderRankingWidget(container, servers);
@@ -89,7 +87,7 @@ async function loadTopRankingWidget() {
 async function loadUpcomingEventsWidget() {
     const container = document.getElementById('calendar-widget-list');
     if (!container) return;
-    ui.renderLoading(container);
+    ui.renderSkeletonLoading(container, 'calendar', 3);
     try {
         const servers = await api.getUpcomingOpeningsWidget();
         ui.renderCalendarWidget(container, servers);
@@ -105,6 +103,6 @@ async function loadGlobalStats() {
         ui.renderGlobalStats(stats);
     } catch (error) {
         console.error("Error cargando estadísticas globales:", error);
+        // Silently fail is ok for stats
     }
 }
-
