@@ -1,7 +1,8 @@
 // js/modules/lazy-loading.js
-// Sistema completo de lazy loading para MuServerList con soporte WebP
+// Sistema completo de lazy loading para MuServerList
 
-import { isWebPSupported, getWebPUrl, createLazyWebPImage } from './webp-support.js';
+// TEMPORAL: Comentado import de WebP para evitar problemas de dependencias
+// import { isWebPSupported, getWebPUrl, createLazyWebPImage } from './webp-support.js';
 
 // =====================================================
 // CONFIGURACIÓN DE LAZY LOADING
@@ -209,21 +210,15 @@ function loadAllImagesImmediately() {
     console.log('⚠️ Lazy loading fallback: cargadas todas las imágenes inmediatamente');
 }
 
-// Función para crear imagen lazy con soporte WebP
+// Función para crear imagen lazy (WebP temporalmente deshabilitado)
 export function createLazyImage(src, alt, options = {}) {
     const {
         width,
         height,
         className = '',
         fallback = 'img/logo_placeholder_small.png',
-        loading = 'lazy',
-        useWebP = true
+        loading = 'lazy'
     } = options;
-
-    // Si se solicita WebP y está disponible, usar la función optimizada
-    if (useWebP) {
-        return createLazyWebPImage(src, alt, { className, width, height, fallback });
-    }
 
     // Si el navegador soporta loading="lazy" nativo, usarlo
     if ('loading' in HTMLImageElement.prototype) {

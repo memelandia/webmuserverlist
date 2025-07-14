@@ -1,7 +1,8 @@
 // js/modules/ui.js (v19 - COMPLETO y VERIFICADO)
 
 import { getOptimizedImageUrl, renderStars } from './utils.js';
-import { observeImagesInContainer, createLazyImage, createLazyBackground } from './lazy-loading.js';
+// TEMPORAL: Comentado lazy-loading para debugging
+// import { observeImagesInContainer, createLazyImage, createLazyBackground } from './lazy-loading.js';
 
 // --- Funciones de Estado y Ayuda ---
 export function renderLoading(container, message = "Cargando...") {
@@ -22,7 +23,7 @@ export function setFormFeedback(element, message, type) {
 // LAZY LOADING HELPERS
 // =====================================================
 
-// Función auxiliar para crear imagen de servidor con lazy loading
+// Función auxiliar para crear imagen de servidor (lazy loading temporalmente deshabilitado)
 export function createServerImage(server, options = {}) {
     const {
         size = 'medium', // small, medium, large
@@ -41,31 +42,32 @@ export function createServerImage(server, options = {}) {
 
     const { width, height } = sizes[size] || sizes.medium;
 
-    return createLazyImage(imageUrl, server.name, {
-        width,
-        height,
-        className: `server-logo ${className}`,
-        fallback
-    });
+    // TEMPORAL: Usar imagen normal en lugar de lazy loading
+    return `<img src="${imageUrl}" alt="${server.name}" class="server-logo ${className}" width="${width}" height="${height}" loading="lazy">`;
 }
 
-// Función auxiliar para crear banner de servidor con lazy loading
+// Función auxiliar para crear banner de servidor (lazy loading temporalmente deshabilitado)
 export function createServerBanner(server, className = '') {
     const bannerUrl = getOptimizedImageUrl(server.banner_url);
-    return createLazyBackground(bannerUrl, {
+    // TEMPORAL: Usar background normal en lugar de lazy loading
+    return {
         className: `card-banner ${className}`,
-        fallback: 'img/banner_placeholder.png'
-    });
+        style: `background-image: url('${bannerUrl}'); background-size: cover; background-position: center;`
+    };
 }
 
-// Función para activar lazy loading en un contenedor después de renderizar
+// Función para activar lazy loading en un contenedor después de renderizar (temporalmente deshabilitada)
 export function activateLazyLoading(container) {
+    // TEMPORAL: Lazy loading deshabilitado para debugging
+    console.log('activateLazyLoading llamada pero temporalmente deshabilitada');
+    /*
     if (container) {
         // Pequeño delay para asegurar que el DOM esté actualizado
         setTimeout(() => {
             observeImagesInContainer(container);
         }, 100);
     }
+    */
 }
 
 // =====================================================
@@ -214,9 +216,9 @@ export function renderFeaturedCarousel(container, servers) {
 
         return `
         <div class="carousel-card">
-            <a href="servidor.html?id=${server.id}" class="card-banner-link lazy-placeholder" data-bg-src="${banner}" data-bg-fallback="img/banner_placeholder.png" aria-label="Ver banner de ${server.name}"></a>
+            <a href="servidor.html?id=${server.id}" class="card-banner-link" style="background-image: url('${banner}'); background-size: cover; background-position: center;" aria-label="Ver banner de ${server.name}"></a>
             <div class="carousel-card-info">
-                <img data-src="${logo}" data-fallback="img/logo_placeholder_small.png" alt="Logo de ${server.name}" class="carousel-card-logo lazy-placeholder" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3C/svg%3E">
+                <img src="${logo}" alt="Logo de ${server.name}" class="carousel-card-logo" loading="lazy">
                 <h3><a href="servidor.html?id=${server.id}">${server.name}</a></h3>
                 <div class="carousel-card-meta">
                     <span title="Versión"><i class="fa-solid fa-gamepad"></i> ${server.version || 'N/A'}</span>
@@ -228,8 +230,8 @@ export function renderFeaturedCarousel(container, servers) {
         </div>`;
     }).join('');
 
-    // Activar lazy loading para las imágenes recién renderizadas
-    activateLazyLoading(container);
+    // TEMPORAL: Lazy loading deshabilitado
+    // activateLazyLoading(container);
 }
 
 export function initCarouselControls() {
@@ -448,9 +450,9 @@ export function renderExploreServers(container, servers) {
         const banner = getOptimizedImageUrl("server-banners", server.banner_url, { width: 400, height: 120 }, "img/banner_placeholder.png");
         return `
         <div class="server-card-new">
-            <div class="card-banner lazy-placeholder" data-bg-src="${banner}" data-bg-fallback="img/banner_placeholder.png"></div>
+            <div class="card-banner" style="background-image: url('${banner}'); background-size: cover; background-position: center;"></div>
             <div class="card-header">
-                <img data-src="${logo}" data-fallback="img/logo_placeholder_small.png" alt="Logo de ${server.name}" class="card-logo lazy-placeholder" width="80" height="80" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3C/svg%3E">
+                <img src="${logo}" alt="Logo de ${server.name}" class="card-logo" width="80" height="80" loading="lazy">
             </div>
             <div class="card-content">
                 <h3>${server.name}</h3>
@@ -469,8 +471,8 @@ export function renderExploreServers(container, servers) {
         </div>`;
     }).join("");
 
-    // Activar lazy loading para las imágenes recién renderizadas
-    activateLazyLoading(container);
+    // TEMPORAL: Lazy loading deshabilitado
+    // activateLazyLoading(container);
 }
 
 // --- Componentes de la Página de Calendario ---

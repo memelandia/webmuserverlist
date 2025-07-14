@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Básico - MuServerList</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #0f0f0f; 
+            color: #fff; 
+            line-height: 1.6;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { 
+            background: #1a1a1a; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border: 1px solid #333;
+        }
+        .test-title { 
+            color: #ff3333; 
+            margin-bottom: 15px; 
+            font-size: 1.2em;
+        }
+        .status {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .status-ok { background: #2d5a2d; }
+        .status-error { background: #5a2d2d; }
+        .test-button {
+            background: #ff3333;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover { background: #e62e2e; }
+        .log {
+            background: #252525;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Básico - MuServerList</h1>
+        <p>Prueba básica de conexión y módulos fundamentales.</p>
+
+        <!-- Test de Supabase -->
+        <div class="test-section">
+            <div class="test-title">📡 Test de Supabase</div>
+            <div class="status" id="supabase-status">🔄 Verificando Supabase...</div>
+            <button class="test-button" onclick="testSupabase()">🧪 Probar Supabase</button>
+        </div>
+
+        <!-- Test de Módulos Básicos -->
+        <div class="test-section">
+            <div class="test-title">📦 Test de Módulos Básicos</div>
+            <div class="status" id="utils-status">🔄 Verificando utils.js...</div>
+            <div class="status" id="api-status">🔄 Verificando api.js...</div>
+            <button class="test-button" onclick="testModules()">🧪 Probar Módulos</button>
+        </div>
+
+        <!-- Test de API -->
+        <div class="test-section">
+            <div class="test-title">🌐 Test de API</div>
+            <div class="status" id="api-call-status">🔄 Esperando test...</div>
+            <button class="test-button" onclick="testAPI()">🧪 Probar API</button>
+        </div>
+
+        <!-- Log -->
+        <div class="test-section">
+            <div class="test-title">📝 Log de Pruebas</div>
+            <div class="log" id="test-log"></div>
+            <button class="test-button" onclick="clearLog()">🗑️ Limpiar</button>
+        </div>
+    </div>
+
+    <!-- Scripts básicos -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-init.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                success: '#48bb78',
+                error: '#f56565',
+                warning: '#f6e05e',
+                info: '#63b3ed'
+            };
+            const logElement = document.getElementById('test-log');
+            logElement.innerHTML += `<div style="color: ${colors[type]}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            element.className = success ? 'status status-ok' : 'status status-error';
+            element.textContent = (success ? '✅ ' : '❌ ') + message;
+        }
+
+        async function testSupabase() {
+            log('Probando conexión a Supabase...', 'info');
+            
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client no disponible');
+                }
+
+                // Test básico de conexión
+                const { data, error } = await window.supabaseClient
+                    .from('servers')
+                    .select('id')
+                    .limit(1);
+
+                if (error) throw error;
+
+                updateStatus('supabase-status', true, 'Conexión exitosa');
+                log('✅ Supabase conectado correctamente', 'success');
+                return true;
+            } catch (error) {
+                updateStatus('supabase-status', false, `Error: ${error.message}`);
+                log(`❌ Error Supabase: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testModules() {
+            log('Probando carga de módulos...', 'info');
+
+            // Test utils.js
+            try {
+                const utils = await import('./js/modules/utils.js');
+                updateStatus('utils-status', true, 'utils.js cargado');
+                log('✅ utils.js cargado correctamente', 'success');
+                
+                // Test función específica
+                if (typeof utils.getOptimizedImageUrl === 'function') {
+                    log('✅ getOptimizedImageUrl disponible', 'success');
+                } else {
+                    log('⚠️ getOptimizedImageUrl no encontrada', 'warning');
+                }
+            } catch (error) {
+                updateStatus('utils-status', false, `Error: ${error.message}`);
+                log(`❌ Error utils.js: ${error.message}`, 'error');
+            }
+
+            // Test api.js
+            try {
+                const api = await import('./js/modules/api.js');
+                updateStatus('api-status', true, 'api.js cargado');
+                log('✅ api.js cargado correctamente', 'success');
+                
+                // Test función específica
+                if (typeof api.getFeaturedServers === 'function') {
+                    log('✅ getFeaturedServers disponible', 'success');
+                } else {
+                    log('⚠️ getFeaturedServers no encontrada', 'warning');
+                }
+            } catch (error) {
+                updateStatus('api-status', false, `Error: ${error.message}`);
+                log(`❌ Error api.js: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPI() {
+            log('Probando llamadas a API...', 'info');
+
+            try {
+                // Verificar que Supabase esté disponible
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase no disponible');
+                }
+
+                // Importar módulo API
+                const api = await import('./js/modules/api.js');
+                
+                if (!api.getFeaturedServers) {
+                    throw new Error('getFeaturedServers no disponible');
+                }
+
+                // Probar llamada a API
+                log('Llamando a getFeaturedServers...', 'info');
+                const servers = await api.getFeaturedServers();
+                
+                updateStatus('api-call-status', true, `${servers.length} servidores obtenidos`);
+                log(`✅ API call exitosa: ${servers.length} servidores`, 'success');
+                
+                // Mostrar algunos datos
+                if (servers.length > 0) {
+                    log(`📊 Primer servidor: ${servers[0].name}`, 'info');
+                }
+
+            } catch (error) {
+                updateStatus('api-call-status', false, `Error: ${error.message}`);
+                log(`❌ Error API: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = '';
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Test básico iniciado', 'info');
+            
+            // Auto-test después de un momento
+            setTimeout(async () => {
+                log('🔄 Iniciando tests automáticos...', 'info');
+                
+                const supabaseOk = await testSupabase();
+                if (supabaseOk) {
+                    await testModules();
+                    await testAPI();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

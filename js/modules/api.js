@@ -1,6 +1,7 @@
 // js/modules/api.js
 
-import { cache } from './cache.js';
+// TEMPORAL: Comentado cache para debugging
+// import { cache } from './cache.js';
 
 const supabase = window.supabaseClient;
 
@@ -126,27 +127,26 @@ export async function getUpcomingOpeningsWidget() {
 // =====================================================
 
 export async function getHomepageData() {
-    // Usar caché inteligente para datos de homepage
-    return await cache.getHomepageData(async () => {
-        logNetworkDiagnostics('getHomepageData', { operation: 'RPC_CALL' });
+    // TEMPORAL: Sin caché para debugging
+    logNetworkDiagnostics('getHomepageData', { operation: 'RPC_CALL' });
 
-        try {
-            const { data, error } = await supabase.rpc('get_homepage_data');
+    try {
+        const { data, error } = await supabase.rpc('get_homepage_data');
 
-            if (error) {
-                console.error("API Error (getHomepageData):", error);
-                logNetworkDiagnostics('getHomepageData', {
-                    status: 'ERROR',
-                    error: error.message,
-                    errorCode: error.code
-                });
-                throw new Error("No se pudieron cargar los datos de la homepage.");
-            }
+        if (error) {
+            console.error("API Error (getHomepageData):", error);
+            logNetworkDiagnostics('getHomepageData', {
+                status: 'ERROR',
+                error: error.message,
+                errorCode: error.code
+            });
+            throw new Error("No se pudieron cargar los datos de la homepage.");
+        }
 
-            if (!data || !data.success) {
-                console.error("RPC Error (getHomepageData):", data?.error || 'Unknown error');
-                throw new Error(data?.error || "Error interno del servidor.");
-            }
+        if (!data || !data.success) {
+            console.error("RPC Error (getHomepageData):", data?.error || 'Unknown error');
+            throw new Error(data?.error || "Error interno del servidor.");
+        }
 
             logNetworkDiagnostics('getHomepageData', {
                 status: 'SUCCESS',
@@ -177,7 +177,7 @@ export async function getHomepageData() {
                 globalStats: { totalServers: 0, totalUsers: 0, totalVotes: 0 }
             };
         }
-    });
+    // TEMPORAL: Removido cierre de cache
 }
 
 // =====================================================

@@ -18,6 +18,13 @@ async function loadAuthModal() {
 export async function initAuth() {
     console.log("🚀 Inicializando Módulo de Autenticación...");
 
+    // Verificar que Supabase esté disponible
+    if (!window.supabaseClient) {
+        console.error("❌ Supabase no está inicializado. Esperando...");
+        // Esperar hasta que Supabase esté disponible
+        await waitForSupabase();
+    }
+
     await loadAuthModal();
     initAuthModalListeners();
     initAuthUI();
@@ -25,6 +32,22 @@ export async function initAuth() {
     window.supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         console.log('Cambio de estado de autenticación:', _event);
         await updateAuthUI(session);
+    });
+}
+
+// Función para esperar a que Supabase esté disponible
+function waitForSupabase() {
+    return new Promise((resolve) => {
+        const checkSupabase = () => {
+            if (window.supabaseClient) {
+                console.log("✅ Supabase disponible");
+                resolve();
+            } else {
+                console.log("⏳ Esperando Supabase...");
+                setTimeout(checkSupabase, 100);
+            }
+        };
+        checkSupabase();
     });
 }
 

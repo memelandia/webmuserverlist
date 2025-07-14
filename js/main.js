@@ -2,7 +2,8 @@
 
 import * as api from './modules/api.js';
 import * as ui from './modules/ui.js';
-import { registerServiceWorker } from './modules/service-worker.js';
+// TEMPORAL: Comentado service worker para debugging
+// import { registerServiceWorker } from './modules/service-worker.js';
 
 export function initHomePage() {
     console.log("🚀 Inicializando Página de Inicio (main.js)...");
