@@ -230,11 +230,10 @@ function generateFilterHash(filters) {
 }
 
 export async function getExploreServers(filters) {
-    // Generar hash único para los filtros
-    const filterHash = generateFilterHash(filters);
+    // TEMPORAL: Sin caché para debugging
+    console.log('🔍 getExploreServers llamada con filtros:', filters);
 
-    // Usar caché mejorado para listas de servidores
-    return await cache.getServerList(filterHash, async () => {
+    try {
         let query = supabase.from('servers')
             .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
             .eq('status', 'aprobado');
@@ -258,30 +257,51 @@ export async function getExploreServers(filters) {
         }
 
         const { data, error } = await query;
-        if (error) { console.error("API Error (getExploreServers):", error); throw error; }
+        if (error) {
+            console.error("API Error (getExploreServers):", error);
+            throw error;
+        }
+
+        console.log(`✅ getExploreServers: ${data.length} servidores obtenidos`);
         return data;
-    });
+    } catch (error) {
+        console.error("❌ Error en getExploreServers:", error);
+        throw error;
+    }
 }
 
 export async function getCalendarOpenings() {
-    // Usar caché inteligente para datos de calendario
-    return await cache.getCalendarData(async () => {
+    // TEMPORAL: Sin caché para debugging
+    console.log('📅 getCalendarOpenings llamada');
+
+    try {
         const { data, error } = await supabase
             .from('servers')
             .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
             .not('opening_date', 'is', null)
             .gt('opening_date', new Date().toISOString())
             .order('opening_date', { ascending: true });
-        if (error) { console.error("API Error (getCalendarOpenings):", error); throw error; }
+
+        if (error) {
+            console.error("API Error (getCalendarOpenings):", error);
+            throw error;
+        }
+
+        console.log(`✅ getCalendarOpenings: ${data.length} aperturas obtenidas`);
         return data;
-    });
+    } catch (error) {
+        console.error("❌ Error en getCalendarOpenings:", error);
+        throw error;
+    }
 }
 
 export async function getServerById(serverId) {
     if (!serverId) throw new Error("Se requiere un ID de servidor válido.");
 
-    // Usar caché inteligente para detalles de servidor
-    return await cache.getServerData(serverId, async () => {
+    // TEMPORAL: Sin caché para debugging
+    console.log('🖥️ getServerById llamada para servidor:', serverId);
+
+    try {
         // Consulta optimizada que solo obtiene los campos necesarios para la página del servidor
         const { data, error } = await supabase
             .from('servers')
@@ -316,8 +336,12 @@ export async function getServerById(serverId) {
             }
         }
 
+        console.log(`✅ getServerById: servidor ${data.name} obtenido`);
         return data;
-    });
+    } catch (error) {
+        console.error("❌ Error en getServerById:", error);
+        throw error;
+    }
 }
 
 
@@ -339,11 +363,11 @@ export async function addReview(reviewData) {
     const { error } = await supabase.from('reviews').insert([dataToInsert]);
     if (error) { console.error("API Error (addReview):", error); throw new Error(error.message); }
 
-    // Invalidar caché del servidor cuando se agrega una reseña
-    if (reviewData.server_id) {
-        cache.invalidateServer(reviewData.server_id);
-        cache.invalidateHomepage(); // Las reseñas pueden afectar ratings en homepage
-    }
+    // TEMPORAL: Cache invalidation deshabilitado
+    // if (reviewData.server_id) {
+    //     cache.invalidateServer(reviewData.server_id);
+    //     cache.invalidateHomepage(); // Las reseñas pueden afectar ratings en homepage
+    // }
 }
 
 export async function voteForServer(serverId) {
@@ -351,10 +375,10 @@ export async function voteForServer(serverId) {
     if (error) throw new Error("Error de red al intentar votar. Inténtalo de nuevo.");
     if (data.error) throw new Error(data.error);
 
-    // Invalidar caché cuando se vota por un servidor
-    cache.invalidateServer(serverId);
-    cache.invalidateHomepage(); // Los votos afectan rankings y estadísticas
-    cache.invalidateServerLists(); // Los votos afectan el orden en listas
+    // TEMPORAL: Cache invalidation deshabilitado
+    // cache.invalidateServer(serverId);
+    // cache.invalidateHomepage(); // Los votos afectan rankings y estadísticas
+    // cache.invalidateServerLists(); // Los votos afectan el orden en listas
 
     return data;
 }
@@ -362,25 +386,26 @@ export async function voteForServer(serverId) {
 export async function getUserProfile(userId) {
     if (!userId) throw new Error("Se requiere un ID de usuario para obtener el perfil.");
 
+    // TEMPORAL: Sin caché para debugging
+    console.log('👤 getUserProfile llamada para usuario:', userId);
+
     try {
-        // Usar caché inteligente para perfiles de usuario
-        return await cache.getUserProfile(userId, async () => {
-            const { data, error } = await supabase.from('profiles').select('id, username, avatar_url, role, status, updated_at').eq('id', userId).single();
-            if (error) {
-                console.error("API Error (getUserProfile):", error);
-                throw new Error(`No se pudo obtener el perfil de usuario: ${error.message}`);
-            }
-            return data;
-        });
-    } catch (cacheError) {
-        console.warn("Error en caché, usando consulta directa:", cacheError);
-        // Fallback: consulta directa sin caché
-        const { data, error } = await supabase.from('profiles').select('id, username, avatar_url, role, status, updated_at').eq('id', userId).single();
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, role, status, updated_at')
+            .eq('id', userId)
+            .single();
+
         if (error) {
-            console.error("API Error (getUserProfile - fallback):", error);
+            console.error("API Error (getUserProfile):", error);
             throw new Error(`No se pudo obtener el perfil de usuario: ${error.message}`);
         }
+
+        console.log(`✅ getUserProfile: perfil de ${data.username} obtenido`);
         return data;
+    } catch (error) {
+        console.error("❌ Error en getUserProfile:", error);
+        throw error;
     }
 }
 
