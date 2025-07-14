@@ -1,5 +1,7 @@
 // js/modules/api.js
 
+import { cache } from './cache.js';
+
 const supabase = window.supabaseClient;
 
 // === DIAGNÓSTICO AVANZADO DE RED ===
@@ -124,55 +126,58 @@ export async function getUpcomingOpeningsWidget() {
 // =====================================================
 
 export async function getHomepageData() {
-    logNetworkDiagnostics('getHomepageData', { operation: 'RPC_CALL' });
+    // Usar caché inteligente para datos de homepage
+    return await cache.getHomepageData(async () => {
+        logNetworkDiagnostics('getHomepageData', { operation: 'RPC_CALL' });
 
-    try {
-        const { data, error } = await supabase.rpc('get_homepage_data');
+        try {
+            const { data, error } = await supabase.rpc('get_homepage_data');
 
-        if (error) {
-            console.error("API Error (getHomepageData):", error);
+            if (error) {
+                console.error("API Error (getHomepageData):", error);
+                logNetworkDiagnostics('getHomepageData', {
+                    status: 'ERROR',
+                    error: error.message,
+                    errorCode: error.code
+                });
+                throw new Error("No se pudieron cargar los datos de la homepage.");
+            }
+
+            if (!data || !data.success) {
+                console.error("RPC Error (getHomepageData):", data?.error || 'Unknown error');
+                throw new Error(data?.error || "Error interno del servidor.");
+            }
+
             logNetworkDiagnostics('getHomepageData', {
-                status: 'ERROR',
-                error: error.message,
-                errorCode: error.code
+                status: 'SUCCESS',
+                dataSize: JSON.stringify(data).length,
+                timestamp: data.timestamp
             });
-            throw new Error("No se pudieron cargar los datos de la homepage.");
+
+            return {
+                featuredServers: data.featuredServers || [],
+                serverOfTheMonth: data.serverOfTheMonth || null,
+                topRanking: data.topRanking || [],
+                upcomingOpenings: data.upcomingOpenings || [],
+                globalStats: data.globalStats || { totalServers: 0, totalUsers: 0, totalVotes: 0 }
+            };
+        } catch (error) {
+            console.error("Critical Error (getHomepageData):", error);
+            logNetworkDiagnostics('getHomepageData', {
+                status: 'CRITICAL_ERROR',
+                error: error.message
+            });
+
+            // Fallback: retornar datos vacíos pero válidos
+            return {
+                featuredServers: [],
+                serverOfTheMonth: null,
+                topRanking: [],
+                upcomingOpenings: [],
+                globalStats: { totalServers: 0, totalUsers: 0, totalVotes: 0 }
+            };
         }
-
-        if (!data || !data.success) {
-            console.error("RPC Error (getHomepageData):", data?.error || 'Unknown error');
-            throw new Error(data?.error || "Error interno del servidor.");
-        }
-
-        logNetworkDiagnostics('getHomepageData', {
-            status: 'SUCCESS',
-            dataSize: JSON.stringify(data).length,
-            timestamp: data.timestamp
-        });
-
-        return {
-            featuredServers: data.featuredServers || [],
-            serverOfTheMonth: data.serverOfTheMonth || null,
-            topRanking: data.topRanking || [],
-            upcomingOpenings: data.upcomingOpenings || [],
-            globalStats: data.globalStats || { totalServers: 0, totalUsers: 0, totalVotes: 0 }
-        };
-    } catch (error) {
-        console.error("Critical Error (getHomepageData):", error);
-        logNetworkDiagnostics('getHomepageData', {
-            status: 'CRITICAL_ERROR',
-            error: error.message
-        });
-
-        // Fallback: retornar datos vacíos pero válidos
-        return {
-            featuredServers: [],
-            serverOfTheMonth: null,
-            topRanking: [],
-            upcomingOpenings: [],
-            globalStats: { totalServers: 0, totalUsers: 0, totalVotes: 0 }
-        };
-    }
+    });
 }
 
 // =====================================================
@@ -196,75 +201,87 @@ export async function getGlobalStats() {
 }
 
 export async function getExploreServers(filters) {
-    let query = supabase.from('servers')
-        .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
-        .eq('status', 'aprobado');
+    // Crear hash único para los filtros para caché
+    const filterHash = btoa(JSON.stringify(filters)).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
 
-    if (filters.name) query = query.ilike('name', `%${filters.name}%`);
-    if (filters.version) query = query.eq('version', filters.version);
-    if (filters.type) query = query.eq('type', filters.type);
-    if (filters.configuration) query = query.eq('configuration', filters.configuration);
-    if (filters.exp < 99999) query = query.lte('exp_rate', filters.exp);
+    // Usar caché inteligente para listas de servidores
+    return await cache.getServerList(filterHash, async () => {
+        let query = supabase.from('servers')
+            .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date')
+            .eq('status', 'aprobado');
 
-    switch (filters.sort) {
-        case 'newest': query = query.order('created_at', { ascending: false }); break;
-        case 'opening_soon': query = query.not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }); break;
-        default: query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false }); break;
-    }
-    const { data, error } = await query;
-    if (error) { console.error("API Error (getExploreServers):", error); throw error; }
-    return data;
+        if (filters.name) query = query.ilike('name', `%${filters.name}%`);
+        if (filters.version) query = query.eq('version', filters.version);
+        if (filters.type) query = query.eq('type', filters.type);
+        if (filters.configuration) query = query.eq('configuration', filters.configuration);
+        if (filters.exp < 99999) query = query.lte('exp_rate', filters.exp);
+
+        switch (filters.sort) {
+            case 'newest': query = query.order('created_at', { ascending: false }); break;
+            case 'opening_soon': query = query.not('opening_date', 'is', null).gt('opening_date', new Date().toISOString()).order('opening_date', { ascending: true }); break;
+            default: query = query.order('is_featured', { ascending: false }).order('votes_count', { ascending: false, nullsFirst: false }); break;
+        }
+        const { data, error } = await query;
+        if (error) { console.error("API Error (getExploreServers):", error); throw error; }
+        return data;
+    });
 }
 
 export async function getCalendarOpenings() {
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
-        .not('opening_date', 'is', null)
-        .gt('opening_date', new Date().toISOString())
-        .order('opening_date', { ascending: true });
-    if (error) { console.error("API Error (getCalendarOpenings):", error); throw error; }
-    return data;
+    // Usar caché inteligente para datos de calendario
+    return await cache.getCalendarData(async () => {
+        const { data, error } = await supabase
+            .from('servers')
+            .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, opening_date')
+            .not('opening_date', 'is', null)
+            .gt('opening_date', new Date().toISOString())
+            .order('opening_date', { ascending: true });
+        if (error) { console.error("API Error (getCalendarOpenings):", error); throw error; }
+        return data;
+    });
 }
 
 export async function getServerById(serverId) {
     if (!serverId) throw new Error("Se requiere un ID de servidor válido.");
-    
-    // Consulta optimizada que solo obtiene los campos necesarios para la página del servidor
-    const { data, error } = await supabase
-        .from('servers')
-        .select('id, name, description, version, type, configuration, exp_rate, drop_rate, reset_info, antihack_info, image_url, banner_url, gallery_urls, events, website_url, discord_url, opening_date, votes_count, average_rating, review_count, status, created_at, user_id')
-        .eq('id', serverId)
-        .single();
-    
-    if (error) {
-        console.error("API Error (getServerById):", error);
-        throw new Error("Ocurrió un error al buscar el servidor.");
-    }
-    
-    if (!data) {
-        throw new Error("Servidor no encontrado o no disponible.");
-    }
-    
-    // Obtener información adicional del propietario si existe
-    if (data.user_id) {
-        try {
-            const { data: ownerData } = await supabase
-                .from('profiles')
-                .select('username, avatar_url')
-                .eq('id', data.user_id)
-                .single();
-                
-            if (ownerData) {
-                data.owner = ownerData;
-            }
-        } catch (profileError) {
-            console.warn("No se pudo obtener información del propietario:", profileError);
-            // No lanzamos error aquí para que la página siga funcionando
+
+    // Usar caché inteligente para detalles de servidor
+    return await cache.getServerData(serverId, async () => {
+        // Consulta optimizada que solo obtiene los campos necesarios para la página del servidor
+        const { data, error } = await supabase
+            .from('servers')
+            .select('id, name, description, version, type, configuration, exp_rate, drop_rate, reset_info, antihack_info, image_url, banner_url, gallery_urls, events, website_url, discord_url, opening_date, votes_count, average_rating, review_count, status, created_at, user_id')
+            .eq('id', serverId)
+            .single();
+
+        if (error) {
+            console.error("API Error (getServerById):", error);
+            throw new Error("Ocurrió un error al buscar el servidor.");
         }
-    }
-    
-    return data;
+
+        if (!data) {
+            throw new Error("Servidor no encontrado o no disponible.");
+        }
+
+        // Obtener información adicional del propietario si existe
+        if (data.user_id) {
+            try {
+                const { data: ownerData } = await supabase
+                    .from('profiles')
+                    .select('username, avatar_url')
+                    .eq('id', data.user_id)
+                    .single();
+
+                if (ownerData) {
+                    data.owner = ownerData;
+                }
+            } catch (profileError) {
+                console.warn("No se pudo obtener información del propietario:", profileError);
+                // No lanzamos error aquí para que la página siga funcionando
+            }
+        }
+
+        return data;
+    });
 }
 
 
@@ -281,24 +298,40 @@ export async function getReviewsByServerId(serverId) {
 export async function addReview(reviewData) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Debes iniciar sesión para dejar una reseña.");
-    
+
     const dataToInsert = { ...reviewData, user_id: session.user.id };
     const { error } = await supabase.from('reviews').insert([dataToInsert]);
     if (error) { console.error("API Error (addReview):", error); throw new Error(error.message); }
+
+    // Invalidar caché del servidor cuando se agrega una reseña
+    if (reviewData.server_id) {
+        cache.invalidateServer(reviewData.server_id);
+        cache.invalidateHomepage(); // Las reseñas pueden afectar ratings en homepage
+    }
 }
 
 export async function voteForServer(serverId) {
     const { data, error } = await supabase.functions.invoke('vote-server', { body: { serverId: parseInt(serverId, 10) } });
     if (error) throw new Error("Error de red al intentar votar. Inténtalo de nuevo.");
     if (data.error) throw new Error(data.error);
+
+    // Invalidar caché cuando se vota por un servidor
+    cache.invalidateServer(serverId);
+    cache.invalidateHomepage(); // Los votos afectan rankings y estadísticas
+    cache.invalidateServerLists(); // Los votos afectan el orden en listas
+
     return data;
 }
 
 export async function getUserProfile(userId) {
     if (!userId) throw new Error("Se requiere un ID de usuario para obtener el perfil.");
-    const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
-    if (error) { console.error("API Error (getUserProfile):", error); throw new Error("No se pudo obtener el perfil de usuario."); }
-    return data;
+
+    // Usar caché inteligente para perfiles de usuario
+    return await cache.getUserProfile(userId, async () => {
+        const { data, error } = await supabase.from('profiles').select('id, username, email, avatar_url, role, created_at').eq('id', userId).single();
+        if (error) { console.error("API Error (getUserProfile):", error); throw new Error("No se pudo obtener el perfil de usuario."); }
+        return data;
+    });
 }
 
 export async function getServersByUserId(userId) {
