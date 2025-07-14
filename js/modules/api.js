@@ -16,6 +16,7 @@ function getPublicImageUrl(bucketName, imagePath, options = {}, fallbackUrl = 'i
     return data.publicUrl || fallbackUrl;
 }
 
+
 // --- API de Servidores y Widgets ---
 
 export async function getServers() {
@@ -181,88 +182,62 @@ export async function updateUserAvatar(userId, avatarPath) {
     if (error) { console.error("API Error (updateUserAvatar):", error); throw new Error("No se pudo actualizar el avatar."); }
 }
 
+
 /**
  * --- INICIO DE LA CORRECCIÓN ---
- * Función de subida de archivos "a prueba de balas".
- * Incluye validaciones, logs detallados, y un timeout para evitar que la aplicación se congele.
+ * Sube un archivo a Supabase Storage de manera robusta.
  */
 export async function uploadFile(file, bucket) {
-    console.log(`[uploadFile] Iniciando subida: ${file.name} a bucket '${bucket}'`);
+    console.log(`[uploadFile] Iniciando subida para '${file.name}' al bucket '${bucket}'.`);
 
-    // 1. Validaciones previas
+    // 1. Validaciones robustas
     if (!file) {
-        console.error("[uploadFile] Error: No se proporcionó ningún archivo.");
-        throw new Error("No se seleccionó ningún archivo para subir.");
+        throw new Error("No se ha seleccionado ningún archivo.");
     }
-
     const MAX_SIZE_MB = 5;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        console.error(`[uploadFile] Error: El archivo ${file.name} excede el límite de ${MAX_SIZE_MB}MB.`);
-        throw new Error(`El archivo es demasiado grande. El límite es de ${MAX_SIZE_MB}MB.`);
+        throw new Error(`El archivo es demasiado grande (máximo ${MAX_SIZE_MB}MB).`);
     }
-    
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-        console.error(`[uploadFile] Error: Tipo de archivo no permitido: ${file.type}`);
-        throw new Error('Tipo de archivo no válido. Solo se permiten imágenes (JPEG, PNG, GIF, WebP).');
+        throw new Error("Formato de archivo no permitido. Solo se aceptan imágenes.");
     }
 
-    // 2. Verificación de sesión
+    // 2. Autenticación y preparación
     const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
     if (sessionError || !session) {
-        console.error("[uploadFile] Error: No hay sesión de usuario activa.");
-        throw new Error("Debes iniciar sesión para subir archivos.");
+        throw new Error("Sesión no válida. Por favor, inicia sesión de nuevo para continuar.");
     }
-    console.log(`[uploadFile] Sesión verificada para usuario: ${session.user.id}`);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+    console.log(`[uploadFile] Usuario verificado. Nombre de archivo final: ${fileName}`);
 
-    // 3. Preparación del nombre del archivo
-    const fileExtension = file.name.split('.').pop();
-    const cleanFileName = file.name.substring(0, file.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9_-]/g, '');
-    const finalFileName = `${session.user.id}/${Date.now()}_${cleanFileName}.${fileExtension}`;
-    console.log(`[uploadFile] Nombre de archivo final: ${finalFileName}`);
-
-    // 4. Lógica de subida con Timeout
-    const UPLOAD_TIMEOUT = 20000; // 20 segundos
-    
+    // 3. Subida con try/catch explícito
     try {
-        const uploadPromise = window.supabaseClient.storage
+        const { data, error } = await window.supabaseClient.storage
             .from(bucket)
-            .upload(finalFileName, file, {
+            .upload(fileName, file, {
                 cacheControl: '3600',
-                upsert: false // No sobreescribir si ya existe
+                upsert: false
             });
-
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('La subida del archivo tardó demasiado (Timeout). Revisa tu conexión a internet.')), UPLOAD_TIMEOUT);
-        });
-
-        // 5. Ejecutar la subida
-        console.log("[uploadFile] Ejecutando Promise.race para la subida...");
-        const result = await Promise.race([uploadPromise, timeoutPromise]);
         
-        // La promesa de Supabase se resolvió, ahora verificamos si tuvo errores internos.
-        if (result.error) {
-            console.error('[uploadFile] Error devuelto por Supabase:', result.error);
-            // Proporciona un mensaje más amigable basado en el error de Supabase
-            if (result.error.message.includes("exceeds the maximum allowed size")) {
-                throw new Error("El archivo excede el tamaño máximo permitido por el servidor.");
+        // 4. Manejo de errores de Supabase
+        if (error) {
+            console.error(`[uploadFile] Error devuelto por Supabase:`, error);
+            // Revisar si es un problema de permisos por políticas RLS
+            if (error.message.includes('permission') || error.message.includes('policy')) {
+                 throw new Error("Error de permisos. No puedes subir archivos a este destino. Contacta a soporte.");
             }
-            throw new Error(`Error del servidor de almacenamiento: ${result.error.message}`);
-        }
-        
-        if (!result.data || !result.data.path) {
-             console.error('[uploadFile] Error: La subida no devolvió una ruta de archivo válida.', result);
-             throw new Error('El servidor de almacenamiento no devolvió una ruta válida para el archivo.');
+            throw new Error(`Error del servidor al subir el archivo: ${error.message}`);
         }
 
-        console.log(`[uploadFile] Éxito. Ruta del archivo: ${result.data.path}`);
-        return result.data.path;
+        console.log(`[uploadFile] ¡Subida exitosa! Ruta: ${data.path}`);
+        return data.path;
 
     } catch (e) {
-        // Captura tanto los errores del try como el error de timeout
-        console.error(`[uploadFile] Fallo final en el proceso de subida:`, e);
-        // Re-lanza el error para que sea capturado por el manejador del formulario.
-        throw e;
+        // 5. Captura de errores de red u otros fallos
+        console.error(`[uploadFile] Fallo catastrófico en la subida:`, e);
+        throw new Error(`La subida del archivo falló. Revisa tu conexión a internet o el tamaño del archivo.`);
     }
 }
 // --- FIN DE LA CORRECCIÓN ---
