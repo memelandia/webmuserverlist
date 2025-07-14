@@ -36,12 +36,82 @@ function initMobileNavigation() {
 }
 
 function loadHomeWidgets() {
-    loadFeaturedCarousel();
-    loadServerOfTheMonth();
-    loadTopRankingWidget();
-    loadUpcomingEventsWidget();
-    loadGlobalStats();
+    // NUEVA IMPLEMENTACIÓN OPTIMIZADA
+    // Una sola llamada RPC en lugar de 5 consultas separadas
+    loadHomepageDataOptimized();
 }
+
+// =====================================================
+// NUEVA FUNCIÓN OPTIMIZADA - UNA SOLA CONSULTA RPC
+// =====================================================
+async function loadHomepageDataOptimized() {
+    console.log("🚀 Cargando datos de homepage con RPC optimizada...");
+
+    // Mostrar loading en todos los contenedores
+    const containers = {
+        carousel: document.getElementById('featured-carousel'),
+        serverOfMonth: document.getElementById('server-of-the-month-widget'),
+        ranking: document.getElementById('ranking-widget-list'),
+        calendar: document.getElementById('calendar-widget-list')
+    };
+
+    // Mostrar estados de carga
+    Object.values(containers).forEach(container => {
+        if (container) ui.renderLoading(container, "Cargando...");
+    });
+
+    try {
+        // UNA SOLA LLAMADA que obtiene todos los datos
+        const homepageData = await api.getHomepageData();
+
+        console.log("✅ Datos de homepage cargados exitosamente:", homepageData);
+
+        // Renderizar cada sección con los datos obtenidos
+        if (containers.carousel) {
+            ui.renderFeaturedCarousel(containers.carousel, homepageData.featuredServers);
+            ui.initCarouselControls();
+        }
+
+        if (containers.serverOfMonth) {
+            ui.renderServerOfTheMonth(containers.serverOfMonth, homepageData.serverOfTheMonth);
+        }
+
+        if (containers.ranking) {
+            ui.renderRankingWidget(containers.ranking, homepageData.topRanking);
+        }
+
+        if (containers.calendar) {
+            ui.renderCalendarWidget(containers.calendar, homepageData.upcomingOpenings);
+        }
+
+        // Renderizar estadísticas globales
+        ui.renderGlobalStats(homepageData.globalStats);
+
+    } catch (error) {
+        console.error("❌ Error cargando datos de homepage:", error);
+
+        // Mostrar errores en cada contenedor
+        Object.entries(containers).forEach(([key, container]) => {
+            if (container) {
+                const errorMessages = {
+                    carousel: "No se pudieron cargar los servidores destacados.",
+                    serverOfMonth: "No se pudo cargar el Servidor del Mes.",
+                    ranking: "No se pudo cargar el ranking.",
+                    calendar: "No se pudo cargar el calendario."
+                };
+                ui.renderError(container, errorMessages[key] || "Error de carga.");
+            }
+        });
+    }
+}
+
+// =====================================================
+// FUNCIONES LEGACY (mantenidas como fallback)
+// Estas funciones están disponibles si necesitas volver
+// al método anterior de consultas individuales
+// =====================================================
+
+/* LEGACY FUNCTIONS - COMMENTED OUT (available as fallback)
 
 async function loadFeaturedCarousel() {
     const container = document.getElementById('featured-carousel');
@@ -105,3 +175,5 @@ async function loadGlobalStats() {
         console.error("Error cargando estadísticas globales:", error);
     }
 }
+
+*/

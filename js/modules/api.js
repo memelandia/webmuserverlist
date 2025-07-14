@@ -67,7 +67,7 @@ async function getDetailedAuthInfo() {
 export async function getServers() {
     const { data, error } = await supabase
         .from('servers')
-        .select('*')
+        .select('id, name, image_url, banner_url, version, type, configuration, exp_rate, drop_rate, description, website_url, opening_date, votes_count, average_rating, review_count, status, created_at')
         .eq('status', 'aprobado')
         .order('created_at', { ascending: false });
     if (error) { console.error("API Error (getServers):", error); throw new Error("No se pudieron obtener los servidores."); }
@@ -88,7 +88,7 @@ export async function getFeaturedServers() {
 export async function getServerOfTheMonth() {
     const { data, error } = await supabase
         .from('servers')
-        .select('*')
+        .select('id, name, image_url, banner_url, description, version, type, configuration, exp_rate, drop_rate, website_url, discord_url, opening_date, votes_count, average_rating, review_count')
         .eq('is_server_of_the_month', true)
         .maybeSingle();
     if (error) { console.error("API Error (getServerOfTheMonth):", error); throw error; }
@@ -117,6 +117,67 @@ export async function getUpcomingOpeningsWidget() {
     if (error) { console.error("API Error (getUpcomingOpeningsWidget):", error); throw error; }
     return data;
 }
+
+// =====================================================
+// NUEVA FUNCIÓN OPTIMIZADA PARA HOMEPAGE
+// Reemplaza 8 consultas individuales con 1 sola RPC call
+// =====================================================
+
+export async function getHomepageData() {
+    logNetworkDiagnostics('getHomepageData', { operation: 'RPC_CALL' });
+
+    try {
+        const { data, error } = await supabase.rpc('get_homepage_data');
+
+        if (error) {
+            console.error("API Error (getHomepageData):", error);
+            logNetworkDiagnostics('getHomepageData', {
+                status: 'ERROR',
+                error: error.message,
+                errorCode: error.code
+            });
+            throw new Error("No se pudieron cargar los datos de la homepage.");
+        }
+
+        if (!data || !data.success) {
+            console.error("RPC Error (getHomepageData):", data?.error || 'Unknown error');
+            throw new Error(data?.error || "Error interno del servidor.");
+        }
+
+        logNetworkDiagnostics('getHomepageData', {
+            status: 'SUCCESS',
+            dataSize: JSON.stringify(data).length,
+            timestamp: data.timestamp
+        });
+
+        return {
+            featuredServers: data.featuredServers || [],
+            serverOfTheMonth: data.serverOfTheMonth || null,
+            topRanking: data.topRanking || [],
+            upcomingOpenings: data.upcomingOpenings || [],
+            globalStats: data.globalStats || { totalServers: 0, totalUsers: 0, totalVotes: 0 }
+        };
+    } catch (error) {
+        console.error("Critical Error (getHomepageData):", error);
+        logNetworkDiagnostics('getHomepageData', {
+            status: 'CRITICAL_ERROR',
+            error: error.message
+        });
+
+        // Fallback: retornar datos vacíos pero válidos
+        return {
+            featuredServers: [],
+            serverOfTheMonth: null,
+            topRanking: [],
+            upcomingOpenings: [],
+            globalStats: { totalServers: 0, totalUsers: 0, totalVotes: 0 }
+        };
+    }
+}
+
+// =====================================================
+// FUNCIONES LEGACY (mantenidas para compatibilidad)
+// =====================================================
 
 export async function getGlobalStats() {
     const [serverCount, userCount, votesData] = await Promise.all([
@@ -169,10 +230,10 @@ export async function getCalendarOpenings() {
 export async function getServerById(serverId) {
     if (!serverId) throw new Error("Se requiere un ID de servidor válido.");
     
-    // Consulta básica que solo obtiene datos de la tabla servers
+    // Consulta optimizada que solo obtiene los campos necesarios para la página del servidor
     const { data, error } = await supabase
         .from('servers')
-        .select('*')
+        .select('id, name, description, version, type, configuration, exp_rate, drop_rate, reset_info, antihack_info, image_url, banner_url, gallery_urls, events, website_url, discord_url, opening_date, votes_count, average_rating, review_count, status, created_at, user_id')
         .eq('id', serverId)
         .single();
     
