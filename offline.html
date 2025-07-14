@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión - MuServerList</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+    <style>
+        /* Estilos inline para funcionar offline */
+        :root {
+            --bg-dark: #0f0f0f;
+            --bg-light: #1a1a1a;
+            --bg-contrast: #252525;
+            --border-color: #333333;
+            --primary-color: #ff3333;
+            --primary-hover: #e62e2e;
+            --text-primary: #f5f5f5;
+            --text-secondary: #aaaaaa;
+            --font-body: 'Arial', sans-serif;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .offline-icon {
+            font-size: 6em;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        .offline-title {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .offline-subtitle {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .offline-message {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .offline-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-contrast);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-light);
+        }
+
+        .connection-status {
+            background: var(--bg-contrast);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f56565;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #48bb78;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .cached-content {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            margin: 20px 0;
+            text-align: left;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .cached-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .cached-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .cached-content li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cached-content li:last-child {
+            border-bottom: none;
+        }
+
+        .cached-content a {
+            color: var(--text-primary);
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .cached-content a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .offline-title {
+                font-size: 2em;
+            }
+            
+            .offline-icon {
+                font-size: 4em;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="offline-icon">📡</div>
+        <h1 class="offline-title">Sin Conexión</h1>
+        <p class="offline-subtitle">No se puede conectar a internet</p>
+        
+        <div class="offline-message">
+            <p>Parece que no tienes conexión a internet en este momento. No te preocupes, algunas funciones de MuServerList están disponibles offline gracias a nuestro sistema de caché.</p>
+        </div>
+
+        <div class="connection-status">
+            <div class="status-indicator" id="status-indicator"></div>
+            <span id="connection-text">Sin conexión</span>
+        </div>
+
+        <div class="offline-actions">
+            <button class="btn" onclick="checkConnection()">🔄 Verificar Conexión</button>
+            <button class="btn btn-secondary" onclick="goHome()">🏠 Ir al Inicio</button>
+            <button class="btn btn-secondary" onclick="showCachedContent()">📦 Ver Contenido en Caché</button>
+        </div>
+
+        <div class="cached-content" id="cached-content" style="display: none;">
+            <h3>📦 Contenido Disponible Offline</h3>
+            <p>Estas páginas están disponibles en tu caché local:</p>
+            <ul id="cached-pages">
+                <li>🏠 <a href="/">Página de Inicio</a></li>
+                <li>🔍 <a href="/explorar.html">Explorar Servidores</a></li>
+                <li>🏆 <a href="/ranking.html">Ranking</a></li>
+                <li>📅 <a href="/calendario.html">Calendario</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>MuServerList - Tu guía de servidores de Mu Online</p>
+        <p>Funcionalidad offline habilitada por Service Worker</p>
+    </div>
+
+    <script>
+        // Verificar estado de conexión
+        function updateConnectionStatus() {
+            const indicator = document.getElementById('status-indicator');
+            const text = document.getElementById('connection-text');
+            
+            if (navigator.onLine) {
+                indicator.classList.add('online');
+                text.textContent = 'Conexión restaurada';
+                
+                // Mostrar botón para recargar
+                setTimeout(() => {
+                    if (confirm('¡Conexión restaurada! ¿Quieres recargar la página?')) {
+                        window.location.reload();
+                    }
+                }, 1000);
+            } else {
+                indicator.classList.remove('online');
+                text.textContent = 'Sin conexión';
+            }
+        }
+
+        // Verificar conexión manualmente
+        async function checkConnection() {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            button.textContent = '🔄 Verificando...';
+            button.disabled = true;
+            
+            try {
+                // Intentar hacer una petición simple
+                const response = await fetch('/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    updateConnectionStatus();
+                } else {
+                    throw new Error('No response');
+                }
+            } catch (error) {
+                console.log('Still offline');
+                updateConnectionStatus();
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Ir al inicio
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        // Mostrar contenido en caché
+        function showCachedContent() {
+            const cachedContent = document.getElementById('cached-content');
+            cachedContent.style.display = cachedContent.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Obtener información del caché del Service Worker
+        async function getCacheInfo() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                try {
+                    const messageChannel = new MessageChannel();
+                    
+                    return new Promise((resolve) => {
+                        messageChannel.port1.onmessage = (event) => {
+                            resolve(event.data);
+                        };
+                        
+                        navigator.serviceWorker.controller.postMessage(
+                            { type: 'GET_CACHE_INFO' },
+                            [messageChannel.port2]
+                        );
+                    });
+                } catch (error) {
+                    console.error('Error obteniendo info del caché:', error);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // Actualizar lista de páginas en caché
+        async function updateCachedPages() {
+            const cacheInfo = await getCacheInfo();
+            
+            if (cacheInfo && cacheInfo.urls) {
+                const pagesList = document.getElementById('cached-pages');
+                const pages = cacheInfo.urls
+                    .filter(url => url.endsWith('.html') || url.endsWith('/'))
+                    .map(url => {
+                        const path = new URL(url).pathname;
+                        let name = path;
+                        let icon = '📄';
+                        
+                        if (path === '/' || path === '/index.html') {
+                            name = 'Página de Inicio';
+                            icon = '🏠';
+                        } else if (path.includes('explorar')) {
+                            name = 'Explorar Servidores';
+                            icon = '🔍';
+                        } else if (path.includes('ranking')) {
+                            name = 'Ranking';
+                            icon = '🏆';
+                        } else if (path.includes('calendario')) {
+                            name = 'Calendario';
+                            icon = '📅';
+                        } else if (path.includes('servidor')) {
+                            name = 'Página de Servidor';
+                            icon = '🖥️';
+                        } else if (path.includes('profile')) {
+                            name = 'Perfil de Usuario';
+                            icon = '👤';
+                        }
+                        
+                        return `<li>${icon} <a href="${path}">${name}</a></li>`;
+                    });
+                
+                if (pages.length > 0) {
+                    pagesList.innerHTML = pages.join('');
+                }
+            }
+        }
+
+        // Event listeners
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            updateConnectionStatus();
+            updateCachedPages();
+            
+            // Verificar conexión cada 30 segundos
+            setInterval(updateConnectionStatus, 30000);
+        });
+
+        // Registrar Service Worker si no está registrado
+        if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registrado desde página offline');
+                })
+                .catch((error) => {
+                    console.error('Error registrando Service Worker:', error);
+                });
+        }
+    </script>
+</body>
+</html>

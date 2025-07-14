@@ -1,20 +1,10 @@
 // /js/modules/utils.js
 
-export function getOptimizedImageUrl(bucketName, imagePath, options, fallbackUrl) {
-    if (!window.supabaseClient) return fallbackUrl;
-    if (!imagePath) return fallbackUrl;
-    if (imagePath.startsWith('http')) return imagePath;
-    
-    const { data } = window.supabaseClient.storage
-        .from(bucketName)
-        .getPublicUrl(imagePath, {
-            transform: {
-                ...options,
-                resize: options.resize || 'cover'
-            },
-        });
+import { getOptimizedImageUrl as getWebPOptimizedUrl, isWebPSupported } from './webp-support.js';
 
-    return data.publicUrl || fallbackUrl;
+export function getOptimizedImageUrl(bucketName, imagePath, options = {}, fallbackUrl = 'img/logo_placeholder_small.png') {
+    // Usar la función optimizada con soporte WebP
+    return getWebPOptimizedUrl(bucketName, imagePath, options, fallbackUrl);
 }
 
 export function renderStars(rating) {

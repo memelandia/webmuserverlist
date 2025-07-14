@@ -352,6 +352,153 @@ body {
     }
 }
 
+/* --- 2.2. Lazy Loading Styles --- */
+.lazy-placeholder {
+    background: linear-gradient(90deg,
+        var(--bg-light) 25%,
+        var(--bg-contrast) 50%,
+        var(--bg-light) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.lazy-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%);
+    animation: skeleton-shimmer 2s infinite;
+}
+
+.lazy-loaded {
+    animation: fadeInLazy 0.3s ease-in-out;
+}
+
+@keyframes fadeInLazy {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.lazy-error {
+    background: var(--bg-contrast);
+    position: relative;
+}
+
+.lazy-error::before {
+    content: '🖼️';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2em;
+    opacity: 0.5;
+}
+
+/* Lazy loading para imágenes específicas */
+img.lazy-placeholder {
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+}
+
+/* Lazy loading para backgrounds */
+.card-banner.lazy-placeholder,
+.calendar-card-banner.lazy-placeholder {
+    background: linear-gradient(135deg,
+        var(--bg-light) 0%,
+        var(--bg-contrast) 50%,
+        var(--bg-light) 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 2s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Optimizaciones para imágenes */
+img {
+    /* Mejorar renderizado de imágenes */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Placeholder mejorado para logos */
+.server-logo-table.lazy-placeholder,
+.card-logo.lazy-placeholder {
+    background: radial-gradient(circle,
+        var(--bg-contrast) 30%,
+        var(--bg-light) 70%);
+    border: 2px solid var(--border-color);
+}
+
+/* Placeholder para avatares */
+.avatar.lazy-placeholder {
+    background: radial-gradient(circle,
+        var(--primary-color) 0%,
+        var(--bg-light) 70%);
+    border-radius: 50%;
+}
+
+/* Estados de carga para galería */
+.gallery-item img.lazy-placeholder {
+    background: linear-gradient(45deg,
+        var(--bg-light) 25%,
+        var(--bg-contrast) 25%,
+        var(--bg-contrast) 50%,
+        var(--bg-light) 50%,
+        var(--bg-light) 75%,
+        var(--bg-contrast) 75%);
+    background-size: 20px 20px;
+    animation: diagonalMove 1s linear infinite;
+}
+
+@keyframes diagonalMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 20px; }
+}
+
+/* Mejoras de rendimiento */
+.lazy-loaded {
+    /* Optimizar compositing */
+    will-change: auto;
+    transform: translateZ(0);
+}
+
+/* Responsive para lazy loading */
+@media (max-width: 768px) {
+    .lazy-placeholder::after {
+        animation-duration: 1s;
+    }
+
+    .card-banner.lazy-placeholder {
+        min-height: 120px;
+    }
+}
+
+/* Prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .lazy-placeholder,
+    .lazy-placeholder::after,
+    .card-banner.lazy-placeholder {
+        animation: none;
+    }
+
+    .lazy-loaded {
+        animation: none;
+        transition: none;
+    }
+}
+
 .page-container {
     padding: 4rem 0;
 }

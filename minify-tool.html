@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Minificación - MuServerList</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #0f0f0f; 
+            color: #fff; 
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .tool-section { 
+            background: #1a1a1a; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border: 1px solid #333;
+        }
+        .tool-title { 
+            color: #ff3333; 
+            margin-bottom: 15px; 
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        textarea { 
+            width: 100%; 
+            height: 200px; 
+            background: #252525; 
+            color: #fff; 
+            border: 1px solid #333; 
+            border-radius: 4px; 
+            padding: 10px; 
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        button { 
+            background: #ff3333; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #e62e2e; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .stats { 
+            background: #252525; 
+            padding: 15px; 
+            border-radius: 4px; 
+            margin: 10px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .stat-item { text-align: center; }
+        .stat-number { 
+            font-size: 1.5em; 
+            font-weight: bold; 
+            color: #ff3333; 
+        }
+        .stat-label { color: #aaa; font-size: 0.9em; }
+        .file-input { 
+            background: #252525; 
+            border: 1px solid #333; 
+            border-radius: 4px; 
+            padding: 10px; 
+            margin: 10px 0;
+        }
+        .file-input input[type="file"] { 
+            background: #333; 
+            color: #fff; 
+            border: none; 
+            padding: 5px; 
+            border-radius: 3px;
+        }
+        .download-section {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .download-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .download-link:hover { background: #218838; }
+        .progress { 
+            background: #333; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            margin: 10px 0;
+        }
+        .progress-bar { 
+            background: #ff3333; 
+            height: 20px; 
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗜️ Herramienta de Minificación - MuServerList</h1>
+        <p>Minifica archivos CSS, JavaScript y HTML para optimizar el rendimiento del sitio.</p>
+
+        <!-- CSS Minifier -->
+        <div class="tool-section">
+            <div class="tool-title">
+                <span>📄</span>
+                <span>Minificador CSS</span>
+            </div>
+            
+            <div class="file-input">
+                <label>Cargar archivo CSS:</label>
+                <input type="file" id="css-file" accept=".css" />
+                <button onclick="loadCSSFile()">Cargar</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>CSS Original:</h4>
+                    <textarea id="css-input" placeholder="Pega tu código CSS aquí o carga un archivo..."></textarea>
+                </div>
+                <div>
+                    <h4>CSS Minificado:</h4>
+                    <textarea id="css-output" readonly placeholder="El CSS minificado aparecerá aquí..."></textarea>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 15px 0;">
+                <button onclick="minifyCSS()">🗜️ Minificar CSS</button>
+                <button onclick="downloadCSS()">💾 Descargar CSS</button>
+                <button onclick="clearCSS()">🗑️ Limpiar</button>
+            </div>
+            
+            <div class="stats" id="css-stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="css-original-size">0</div>
+                    <div class="stat-label">Tamaño Original</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="css-minified-size">0</div>
+                    <div class="stat-label">Tamaño Minificado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="css-savings">0%</div>
+                    <div class="stat-label">Reducción</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JavaScript Minifier -->
+        <div class="tool-section">
+            <div class="tool-title">
+                <span>📜</span>
+                <span>Minificador JavaScript</span>
+            </div>
+            
+            <div class="file-input">
+                <label>Cargar archivo JS:</label>
+                <input type="file" id="js-file" accept=".js" />
+                <button onclick="loadJSFile()">Cargar</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>JavaScript Original:</h4>
+                    <textarea id="js-input" placeholder="Pega tu código JavaScript aquí o carga un archivo..."></textarea>
+                </div>
+                <div>
+                    <h4>JavaScript Minificado:</h4>
+                    <textarea id="js-output" readonly placeholder="El JavaScript minificado aparecerá aquí..."></textarea>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 15px 0;">
+                <button onclick="minifyJS()">🗜️ Minificar JavaScript</button>
+                <button onclick="downloadJS()">💾 Descargar JS</button>
+                <button onclick="clearJS()">🗑️ Limpiar</button>
+            </div>
+            
+            <div class="stats" id="js-stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="js-original-size">0</div>
+                    <div class="stat-label">Tamaño Original</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="js-minified-size">0</div>
+                    <div class="stat-label">Tamaño Minificado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="js-savings">0%</div>
+                    <div class="stat-label">Reducción</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML Minifier -->
+        <div class="tool-section">
+            <div class="tool-title">
+                <span>🌐</span>
+                <span>Minificador HTML</span>
+            </div>
+            
+            <div class="file-input">
+                <label>Cargar archivo HTML:</label>
+                <input type="file" id="html-file" accept=".html" />
+                <button onclick="loadHTMLFile()">Cargar</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>HTML Original:</h4>
+                    <textarea id="html-input" placeholder="Pega tu código HTML aquí o carga un archivo..."></textarea>
+                </div>
+                <div>
+                    <h4>HTML Minificado:</h4>
+                    <textarea id="html-output" readonly placeholder="El HTML minificado aparecerá aquí..."></textarea>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 15px 0;">
+                <button onclick="minifyHTML()">🗜️ Minificar HTML</button>
+                <button onclick="downloadHTML()">💾 Descargar HTML</button>
+                <button onclick="clearHTML()">🗑️ Limpiar</button>
+            </div>
+            
+            <div class="stats" id="html-stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="html-original-size">0</div>
+                    <div class="stat-label">Tamaño Original</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="html-minified-size">0</div>
+                    <div class="stat-label">Tamaño Minificado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="html-savings">0%</div>
+                    <div class="stat-label">Reducción</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Processing -->
+        <div class="tool-section">
+            <div class="tool-title">
+                <span>📦</span>
+                <span>Procesamiento por Lotes</span>
+            </div>
+            
+            <p>Minifica múltiples archivos de una vez:</p>
+            
+            <div class="file-input">
+                <label>Seleccionar múltiples archivos:</label>
+                <input type="file" id="batch-files" multiple accept=".css,.js,.html" />
+                <button onclick="processBatch()">🚀 Procesar Todo</button>
+            </div>
+            
+            <div class="progress" id="batch-progress" style="display: none;">
+                <div class="progress-bar" id="batch-progress-bar" style="width: 0%;">0%</div>
+            </div>
+            
+            <div id="batch-results"></div>
+        </div>
+
+        <!-- Estadísticas Globales -->
+        <div class="tool-section">
+            <div class="tool-title">
+                <span>📊</span>
+                <span>Estadísticas Globales</span>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="total-files">0</div>
+                    <div class="stat-label">Archivos Procesados</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-original">0 KB</div>
+                    <div class="stat-label">Tamaño Original Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-minified">0 KB</div>
+                    <div class="stat-label">Tamaño Minificado Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-savings">0%</div>
+                    <div class="stat-label">Reducción Total</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales para estadísticas
+        let globalStats = {
+            totalFiles: 0,
+            totalOriginalSize: 0,
+            totalMinifiedSize: 0
+        };
+
+        // Funciones de minificación
+        function minifyCSSCode(css) {
+            return css
+                .replace(/\/\*[\s\S]*?\*\//g, '') // Remover comentarios
+                .replace(/\s+/g, ' ') // Remover espacios excesivos
+                .replace(/\s*([{}:;,>+~])\s*/g, '$1') // Remover espacios alrededor de caracteres especiales
+                .replace(/;}/g, '}') // Remover punto y coma antes de }
+                .trim();
+        }
+
+        function minifyJSCode(js) {
+            return js
+                .replace(/\/\/.*$/gm, '') // Remover comentarios de línea
+                .replace(/\/\*[\s\S]*?\*\//g, '') // Remover comentarios de bloque
+                .replace(/\s+/g, ' ') // Remover espacios excesivos
+                .replace(/\s*([=+\-*/%<>!&|^~?:;,(){}[\]])\s*/g, '$1') // Remover espacios alrededor de operadores
+                .trim();
+        }
+
+        function minifyHTMLCode(html) {
+            return html
+                .replace(/<!--[\s\S]*?-->/g, '') // Remover comentarios HTML
+                .replace(/\s+/g, ' ') // Remover espacios excesivos
+                .replace(/>\s+</g, '><') // Remover espacios entre tags
+                .trim();
+        }
+
+        // Funciones de utilidad
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function updateStats(type, originalSize, minifiedSize) {
+            const savings = originalSize > 0 ? ((originalSize - minifiedSize) / originalSize * 100).toFixed(1) : 0;
+            
+            document.getElementById(`${type}-original-size`).textContent = formatBytes(originalSize);
+            document.getElementById(`${type}-minified-size`).textContent = formatBytes(minifiedSize);
+            document.getElementById(`${type}-savings`).textContent = savings + '%';
+            document.getElementById(`${type}-stats`).style.display = 'grid';
+            
+            // Actualizar estadísticas globales
+            globalStats.totalFiles++;
+            globalStats.totalOriginalSize += originalSize;
+            globalStats.totalMinifiedSize += minifiedSize;
+            updateGlobalStats();
+        }
+
+        function updateGlobalStats() {
+            const totalSavings = globalStats.totalOriginalSize > 0 ? 
+                ((globalStats.totalOriginalSize - globalStats.totalMinifiedSize) / globalStats.totalOriginalSize * 100).toFixed(1) : 0;
+            
+            document.getElementById('total-files').textContent = globalStats.totalFiles;
+            document.getElementById('total-original').textContent = formatBytes(globalStats.totalOriginalSize);
+            document.getElementById('total-minified').textContent = formatBytes(globalStats.totalMinifiedSize);
+            document.getElementById('total-savings').textContent = totalSavings + '%';
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type: type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Funciones específicas para CSS
+        function loadCSSFile() {
+            const fileInput = document.getElementById('css-file');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('css-input').value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function minifyCSS() {
+            const input = document.getElementById('css-input').value;
+            if (!input.trim()) {
+                alert('Por favor, ingresa código CSS para minificar.');
+                return;
+            }
+            
+            const minified = minifyCSSCode(input);
+            document.getElementById('css-output').value = minified;
+            
+            updateStats('css', input.length, minified.length);
+        }
+
+        function downloadCSS() {
+            const content = document.getElementById('css-output').value;
+            if (content) {
+                downloadFile(content, 'style.min.css', 'text/css');
+            }
+        }
+
+        function clearCSS() {
+            document.getElementById('css-input').value = '';
+            document.getElementById('css-output').value = '';
+            document.getElementById('css-stats').style.display = 'none';
+        }
+
+        // Funciones específicas para JavaScript
+        function loadJSFile() {
+            const fileInput = document.getElementById('js-file');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('js-input').value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function minifyJS() {
+            const input = document.getElementById('js-input').value;
+            if (!input.trim()) {
+                alert('Por favor, ingresa código JavaScript para minificar.');
+                return;
+            }
+            
+            const minified = minifyJSCode(input);
+            document.getElementById('js-output').value = minified;
+            
+            updateStats('js', input.length, minified.length);
+        }
+
+        function downloadJS() {
+            const content = document.getElementById('js-output').value;
+            if (content) {
+                downloadFile(content, 'script.min.js', 'text/javascript');
+            }
+        }
+
+        function clearJS() {
+            document.getElementById('js-input').value = '';
+            document.getElementById('js-output').value = '';
+            document.getElementById('js-stats').style.display = 'none';
+        }
+
+        // Funciones específicas para HTML
+        function loadHTMLFile() {
+            const fileInput = document.getElementById('html-file');
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('html-input').value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function minifyHTML() {
+            const input = document.getElementById('html-input').value;
+            if (!input.trim()) {
+                alert('Por favor, ingresa código HTML para minificar.');
+                return;
+            }
+            
+            const minified = minifyHTMLCode(input);
+            document.getElementById('html-output').value = minified;
+            
+            updateStats('html', input.length, minified.length);
+        }
+
+        function downloadHTML() {
+            const content = document.getElementById('html-output').value;
+            if (content) {
+                downloadFile(content, 'index.min.html', 'text/html');
+            }
+        }
+
+        function clearHTML() {
+            document.getElementById('html-input').value = '';
+            document.getElementById('html-output').value = '';
+            document.getElementById('html-stats').style.display = 'none';
+        }
+
+        // Procesamiento por lotes
+        async function processBatch() {
+            const fileInput = document.getElementById('batch-files');
+            const files = Array.from(fileInput.files);
+            
+            if (files.length === 0) {
+                alert('Por favor, selecciona archivos para procesar.');
+                return;
+            }
+            
+            const progressContainer = document.getElementById('batch-progress');
+            const progressBar = document.getElementById('batch-progress-bar');
+            const resultsContainer = document.getElementById('batch-results');
+            
+            progressContainer.style.display = 'block';
+            resultsContainer.innerHTML = '';
+            
+            const results = [];
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const progress = ((i + 1) / files.length * 100).toFixed(0);
+                
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = progress + '%';
+                
+                try {
+                    const content = await readFileAsText(file);
+                    let minified = '';
+                    let type = '';
+                    
+                    if (file.name.endsWith('.css')) {
+                        minified = minifyCSSCode(content);
+                        type = 'CSS';
+                    } else if (file.name.endsWith('.js')) {
+                        minified = minifyJSCode(content);
+                        type = 'JS';
+                    } else if (file.name.endsWith('.html')) {
+                        minified = minifyHTMLCode(content);
+                        type = 'HTML';
+                    }
+                    
+                    const originalSize = content.length;
+                    const minifiedSize = minified.length;
+                    const savings = originalSize > 0 ? ((originalSize - minifiedSize) / originalSize * 100).toFixed(1) : 0;
+                    
+                    results.push({
+                        name: file.name,
+                        type,
+                        originalSize,
+                        minifiedSize,
+                        savings,
+                        content: minified
+                    });
+                    
+                    // Actualizar estadísticas globales
+                    globalStats.totalFiles++;
+                    globalStats.totalOriginalSize += originalSize;
+                    globalStats.totalMinifiedSize += minifiedSize;
+                    
+                } catch (error) {
+                    console.error('Error procesando archivo:', file.name, error);
+                }
+                
+                // Pequeña pausa para mostrar el progreso
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Mostrar resultados
+            resultsContainer.innerHTML = `
+                <h4>Resultados del Procesamiento:</h4>
+                <div style="background: #252525; padding: 15px; border-radius: 4px;">
+                    ${results.map(result => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+                            <span>${result.name} (${result.type})</span>
+                            <span>${formatBytes(result.originalSize)} → ${formatBytes(result.minifiedSize)} (${result.savings}%)</span>
+                            <button onclick="downloadProcessedFile('${result.name}', \`${result.content.replace(/`/g, '\\`')}\`, '${result.type}')">💾 Descargar</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            updateGlobalStats();
+            progressContainer.style.display = 'none';
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function downloadProcessedFile(filename, content, type) {
+            const mimeTypes = {
+                'CSS': 'text/css',
+                'JS': 'text/javascript',
+                'HTML': 'text/html'
+            };
+            
+            const minFilename = filename.replace(/\.(css|js|html)$/, '.min.$1');
+            downloadFile(content, minFilename, mimeTypes[type] || 'text/plain');
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🗜️ Herramienta de minificación cargada');
+        });
+    </script>
+</body>
+</html>
