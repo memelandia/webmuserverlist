@@ -46,6 +46,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.error("❌ Error cargando página de explorar:", error);
                 }
                 break;
+            case 'page-ranking':
+                console.log("🏆 Cargando página de ranking...");
+                try {
+                    const { initAuth } = await import('./modules/auth.js');
+                    const { initRankingPage } = await import('./ranking.js');
+
+                    await initAuth();
+                    initRankingPage();
+                    console.log("✅ Página de ranking cargada");
+                } catch (error) {
+                    console.error("❌ Error cargando página de ranking:", error);
+                }
+                break;
+            case 'page-calendario':
+                console.log("📅 Cargando página de calendario...");
+                try {
+                    const { initAuth } = await import('./modules/auth.js');
+                    const { initCalendarioPage } = await import('./calendario.js');
+
+                    await initAuth();
+                    initCalendarioPage();
+                    console.log("✅ Página de calendario cargada");
+                } catch (error) {
+                    console.error("❌ Error cargando página de calendario:", error);
+                }
+                break;
+            case 'page-servidor':
+                console.log("🖥️ Cargando página de servidor...");
+                try {
+                    const { initAuth } = await import('./modules/auth.js');
+                    const { initServidorPage } = await import('./servidor.js');
+
+                    await initAuth();
+                    initServidorPage();
+                    console.log("✅ Página de servidor cargada");
+                } catch (error) {
+                    console.error("❌ Error cargando página de servidor:", error);
+                }
+                break;
+            case 'page-profile':
+                console.log("👤 Cargando página de perfil...");
+                try {
+                    const { initAuth } = await import('./modules/auth.js');
+                    const { initProfilePage } = await import('./profile.js');
+
+                    await initAuth();
+                    initProfilePage();
+                    console.log("✅ Página de perfil cargada");
+                } catch (error) {
+                    console.error("❌ Error cargando página de perfil:", error);
+                }
+                break;
             default:
                 console.log(`📄 Página "${pageId}" - cargando solo autenticación`);
                 try {
