@@ -54,6 +54,304 @@ body {
     margin: 0 auto;
 }
 
+/* --- 2.1. Skeleton Loading States --- */
+.skeleton {
+    background: linear-gradient(90deg,
+        var(--bg-light) 25%,
+        var(--bg-contrast) 50%,
+        var(--bg-light) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--border-radius);
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 100%);
+    animation: skeleton-shimmer 2s infinite;
+}
+
+@keyframes skeleton-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Skeleton específicos para diferentes componentes */
+.skeleton-text {
+    height: 1em;
+    margin: 0.5em 0;
+}
+
+.skeleton-text.short { width: 60%; }
+.skeleton-text.medium { width: 80%; }
+.skeleton-text.long { width: 100%; }
+
+.skeleton-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+
+.skeleton-image {
+    width: 100%;
+    height: 120px;
+}
+
+.skeleton-card {
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+
+.skeleton-button {
+    height: 40px;
+    width: 120px;
+    border-radius: 6px;
+}
+
+/* Skeleton para carrusel de servidores destacados */
+.skeleton-carousel {
+    display: flex;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.skeleton-carousel-item {
+    min-width: 300px;
+    height: 200px;
+    border-radius: var(--border-radius);
+    flex-shrink: 0;
+}
+
+/* Skeleton para cards de servidor */
+.skeleton-server-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.skeleton-server-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.skeleton-server-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--border-radius);
+    flex-shrink: 0;
+}
+
+.skeleton-server-info {
+    flex: 1;
+}
+
+.skeleton-server-title {
+    height: 1.5em;
+    width: 70%;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-server-subtitle {
+    height: 1em;
+    width: 50%;
+}
+
+.skeleton-server-stats {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.skeleton-stat {
+    height: 1em;
+    width: 60px;
+}
+
+/* Skeleton para ranking */
+.skeleton-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+}
+
+.skeleton-rank-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-rank-logo {
+    width: 45px;
+    height: 45px;
+    border-radius: var(--border-radius);
+    flex-shrink: 0;
+}
+
+.skeleton-rank-info {
+    flex: 1;
+}
+
+.skeleton-rank-name {
+    height: 1.2em;
+    width: 60%;
+    margin-bottom: 0.3rem;
+}
+
+.skeleton-rank-version {
+    height: 0.9em;
+    width: 40%;
+}
+
+.skeleton-rank-votes {
+    width: 50px;
+    height: 1.5em;
+    flex-shrink: 0;
+}
+
+/* Skeleton para estadísticas globales */
+.skeleton-stats-grid {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.skeleton-stat-item {
+    text-align: center;
+}
+
+.skeleton-stat-number {
+    width: 60px;
+    height: 2.5em;
+    margin: 0 auto 0.5rem;
+}
+
+.skeleton-stat-label {
+    width: 80px;
+    height: 1em;
+    margin: 0 auto;
+}
+
+/* Skeleton para calendario */
+.skeleton-calendar-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+}
+
+.skeleton-calendar-date {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    flex-shrink: 0;
+}
+
+.skeleton-calendar-info {
+    flex: 1;
+}
+
+.skeleton-calendar-title {
+    height: 1.2em;
+    width: 70%;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-calendar-time {
+    height: 1em;
+    width: 50%;
+}
+
+/* Skeleton para servidor del mes */
+.skeleton-som-container {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    text-align: center;
+}
+
+.skeleton-som-badge {
+    width: 100px;
+    height: 30px;
+    margin: 0 auto 1rem;
+}
+
+.skeleton-som-logo {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--border-radius);
+    margin: 0 auto 1rem;
+}
+
+.skeleton-som-title {
+    height: 2em;
+    width: 60%;
+    margin: 0 auto 1rem;
+}
+
+.skeleton-som-description {
+    height: 1em;
+    width: 80%;
+    margin: 0 auto 0.5rem;
+}
+
+.skeleton-som-button {
+    width: 150px;
+    height: 45px;
+    margin: 1rem auto 0;
+}
+
+/* Responsive adjustments para skeletons */
+@media (max-width: 768px) {
+    .skeleton-carousel-item {
+        min-width: 250px;
+        height: 180px;
+    }
+
+    .skeleton-server-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .skeleton-server-logo {
+        width: 60px;
+        height: 60px;
+    }
+
+    .skeleton-stats-grid {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
 .page-container {
     padding: 4rem 0;
 }

@@ -35,8 +35,9 @@ async function loadServers() {
     const serversGridContainer = document.getElementById('servers-grid-container');
     if (!serversGridContainer) return;
 
-    ui.renderLoading(serversGridContainer, "Buscando servidores...");
-    
+    // Mostrar skeleton loading para cards de servidor
+    ui.renderSkeletonLoading(serversGridContainer, 'server-cards', 6);
+
     try {
         const filters = ui.getExploreFilters();
         const servers = await api.getExploreServers(filters);

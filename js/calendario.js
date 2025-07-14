@@ -12,7 +12,8 @@ async function loadCalendarOpenings() {
     const calendarContainer = document.getElementById('calendar-container');
     if (!calendarContainer) return;
 
-    ui.renderLoading(calendarContainer, "Cargando próximas aperturas...");
+    // Mostrar skeleton loading para calendario
+    ui.renderSkeletonLoading(calendarContainer, 'calendar', 8);
 
     try {
         const servers = await api.getCalendarOpenings();

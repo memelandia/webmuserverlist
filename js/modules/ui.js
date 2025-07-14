@@ -17,6 +17,135 @@ export function setFormFeedback(element, message, type) {
     element.className = `feedback-message ${type} active`;
 }
 
+// =====================================================
+// SKELETON LOADING STATES
+// =====================================================
+
+export function renderSkeletonCarousel(container) {
+    if (!container) return;
+    container.innerHTML = `
+        <div class="skeleton-carousel">
+            ${Array(3).fill().map(() => `
+                <div class="skeleton skeleton-carousel-item"></div>
+            `).join('')}
+        </div>
+    `;
+}
+
+export function renderSkeletonServerOfTheMonth(container) {
+    if (!container) return;
+    container.innerHTML = `
+        <div class="skeleton-som-container">
+            <div class="skeleton skeleton-som-badge"></div>
+            <div class="skeleton skeleton-som-logo"></div>
+            <div class="skeleton skeleton-som-title"></div>
+            <div class="skeleton skeleton-som-description"></div>
+            <div class="skeleton skeleton-som-description short"></div>
+            <div class="skeleton skeleton-som-button"></div>
+        </div>
+    `;
+}
+
+export function renderSkeletonRanking(container, count = 5) {
+    if (!container) return;
+    container.innerHTML = Array(count).fill().map((_, index) => `
+        <div class="skeleton-ranking-item">
+            <div class="skeleton skeleton-rank-number"></div>
+            <div class="skeleton skeleton-rank-logo"></div>
+            <div class="skeleton-rank-info">
+                <div class="skeleton skeleton-rank-name"></div>
+                <div class="skeleton skeleton-rank-version"></div>
+            </div>
+            <div class="skeleton skeleton-rank-votes"></div>
+        </div>
+    `).join('');
+}
+
+export function renderSkeletonCalendar(container, count = 3) {
+    if (!container) return;
+    container.innerHTML = Array(count).fill().map(() => `
+        <div class="skeleton-calendar-item">
+            <div class="skeleton skeleton-calendar-date"></div>
+            <div class="skeleton-calendar-info">
+                <div class="skeleton skeleton-calendar-title"></div>
+                <div class="skeleton skeleton-calendar-time"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+export function renderSkeletonGlobalStats() {
+    return `
+        <div class="skeleton-stats-grid">
+            <div class="skeleton-stat-item">
+                <div class="skeleton skeleton-stat-number"></div>
+                <div class="skeleton skeleton-stat-label"></div>
+            </div>
+            <div class="skeleton-stat-item">
+                <div class="skeleton skeleton-stat-number"></div>
+                <div class="skeleton skeleton-stat-label"></div>
+            </div>
+            <div class="skeleton-stat-item">
+                <div class="skeleton skeleton-stat-number"></div>
+                <div class="skeleton skeleton-stat-label"></div>
+            </div>
+        </div>
+    `;
+}
+
+export function renderSkeletonServerCards(container, count = 6) {
+    if (!container) return;
+    container.innerHTML = Array(count).fill().map(() => `
+        <div class="skeleton-server-card">
+            <div class="skeleton-server-header">
+                <div class="skeleton skeleton-server-logo"></div>
+                <div class="skeleton-server-info">
+                    <div class="skeleton skeleton-server-title"></div>
+                    <div class="skeleton skeleton-server-subtitle"></div>
+                </div>
+            </div>
+            <div class="skeleton skeleton-text medium"></div>
+            <div class="skeleton skeleton-text short"></div>
+            <div class="skeleton-server-stats">
+                <div class="skeleton skeleton-stat"></div>
+                <div class="skeleton skeleton-stat"></div>
+                <div class="skeleton skeleton-stat"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Función mejorada de loading que usa skeletons
+export function renderSkeletonLoading(container, type = 'default', count = 1) {
+    if (!container) return;
+
+    switch (type) {
+        case 'carousel':
+            renderSkeletonCarousel(container);
+            break;
+        case 'server-of-month':
+            renderSkeletonServerOfTheMonth(container);
+            break;
+        case 'ranking':
+            renderSkeletonRanking(container, count);
+            break;
+        case 'calendar':
+            renderSkeletonCalendar(container, count);
+            break;
+        case 'server-cards':
+            renderSkeletonServerCards(container, count);
+            break;
+        default:
+            container.innerHTML = `
+                <div class="skeleton-server-card">
+                    <div class="skeleton skeleton-text long"></div>
+                    <div class="skeleton skeleton-text medium"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                </div>
+            `;
+    }
+}
+
 // --- Componentes de la Página de Inicio (main.js) ---
 
 export function renderFeaturedCarousel(container, servers) {

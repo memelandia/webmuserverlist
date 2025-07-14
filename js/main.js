@@ -47,7 +47,7 @@ function loadHomeWidgets() {
 async function loadHomepageDataOptimized() {
     console.log("🚀 Cargando datos de homepage con RPC optimizada...");
 
-    // Mostrar loading en todos los contenedores
+    // Mostrar skeleton loading en todos los contenedores
     const containers = {
         carousel: document.getElementById('featured-carousel'),
         serverOfMonth: document.getElementById('server-of-the-month-widget'),
@@ -55,9 +55,16 @@ async function loadHomepageDataOptimized() {
         calendar: document.getElementById('calendar-widget-list')
     };
 
-    // Mostrar estados de carga
-    Object.values(containers).forEach(container => {
-        if (container) ui.renderLoading(container, "Cargando...");
+    // Mostrar skeleton loading states específicos
+    if (containers.carousel) ui.renderSkeletonLoading(containers.carousel, 'carousel');
+    if (containers.serverOfMonth) ui.renderSkeletonLoading(containers.serverOfMonth, 'server-of-month');
+    if (containers.ranking) ui.renderSkeletonLoading(containers.ranking, 'ranking', 5);
+    if (containers.calendar) ui.renderSkeletonLoading(containers.calendar, 'calendar', 3);
+
+    // Mostrar skeleton para estadísticas globales
+    const statsContainers = document.querySelectorAll('.hero-stats .stat-number');
+    statsContainers.forEach(container => {
+        if (container) container.innerHTML = '<div class="skeleton skeleton-stat-number" style="width: 60px; height: 2em; margin: 0 auto;"></div>';
     });
 
     try {

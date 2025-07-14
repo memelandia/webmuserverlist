@@ -45,7 +45,8 @@ async function fetchAndRenderRanking() {
     const rankingContainer = document.getElementById('ranking-container');
     const paginationContainer = document.getElementById('pagination-controls');
     
-    ui.renderLoading(rankingContainer, '<tr><td colspan="9" class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando ranking...</td></tr>');
+    // Mostrar skeleton loading para tabla de ranking
+    ui.renderSkeletonLoading(rankingContainer, 'ranking', 15);
     paginationContainer.innerHTML = '';
     
     ui.updateRankingFilterButtons(currentRankingType);
